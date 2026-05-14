@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.0
-// @description  选取元素后自动点击/输入，严格宽松双模式，支持单选、多选、队列模式，跨刷新保存，初始最小化，自动刷新网页，分页面板。
+// @version      5.0.4
+// @description  不想描述
 // @author       sewolon
 // @match        *://*/*
 // @grant        none
@@ -29,6 +29,7 @@
 
     const STORAGE_KEY = 'AUTO_OP_CONFIG_' + window.location.hostname;
     const REFRESH_STATE_KEY = 'AUTO_OP_REFRESH_STATE_' + window.location.hostname;
+    const AUTOSTART_STATE_KEY = 'AUTO_OP_AUTOSTART_' + window.location.hostname;
 
     const DEBUG = false;
     let targets = [];
@@ -36,7 +37,7 @@
     let timerID = null;
     let clickedCount = 0;
     let maxClicks = Infinity;
-    let clickInterval = 1100;
+    let clickInterval = 1000;
     let isPicking = false;
     let isDarkMode = false;
     let autoFillContent = '';
@@ -61,6 +62,17 @@
     const PAGE_COUNT = 3;
     let collapseAnimPhase = 'collapsed';
     let collapsedWidth = 300;
+    let autoStartIntervalMin = 0;
+    let autoStartEnabled = false;
+    let autoStartTimerID = null;
+    let autoStartCountdownTimerID = null;
+    let autoStartNextTime = 0;
+    let autoStartCountdownLabel = null;
+    let maxDurationMin = 0;
+    let maxDurationTimerID = null;
+    let operationStartTimestamp = 0;
+    let elapsedTimerID = null;
+    let elapsedSpan = null;
 
     async function requestWakeLock() {
         try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { console.error('[AUTO_OP] WakeLock 异常:', e); }
@@ -161,10 +173,8 @@
             justify-content: center; padding: 0; border-radius: 6px; margin-right: 12px; line-height: 1;
             transition: all 0.3s; -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-toggle:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text);
-        }
-        .auto-op-toggle:active { transform: scale(0.85) !important;
-        }
+        .auto-op-toggle:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text); }
+        .auto-op-toggle:active { transform: scale(0.85) !important; }
         .auto-op-header-start {
             flex-shrink: 0; width: 30px; height: 30px; border: none; color: #fff;
             font-size: 14px; font-family: inherit; cursor: pointer; display: none;
@@ -172,44 +182,32 @@
             line-height: 0; transition: all 0.3s, opacity 0.3s ease; background: #16a34a; opacity: 0.9 !important; text-align: center;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-header-start:hover { background: #22c55e; opacity: 1 !important;
-        }
-        .auto-op-header-start.is-stop { background: #dc2626; opacity: 0.9 !important;
-        }
-        .auto-op-header-start.is-stop:hover { background: #ef4444; opacity: 1 !important;
-        }
-        .auto-op-header-start:active { transform: scale(0.85) !important;
-        }
-        .auto-op-header-start:disabled { opacity: 0.4 !important; cursor: not-allowed;
-        }
+        .auto-op-header-start:hover { background: #22c55e; opacity: 1 !important; }
+        .auto-op-header-start.is-stop { background: #dc2626; opacity: 0.9 !important; }
+        .auto-op-header-start.is-stop:hover { background: #ef4444; opacity: 1 !important; }
+        .auto-op-header-start:active { transform: scale(0.85) !important; }
+        .auto-op-header-start:disabled { opacity: 0.4 !important; cursor: not-allowed; }
         .auto-op-body {
             padding: 14px 14px 14px; overflow: hidden; max-height: 60vh;
-            transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.3s ease; opacity: 1;
+            transition: max-height 0.35s ease, padding 0.25s ease, opacity 0.3s ease; opacity: 1;
         }
-        .auto-op-body::-webkit-scrollbar { display: none;
-        }
+        .auto-op-body::-webkit-scrollbar { display: none; }
         #auto-op-panel.collapsing .auto-op-body {
             max-height: 0 !important; padding: 0 !important; margin: 0 !important; border-width: 0 !important;
             opacity: 0; overflow: hidden; contain: layout !important;
             transition: max-height 0.35s ease, padding 0.25s ease, margin 0.25s ease, border-width 0.25s ease, opacity 0.3s ease; visibility 0.25s ease;
         }
-        #auto-op-panel.collapsed {
-            gap: 0 !important;
-        }
-        #auto-op-panel.collapsed .auto-op-header {
-            justify-content: flex-start;
-        }
-		#auto-op-panel.collapsed .auto-op-header h3 {
-            flex: 0 0 auto !important; margin-left: auto;
-        }
+        #auto-op-panel.collapsed { gap: 0 !important; }
+        #auto-op-panel.collapsed .auto-op-header { justify-content: flex-start; }
+        #auto-op-panel.collapsed .auto-op-header h3 { flex: 0 0 auto !important; margin-left: auto; }
         #auto-op-panel.collapsed .auto-op-header-start {
             display: flex; opacity: 0; animation: auto-op-fade-in 0.3s ease 0.1s forwards;
         }
         #auto-op-panel.collapsed .auto-op-body {
             max-height: 0 !important; padding: 0 !important; margin: 0 !important;
             border-width: 0 !important; opacity: 0; overflow: hidden;
-            visibility: hidden;
-            contain: layout !important;
+            visibility: hidden; contain: layout !important;
+			transition: max-height 0.35s ease, padding 0.25s ease, opacity 0.3s ease;
         }
         #auto-op-panel.body-hidden .auto-op-body {
             max-height: 0 !important; padding: 0 !important; margin: 0 !important;
@@ -217,8 +215,7 @@
             contain: layout !important;
             transition: max-height 0.35s ease, padding 0.25s ease, opacity 0.3s ease;
         }
-        .auto-op-row { margin-bottom: 12px; min-height: 0px;
-        }
+        .auto-op-row { margin-bottom: 12px; min-height: 0px; }
         .auto-op-row label {
             display: block; font-size: 11px; font-weight: 600; font-family: var(--auto-op-font); color: var(--panel-label-text);
             margin-bottom: 5px; letter-spacing: 0.5px;
@@ -234,10 +231,8 @@
         .auto-op-row input[type="number"]:focus-visible, .auto-op-row select:focus-visible, .auto-op-row input[type="text"]:focus-visible {
             border-color: var(--panel-highlight-border) !important;
         }
-        .auto-op-row input[type="number"]::placeholder { color: var(--panel-label-text);
-        }
-        .auto-op-row select option { background: var(--panel-input-bg); color: var(--panel-input-text);
-        }
+        .auto-op-row input[type="number"]::placeholder { color: var(--panel-label-text); }
+        .auto-op-row select option { background: var(--panel-input-bg); color: var(--panel-input-text); }
         .auto-op-row-switch {
             display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
         }
@@ -267,17 +262,16 @@
         .auto-op-switch input:checked + .auto-op-switch-track .auto-op-switch-thumb {
             transform: translateX(18px); background: #fff;
         }
-        .auto-op-target-list-container { min-height: 0px;
-        }
+        .auto-op-target-list-container { min-height: 0px; }
         .auto-op-target-info {
             background: var(--panel-input-bg); border: 1px solid var(--panel-input-border);
             border-radius: 6px; padding: 8px 10px; font-size: 12px; font-weight: 600; font-family: var(--auto-op-font);
             color: var(--panel-label-text); word-break: break-all; line-height: 1.5;
         }
         .auto-op-target-list {
-            max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: none; -ms-overflow-style: none; }
-        .auto-op-target-list::-webkit-scrollbar { display: none;
+            max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: none; -ms-overflow-style: none;
         }
+        .auto-op-target-list::-webkit-scrollbar { display: none; }
         .auto-op-target-item {
             background: var(--panel-input-bg); border: 1px solid var(--panel-input-border);
             border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: var(--auto-op-font);
@@ -286,16 +280,11 @@
             box-sizing: border-box; transition: border-color 0s, color 0s;
             scrollbar-width: none; -ms-overflow-style: none;
         }
-        .auto-op-target-item::-webkit-scrollbar { display: none;
-        }
-        .auto-op-target-item.active { border-color: var(--panel-active-border); color: var(--panel-active-text);
-        }
-        .auto-op-target-item.missing { border-color: var(--panel-missing-border); color: var(--panel-missing-text);
-        }
-        .auto-op-target-item span { display: block; padding-right: 20px; white-space: pre-wrap; font-weight: 600;
-        }
-        .auto-op-target-parent { display: block; padding-right: 0px !important; font-size: 11px; font-weight: 600; color: var(--panel-highlight-border); margin-bottom: 2px;
-        }
+        .auto-op-target-item::-webkit-scrollbar { display: none; }
+        .auto-op-target-item.active { border-color: var(--panel-active-border); color: var(--panel-active-text); }
+        .auto-op-target-item.missing { border-color: var(--panel-missing-border); color: var(--panel-missing-text); }
+        .auto-op-target-item span { display: block; padding-right: 20px; white-space: pre-wrap; font-weight: 600; }
+        .auto-op-target-parent { display: block; padding-right: 0px !important; font-size: 11px; font-weight: 600; color: var(--panel-highlight-border); margin-bottom: 2px; }
         .auto-op-btn-info {
             display: block; margin-top: 4px; margin-bottom: 2px; width: 16px; height: 16px;
             background: var(--panel-button-bg); border: 1px solid var(--panel-button-border);
@@ -303,10 +292,8 @@
             line-height: 14px; text-align: center; border-radius: 4px; cursor: pointer; padding: 0; transition: all 0.3s;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-btn-info:hover { background: var(--panel-highlight-border); color: #fff; border-color: var(--panel-highlight-border);
-        }
-        .auto-op-btn-info:active { transform: scale(0.85) !important;
-        }
+        .auto-op-btn-info:hover { background: var(--panel-highlight-border); color: #fff; border-color: var(--panel-highlight-border); }
+        .auto-op-btn-info:active { transform: scale(0.85) !important; }
         .auto-op-match-mode {
             position: absolute !important; right: 24px !important; top: 4px !important; width: 42px !important; height: 16px !important;
             font-size: 10px !important; font-weight: 500 !important; font-family: var(--auto-op-font) !important; padding: 0px 4px !important;
@@ -320,57 +307,41 @@
             line-height: 14px; text-align: center; border-radius: 4px; cursor: pointer; padding: 0; transition: all 0.3s;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-btn-item-del:hover { background: #dc2626; color: #fff; border-color: #dc2626;
-        }
-        .auto-op-btn-item-del:active { transform: scale(0.85) !important;
-        }
-        .auto-op-btn-group { display: flex; gap: 8px; margin-top: 14px;
-        }
+        .auto-op-btn-item-del:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .auto-op-btn-item-del:active { transform: scale(0.85) !important; }
+        .auto-op-btn-group { display: flex; gap: 8px; margin-top: 14px; }
         .auto-op-btn {
             flex: 1; padding: 9px 0; border: none; border-radius: 6px; font-size: 13px;
             font-weight: 600; font-family: var(--auto-op-font); cursor: pointer; transition: all 0.3s;
             display: flex; align-items: center; justify-content: center;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-btn:active { transform: scale(0.96) !important;
-        }
-        .auto-op-btn-pick { background: var(--panel-button-bg); color: var(--panel-button-text);
-        }
-        .auto-op-btn-pick:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text);
-        }
-        .auto-op-btn-pick.picking { background: #f59e0b; color: #000; animation: auto-op-pulse 1s infinite !important;
-        }
-        .auto-op-btn-pick:disabled, .auto-op-btn-start:disabled { opacity: 0.4; cursor: not-allowed;
-        }
-        .auto-op-btn-start { background: #16a34a; color: #fff;
-        }
-        .auto-op-btn-start:hover { background: #22c55e;
-        }
-        .auto-op-btn-stop { background: #dc2626; color: #fff;
-        }
-        .auto-op-btn-stop:hover { background: #ef4444;
-        }
+        .auto-op-btn:active { transform: scale(0.96) !important; }
+        .auto-op-btn-pick { background: var(--panel-button-bg); color: var(--panel-button-text); }
+        .auto-op-btn-pick:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text); }
+        .auto-op-btn-pick.picking { background: #f59e0b; color: #000; animation: auto-op-pulse 1s infinite !important; }
+        .auto-op-btn-pick:disabled, .auto-op-btn-start:disabled { opacity: 0.4; cursor: not-allowed; }
+        .auto-op-btn-start { background: #16a34a; color: #fff; }
+        .auto-op-btn-start:hover { background: #22c55e; }
+        .auto-op-btn-stop { background: #dc2626; color: #fff; }
+        .auto-op-btn-stop:hover { background: #ef4444; }
         .auto-op-status {
             margin-top: 12px; padding-top: 12px; border-top: 1px solid #888; font-size: 12px; font-weight: 600;
             font-family: var(--auto-op-font); color: var(--panel-label-text); display: flex;
             justify-content: space-between; align-items: center;
         }
-        .auto-op-status .auto-op-count { color: var(--panel-highlight-border); font-size: 14px; font-family: var(--auto-op-font);
+        .auto-op-status .auto-op-count { color: var(--panel-highlight-border); font-size: 14px; font-family: var(--auto-op-font); }
+        .auto-op-status.running .auto-op-count { animation: auto-op-pulse 0.8s infinite !important; }
+        .auto-op-status .auto-op-waiting { color: var(--panel-waiting-text); font-size: 11px; font-family: var(--auto-op-font); }
+        .auto-op-status .auto-op-elapsed {
+            color: var(--panel-highlight-border); font-size: 11px; font-weight: 700;
+            font-family: var(--auto-op-font); font-variant-numeric: tabular-nums; margin-left: 8px;
         }
-        .auto-op-status.running .auto-op-count { animation: auto-op-pulse 0.8s infinite !important;
-        }
-        .auto-op-status .auto-op-waiting { color: var(--panel-waiting-text); font-size: 11px; font-family: var(--auto-op-font);
-        }
-        .auto-op-highlight { outline: 2px dashed var(--panel-highlight) !important; outline-offset: 1px !important; cursor: crosshair !important;
-        }
-        .auto-op-selected-highlight { outline: 2px solid var(--panel-active-border) !important; outline-offset: 1px !important;
-        }
-        .auto-op-parent-highlight { box-shadow: 0 0 0 4px var(--panel-highlight-border) !important; outline-offset: -2px !important; position: relative !important;
-        }
-        .auto-op-parent-highlight-Overlap { box-shadow: 0 0 0 2px var(--panel-highlight-border) !important; position: relative !important;
-        }
-        .auto-op-nearest-parent-highlight { outline: 2px dashed var(--panel-missing-border) !important; outline-offset: -2px !important; position: relative !important;
-        }
+        .auto-op-highlight { outline: 2px dashed var(--panel-highlight) !important; outline-offset: 1px !important; cursor: crosshair !important; }
+        .auto-op-selected-highlight { outline: 2px solid var(--panel-active-border) !important; outline-offset: 1px !important; }
+        .auto-op-parent-highlight { box-shadow: 0 0 0 4px var(--panel-highlight-border) !important; outline-offset: -2px !important; position: relative !important; }
+        .auto-op-parent-highlight-Overlap { box-shadow: 0 0 0 2px var(--panel-highlight-border) !important; position: relative !important; }
+        .auto-op-nearest-parent-highlight { outline: 2px dashed var(--panel-missing-border) !important; outline-offset: -2px !important; position: relative !important; }
         .auto-op-btn-clear {
             flex-shrink: 0; padding: 0px; font-size: 11px; font-family: var(--auto-op-font);
             background: var(--panel-button-bg); border: 1px solid var(--panel-button-border);
@@ -380,18 +351,12 @@
             flex: 1; font-weight: 600; transition: all 0.3s;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-btn-clear:hover { background: #dc2626; color: #fff; border-color: #dc2626;
-        }
-        .auto-op-btn-clear:active { transform: scale(0.85) !important;
-        }
-        .auto-op-target-count { font-size: 11px; font-weight: 600; font-family: var(--auto-op-font); margin-left: 6px; display: inline-flex; align-items: center;
-        }
-        .auto-op-target-count-exist { color: var(--panel-active-text);
-        }
-        .auto-op-target-count-missing { color: var(--panel-missing-text);
-        }
-        .auto-op-target-count-total { color: var(--panel-highlight-border);
-        }
+        .auto-op-btn-clear:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .auto-op-btn-clear:active { transform: scale(0.85) !important; }
+        .auto-op-target-count { font-size: 11px; font-weight: 600; font-family: var(--auto-op-font); margin-left: 6px; display: inline-flex; align-items: center; }
+        .auto-op-target-count-exist { color: var(--panel-active-text); }
+        .auto-op-target-count-missing { color: var(--panel-missing-text); }
+        .auto-op-target-count-total { color: var(--panel-highlight-border); }
         @keyframes auto-op-pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -407,7 +372,7 @@
         .auto-op-modal-box {
             background: var(--panel-bg); border: 1px solid var(--panel-border);
             border-radius: 10px; padding: 20px; min-width: 240px; max-width: 275px;
-            max-height: 55vh; overflow-y: auto; box-shadow: 0 4px 5px rgba(0,0,0,0.2);
+            max-height: 250px; overflow-y: auto;
             display: flex; flex-direction: column;
         }
         .auto-op-modal-text {
@@ -415,8 +380,7 @@
             color: var(--panel-text); line-height: 1.6; margin-bottom: 16px;
             word-break: break-all; white-space: pre-wrap; flex: 1 1 auto; overflow-y: auto; min-height: 0;
         }
-        .auto-op-modal-btns { display: flex; gap: 8px; flex-shrink: 0;
-        }
+        .auto-op-modal-btns { display: flex; gap: 8px; flex-shrink: 0; }
         .auto-op-modal-btn {
             flex: 1; padding: 8px 0; border: none; border-radius: 6px;
             font-size: 13px; font-weight: 600; font-family: var(--auto-op-font);
@@ -424,16 +388,11 @@
             display: flex; align-items: center; justify-content: center;
             -webkit-tap-highlight-color: transparent; user-select: none;
         }
-        .auto-op-modal-btn:active { transform: scale(0.96) !important;
-        }
-        .auto-op-modal-cancel { background: var(--panel-button-bg); color: var(--panel-button-text);
-        }
-        .auto-op-modal-cancel:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text);
-        }
-        .auto-op-modal-ok { background: var(--panel-missing-border); color: #fff; opacity: 0.9 !important;
-        }
-        .auto-op-modal-ok:hover { opacity: 1 !important;
-        }
+        .auto-op-modal-btn:active { transform: scale(0.96) !important; }
+        .auto-op-modal-cancel { background: var(--panel-button-bg); color: var(--panel-button-text); }
+        .auto-op-modal-cancel:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text); }
+        .auto-op-modal-ok { background: var(--panel-missing-border); color: #fff; opacity: 0.9 !important; }
+        .auto-op-modal-ok:hover { opacity: 1 !important; }
         .auto-op-section-divider {
             margin: 14px 0 10px; padding-top: 12px;
             border-top: 1px solid var(--panel-border);
@@ -474,19 +433,16 @@
             overflow-y: auto; font-size: 11px; font-family: var(--auto-op-font);
             color: var(--panel-label-text); scrollbar-width: none;
         }
-        .auto-op-log-container::-webkit-scrollbar { display: none;
-        }
+        .auto-op-log-container::-webkit-scrollbar { display: none; }
         .auto-op-log-entry {
             padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
             line-height: 1.5; word-break: break-all;
         }
-        .auto-op-log-entry:last-child { border-bottom: none;
-        }
+        .auto-op-log-entry:last-child { border-bottom: none; }
         .auto-op-log-time {
             color: var(--panel-highlight-border); font-weight: 700; margin-right: 4px;
         }
-        .auto-op-log-msg { color: var(--panel-text); font-weight: 500;
-        }
+        .auto-op-log-msg { color: var(--panel-text); font-weight: 500; }
         .auto-op-log-empty {
             color: var(--panel-label-text); font-style: italic; text-align: center; padding: 6px 0; font-size: 11px;
         }
@@ -500,35 +456,25 @@
             border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700;
             font-family: var(--auto-op-font); display: flex; align-items: center;
             justify-content: center; padding: 0; transition: all 0.3s;
-            -webkit-tap-highlight-color: transparent; user-select: none;
-            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent; user-select: none; flex-shrink: 0;
         }
-        .auto-op-page-btn:hover {
-            background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text);
-        }
-        .auto-op-page-btn:active { transform: scale(0.85) !important;
-        }
-        .auto-op-page-btn-space {
-            flex: 1; min-width: 0;
-        }
+        .auto-op-page-btn:hover { background: var(--panel-button-hover-bg); color: var(--panel-button-hover-text); }
+        .auto-op-page-btn:active { transform: scale(0.85) !important; }
+        .auto-op-page-btn-space { flex: 1; min-width: 0; }
         .auto-op-page-container {
-            position: relative; width: 100%;
-            overflow: hidden;
-            transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .auto-op-page-container {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
+            position: relative; width: 100%; overflow: hidden;
+            transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .auto-op-page {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            display: none; opacity: 0; transition: opacity 0.2s ease;
         }
-        .auto-op-page.active {
-            display: block;
-            opacity: 1;
+        .auto-op-page.active { display: block; opacity: 1; }
+        .auto-op-row .auto-op-label-with-countdown {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .auto-op-row .auto-op-autostart-countdown {
+            font-size: 10px; font-weight: 600; font-family: var(--auto-op-font);
+            color: var(--panel-waiting-text); white-space: nowrap; flex-shrink: 0;
         }
     `;
     document.head.appendChild(style);
@@ -553,13 +499,11 @@
             <h3>自动操作 ⚔</h3>
         </div>
         <div class="auto-op-body">
-            <!-- 页码切换按钮 -->
             <div class="auto-op-page-selector">
                 <button class="auto-op-page-btn" id="auto-op-page-prev" title="上一页"><</button>
                 <div class="auto-op-page-btn-space"></div>
                 <button class="auto-op-page-btn" id="auto-op-page-next" title="下一页">></button>
             </div>
-            <!-- 分页容器 -->
             <div class="auto-op-page-container" id="auto-op-page-container">
                 <!-- ===== 第1页 ===== -->
                 <div class="auto-op-page active" data-page="0">
@@ -600,8 +544,19 @@
                         <input type="number" id="auto-op-max-clicks" min="0" placeholder="留空为无限">
                     </div>
                     <div class="auto-op-row">
+                        <label>操作时间（min）</label>
+                        <input type="number" id="auto-op-max-duration" min="0" step="0.0001" placeholder="留空为无限 支持小数">
+                    </div>
+                    <div class="auto-op-row">
                         <label>操作间隔（ms）</label>
-                        <input type="number" id="auto-op-click-interval" min="1" placeholder="1100" value="1100">
+                        <input type="number" id="auto-op-click-interval" min="1" placeholder="1000" value="1000">
+                    </div>
+                    <div class="auto-op-row">
+                        <div class="auto-op-label-with-countdown">
+                            <label style="margin-bottom:0;">自动启动间隔（min）</label>
+                            <span class="auto-op-autostart-countdown" id="auto-op-autostart-countdown"></span>
+                        </div>
+                        <input type="number" id="auto-op-autostart-interval" min="0" step="0.0001" placeholder="留空为关闭 支持小数">
                     </div>
                     <div class="auto-op-row">
                         <label>元素消失后</label>
@@ -635,7 +590,6 @@
                     </div>
                 </div>
             </div>
-            <!-- 刷新进度条 -->
             <div id="auto-op-refresh-progress" style="display: none;">
                 <div class="auto-op-progress-info">
                     <span class="auto-op-progress-percent" id="auto-op-refresh-percent">0%</span>
@@ -645,13 +599,12 @@
                     <div class="auto-op-progress-fill" id="auto-op-progress-fill"></div>
                 </div>
             </div>
-            <!-- 按钮组 -->
             <div class="auto-op-btn-group">
                 <button class="auto-op-btn auto-op-btn-pick" id="auto-op-btn-pick">选取元素</button>
                 <button class="auto-op-btn auto-op-btn-start" id="auto-op-btn-start" disabled>开始</button>
             </div>
             <div class="auto-op-status" id="auto-op-status">
-                <span>已操作：<span class="auto-op-count" id="auto-op-count">0</span> 次</span>
+                <span>已操作：<span class="auto-op-count" id="auto-op-count">0</span>次<span class="auto-op-elapsed" id="auto-op-elapsed">00:00:00</span></span>
                 <span id="auto-op-state">请选取目标元素</span>
             </div>
         </div>
@@ -669,7 +622,7 @@
     `;
     document.body.appendChild(panel);
 
-    //DOM 引用
+    // DOM 引用
     const targetListContainer = document.getElementById('auto-op-target-list-container');
     const autoFillInput = document.getElementById('auto-op-auto-fill');
     const maxClicksInput = document.getElementById('auto-op-max-clicks');
@@ -699,29 +652,27 @@
     const refreshProgressFill = document.getElementById('auto-op-progress-fill');
     const logContainer = document.getElementById('auto-op-log-container');
     const btnClearLog = document.getElementById('auto-op-btn-clear-log');
+    const maxDurationInput = document.getElementById('auto-op-max-duration');
+    const autoStartIntervalInput = document.getElementById('auto-op-autostart-interval');
+    autoStartCountdownLabel = document.getElementById('auto-op-autostart-countdown');
+    elapsedSpan = document.getElementById('auto-op-elapsed');
 
     // ========== 分页逻辑 ==========
-
     function updatePageHeight() {
         const pages = pageContainer.querySelectorAll('.auto-op-page');
         const el = pages[currentPage];
         if (!el) return;
         const h = el.offsetHeight;
-        if (h > 0) {
-            pageContainer.style.height = h + 'px';
-        }
+        if (h > 0) { pageContainer.style.height = h + 'px'; }
     }
 
     function goToPage(page, animated) {
         const clamped = ((page % PAGE_COUNT) + PAGE_COUNT) % PAGE_COUNT;
         if (clamped === currentPage && animated !== false) return;
-
         const pages = pageContainer.querySelectorAll('.auto-op-page');
         const oldPage = pages[currentPage];
         const newPage = pages[clamped];
-
         currentPage = clamped;
-
         if (animated === false) {
             pages.forEach(p => { p.classList.remove('active'); p.style.opacity = '0'; });
             newPage.classList.add('active');
@@ -742,23 +693,15 @@
     btnPageNext.addEventListener('click', (e) => { e.stopPropagation(); goToPage(currentPage + 1); });
 
     function measureCollapsedWidth() {
-		const h3 = dragHandle.querySelector('h3');
-
+        const h3 = dragHandle.querySelector('h3');
         const wasCollapsed = panel.classList.contains('collapsed');
-        if (!wasCollapsed) {
-            panel.classList.add('collapsed');
-        }
-
-        // 强制面板先回到 300px，让 h3 有足够空间测量
+        if (!wasCollapsed) { panel.classList.add('collapsed'); }
         const savedWidth = panel.style.width;
         const savedTransition = panel.style.transition;
         panel.style.transition = 'none';
         panel.style.width = '300px';
         void panel.offsetWidth;
-
         collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3.offsetWidth + 14 + 2;
-
-        // 恢复原始状态
         panel.style.width = savedWidth;
         panel.style.transition = savedTransition;
         if (!wasCollapsed) panel.classList.remove('collapsed');
@@ -769,26 +712,16 @@
         collapseAnimPhase = 'collapsing';
         body.style.overflow = 'hidden';
         toggleBtn.textContent = '+';
-
-        // 第1阶段：body 折叠
         panel.classList.add('body-hidden');
-
         setTimeout(() => {
-            // 第2阶段：头部紧凑 + 面板宽度收窄
             panel.classList.remove('body-hidden');
             panel.classList.add('collapsed');
-
-            // 通过已知元素宽度精确计算紧凑宽度
-            // header padding(14+14) + toggle(30+12margin) + start(30+12margin) + h3文字宽度 + panel border(2)
             const h3El = dragHandle.querySelector('h3');
             const h3Width = h3El.scrollWidth;
             collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3Width + 14 + 2;
-
-            // 从 300px 动画过渡到紧凑宽度
             panel.style.width = '300px';
             void panel.offsetWidth;
             panel.style.width = collapsedWidth + 'px';
-
             collapseAnimPhase = 'collapsed';
         }, 200);
     }
@@ -796,18 +729,13 @@
     function performExpand() {
         const body = panel.querySelector('.auto-op-body');
         collapseAnimPhase = 'expanding';
-
-        // 第1阶段：面板宽度展开
         panel.style.width = collapsedWidth + 'px';
         void panel.offsetWidth;
         panel.style.width = '300px';
-
         setTimeout(() => {
-            // 第2阶段：body 展开
             panel.classList.remove('collapsed');
             panel.style.width = '';
             toggleBtn.textContent = '−';
-
             setTimeout(() => {
                 body.style.overflow = 'auto';
                 collapseAnimPhase = 'expanded';
@@ -815,8 +743,6 @@
         }, 200);
     }
 
-
-    // ========== 自定义确认弹窗 ==========
     function showConfirm(text) {
         return new Promise(resolve => {
             const modal = document.getElementById('auto-op-modal');
@@ -921,17 +847,14 @@
         if (attrs.onclick) { const match = attrs.onclick.match(/useItem\((\d+)\)/); if (match) onclickParam = match[1]; }
         let text = getElText(el);
         if (!text && isInputField(el) && el.value != null && String(el.value).trim()) { text = String(el.value).trim(); }
-        return {
-            tagName: el.tagName.toLowerCase(), text: text, dataAttrs, attrs, onclickParam,
-            hasStrong: !!el.id || Object.keys(dataAttrs).length > 0 || keyAttrs.some(k => attrs[k])
-        };
+        return { tagName: el.tagName.toLowerCase(), text: text, dataAttrs, attrs, onclickParam, hasStrong: !!el.id || Object.keys(dataAttrs).length > 0 || keyAttrs.some(k => attrs[k]) };
     }
     function matchesFingerprint(el, fp, matchMode) {
-        if (!el || el.tagName.toLowerCase() !== fp.tagName) { return false; }
+        if (!el || el.tagName.toLowerCase() !== fp.tagName) return false;
         if (matchMode === 'strict') {
-            for (const [k, v] of Object.entries(fp.dataAttrs)) { if (el.getAttribute(k) !== v) { return false; } }
-            for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) { return false; } }
-            if (fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) { return false; } }
+            for (const [k, v] of Object.entries(fp.dataAttrs)) { if (el.getAttribute(k) !== v) return false; }
+            for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) return false; }
+            if (fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) return false; }
             if (fp.text) {
                 let elText;
                 if (fp.hasStrong) {
@@ -939,7 +862,7 @@
                     if (!elText) { const visualAttrs = ['alt', 'title', 'placeholder', 'aria-label', 'value']; for (const attr of visualAttrs) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } }
                     if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) { elText = String(el.value).trim(); }
                 } else { elText = getElText(el); }
-                if (elText !== fp.text) { return false; }
+                if (elText !== fp.text) return false;
             }
             return true;
         } else {
@@ -948,8 +871,8 @@
                 if (!elText) { const visualAttrs = ['alt', 'title', 'placeholder', 'aria-label', 'value']; for (const attr of visualAttrs) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } }
                 if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) { elText = String(el.value).trim(); }
                 if (!elText) elText = getElText(el);
-                if (elText !== fp.text) { return false; }
-            } else { if (!isInputField(el)) { return false; } }
+                if (elText !== fp.text) return false;
+            } else { if (!isInputField(el)) return false; }
         }
         return true;
     }
@@ -968,21 +891,21 @@
         const fp = targetObj.fingerprint;
         function verifyList(list) {
             const matched = [];
-            for (const el of list) { if (panel.contains(el)) { continue; } if (matchesFingerprint(el, fp, targetObj.matchMode)) { matched.push(el); } }
+            for (const el of list) { if (panel.contains(el)) continue; if (matchesFingerprint(el, fp, targetObj.matchMode)) matched.push(el); }
             return matched.length > 0 ? matched : null;
         }
         let root = document;
         if (targetObj.parentSelector) { try { const p = document.querySelector(targetObj.parentSelector); if (p) root = p; } catch (e) { console.error('[AUTO_OP] tryFindTarget parentSelector 异常:', e); } }
         try {
-            if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) { return found; } }
-            if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) { return found; } }
+            if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) return found; }
+            if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) return found; }
             const found = verifyList(cachedQuery(root, fp.tagName));
-            if (found) { return found; }
+            if (found) return found;
         } catch (e) { console.error('[AUTO_OP] tryFindTarget 查找 异常:', e); }
         if (root !== document) {
             try {
-                if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) { return found; } }
-                if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) { return found; } }
+                if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) return found; }
+                if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) return found; }
             } catch (e) { console.error('[AUTO_OP] tryFindTarget fallback 异常:', e); }
         }
         return null;
@@ -1024,7 +947,7 @@
         }
         for (const [parent, children] of newNearestMap) {
             if (newBlueMap.has(parent)) continue;
-            if (!parent.classList.contains('auto-op-nearest-parent-highlight')) { parent.classList.add('auto-op-nearest-parent-highlight'); }
+            if (!parent.classList.contains('auto-op-nearest-parent-highlight')) parent.classList.add('auto-op-nearest-parent-highlight');
             for (const child of children) { const t = targets.find(tt => tt.element === child); if (t) t._nearestEl = parent; }
         }
     }
@@ -1062,7 +985,7 @@
                 newTargets.push({ element: el, strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain, isAuto: true, missCount: 0 });
             }
         }
-        if (newTargets.length > 0) { targets.push(...newTargets); }
+        if (newTargets.length > 0) targets.push(...newTargets);
     }
 
     // ========== 自动刷新函数 ==========
@@ -1074,18 +997,13 @@
         const pad = (n) => String(n).padStart(2, '0');
         return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
     }
-
     function addRefreshLog(msg) {
         const stamp = new Date().toLocaleString('zh-CN', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         refreshLogs.push({ time: stamp, msg: msg || '页面已刷新' });
         updateLogUI();
     }
-
     function updateLogUI() {
-        if (refreshLogs.length === 0) {
-            logContainer.innerHTML = '<div class="auto-op-log-empty">暂无日志</div>';
-            return;
-        }
+        if (refreshLogs.length === 0) { logContainer.innerHTML = '<div class="auto-op-log-empty">暂无日志</div>'; return; }
         let html = '';
         for (let i = 0; i < refreshLogs.length; i++) {
             html += '<div class="auto-op-log-entry"><span class="auto-op-log-time">' + refreshLogs[i].time + '</span><span class="auto-op-log-msg">' + refreshLogs[i].msg + '</span></div>';
@@ -1093,7 +1011,6 @@
         logContainer.innerHTML = html;
         logContainer.scrollTop = logContainer.scrollHeight;
     }
-
     function saveRefreshState() {
         try {
             const now = Date.now();
@@ -1105,24 +1022,17 @@
                 interval: refreshIntervalSec,
                 nextRefreshTime: now + remaining,
                 wasRunning: isRunning,
+                operationStartTimestamp: isRunning ? operationStartTimestamp : 0,
                 logs: refreshLogs
             };
             localStorage.setItem(REFRESH_STATE_KEY, JSON.stringify(state));
         } catch (e) { console.error('[AUTO_OP] saveRefreshState 异常:', e); }
     }
-
     function loadRefreshState() {
-        try {
-            const saved = localStorage.getItem(REFRESH_STATE_KEY);
-            if (!saved) return null;
-            return JSON.parse(saved);
-        } catch (e) { console.error('[AUTO_OP] loadRefreshState 异常:', e); return null; }
+        try { const saved = localStorage.getItem(REFRESH_STATE_KEY); if (!saved) return null; return JSON.parse(saved); }
+        catch (e) { console.error('[AUTO_OP] loadRefreshState 异常:', e); return null; }
     }
-
-    function clearRefreshState() {
-        try { localStorage.removeItem(REFRESH_STATE_KEY); } catch (e) {}
-    }
-
+    function clearRefreshState() { try { localStorage.removeItem(REFRESH_STATE_KEY); } catch (e) {} }
     function updateRefreshProgressUI() {
         if (!isAutoRefresh || !refreshStartTimestamp) return;
         const now = Date.now();
@@ -1130,59 +1040,38 @@
         const elapsed = now - refreshStartTimestamp;
         const remaining = Math.max(0, totalMs - elapsed);
         const percent = Math.min(100, Math.max(0, (elapsed / totalMs) * 100));
-
         refreshPercentSpan.textContent = percent.toFixed(1) + '%';
         refreshTimeSpan.textContent = '剩余 ' + formatRefreshTime(remaining);
         refreshProgressFill.style.width = percent.toFixed(2) + '%';
-
-        if (remaining < 30000) {
-            refreshProgressFill.style.background = 'var(--panel-missing-border)';
-            refreshPercentSpan.style.color = 'var(--panel-missing-border)';
-        } else {
-            refreshProgressFill.style.background = 'var(--panel-highlight-border)';
-            refreshPercentSpan.style.color = 'var(--panel-highlight-border)';
-        }
-
-        if (remaining <= 0) {
-            triggerRefresh();
-        }
+        if (remaining < 30000) { refreshProgressFill.style.background = 'var(--panel-missing-border)'; refreshPercentSpan.style.color = 'var(--panel-missing-border)'; }
+        else { refreshProgressFill.style.background = 'var(--panel-highlight-border)'; refreshPercentSpan.style.color = 'var(--panel-highlight-border)'; }
+        if (remaining <= 0) triggerRefresh();
     }
-
     function triggerRefresh() {
         addRefreshLog('页面已刷新 (' + (isRunning ? '运行中' : '未运行') + ')');
         saveRefreshState();
         saveData();
-
+        saveAutoStartState();
         if (refreshProgressTimerID) { clearInterval(refreshProgressTimerID); refreshProgressTimerID = null; }
         if (refreshTimerID) { clearTimeout(refreshTimerID); refreshTimerID = null; }
         if (timerID) { clearInterval(timerID); timerID = null; }
-
         location.reload();
     }
-
     function startAutoRefreshCountdown(initial) {
         isAutoRefresh = true;
         autoRefreshCheckbox.checked = true;
         refreshProgressDiv.style.display = 'block';
-
-        if (initial) {
-            refreshStartTimestamp = Date.now();
-        }
-
+        if (initial) refreshStartTimestamp = Date.now();
         if (refreshProgressTimerID) clearInterval(refreshProgressTimerID);
         refreshProgressTimerID = setInterval(updateRefreshProgressUI, 100);
-
         const totalMs = refreshIntervalSec * 1000;
         const elapsed = Date.now() - refreshStartTimestamp;
         const remaining = Math.max(0, totalMs - elapsed);
-
         if (refreshTimerID) clearTimeout(refreshTimerID);
         refreshTimerID = setTimeout(triggerRefresh, remaining + 50);
-
         updateRefreshProgressUI();
         requestWakeLock();
     }
-
     function stopAutoRefreshCountdown() {
         isAutoRefresh = false;
         if (refreshProgressTimerID) { clearInterval(refreshProgressTimerID); refreshProgressTimerID = null; }
@@ -1195,18 +1084,156 @@
         if (!isRunning) releaseWakeLock();
     }
 
+    // ========== 自动启动状态持久化 ==========
+    function saveAutoStartState() {
+        try {
+            if (!autoStartEnabled || autoStartIntervalMin <= 0) {
+                localStorage.removeItem(AUTOSTART_STATE_KEY);
+                return;
+            }
+            const state = {
+                intervalMin: autoStartIntervalMin,
+                enabled: true,
+                nextStart: autoStartNextTime
+            };
+            localStorage.setItem(AUTOSTART_STATE_KEY, JSON.stringify(state));
+        } catch (e) { console.error('[AUTO_OP] saveAutoStartState 异常:', e); }
+    }
+    function loadAutoStartState() {
+        try { const saved = localStorage.getItem(AUTOSTART_STATE_KEY); if (!saved) return null; return JSON.parse(saved); }
+        catch (e) { console.error('[AUTO_OP] loadAutoStartState 异常:', e); return null; }
+    }
+    function clearAutoStartState() { try { localStorage.removeItem(AUTOSTART_STATE_KEY); } catch (e) {} }
+
+    // ========== 自动启动时间间隔功能 ==========
+    function formatAutoStartCountdown(ms) {
+        const totalSec = Math.max(0, Math.ceil(ms / 1000));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        if (h > 0) return h + 'h' + pad(m) + 'm' + pad(s) + 's';
+        return pad(m) + 'm' + pad(s) + 's';
+    }
+
+    function updateAutoStartCountdownUI() {
+        if (!autoStartEnabled || autoStartIntervalMin <= 0 || !autoStartNextTime) {
+            if (autoStartCountdownLabel) autoStartCountdownLabel.textContent = '';
+            return;
+        }
+        const now = Date.now();
+        const remaining = autoStartNextTime - now;
+        if (remaining <= 0) {
+            if (autoStartCountdownLabel) autoStartCountdownLabel.textContent = '即将启动...';
+        } else {
+            if (autoStartCountdownLabel) autoStartCountdownLabel.textContent = '距下次启动 ' + formatAutoStartCountdown(remaining);
+        }
+    }
+
+    function doAutoStart() {
+        if (isRunning) return;
+        if (targets.length === 0) {
+            autoStartNextTime = Date.now() + autoStartIntervalMin * 60 * 1000;
+            saveAutoStartState();
+            startAutoStartCountdownTimer();
+            return;
+        }
+        startClicking();
+        // 保存下一次启动时间
+        autoStartNextTime = Date.now() + autoStartIntervalMin * 60 * 1000;
+        saveAutoStartState();
+        // 操作结束后会重新启动倒计时（在stopClicking中处理）
+    }
+
+    function startAutoStartCountdownTimer() {
+        if (autoStartCountdownTimerID) { clearInterval(autoStartCountdownTimerID); autoStartCountdownTimerID = null; }
+        if (!autoStartEnabled || autoStartIntervalMin <= 0 || !autoStartNextTime) {
+            updateAutoStartCountdownUI();
+            return;
+        }
+        autoStartCountdownTimerID = setInterval(() => {
+            const now = Date.now();
+            const remaining = autoStartNextTime - now;
+            updateAutoStartCountdownUI();
+            if (remaining <= 0) {
+                clearInterval(autoStartCountdownTimerID);
+                autoStartCountdownTimerID = null;
+                if (autoStartCountdownLabel) autoStartCountdownLabel.textContent = '即将启动...';
+                doAutoStart();
+            }
+        }, 500);
+        updateAutoStartCountdownUI();
+    }
+
+    function stopAutoStartCountdownTimer() {
+        if (autoStartCountdownTimerID) { clearInterval(autoStartCountdownTimerID); autoStartCountdownTimerID = null; }
+        autoStartNextTime = 0;
+        clearAutoStartState();
+        if (autoStartCountdownLabel) autoStartCountdownLabel.textContent = '';
+    }
+
+    function setupAutoStartFromInput() {
+        const val = parseFloat(autoStartIntervalInput.value);
+        if (isNaN(val) || val <= 0) {
+            autoStartEnabled = false;
+            autoStartIntervalMin = 0;
+            stopAutoStartCountdownTimer();
+            autoStartIntervalInput.value = '';
+        } else {
+            autoStartEnabled = true;
+            autoStartIntervalMin = val;
+            if (!isRunning) {
+                autoStartNextTime = Date.now() + autoStartIntervalMin * 60 * 1000;
+                saveAutoStartState();
+                startAutoStartCountdownTimer();
+            }
+        }
+        saveData();
+    }
+
+    // ========== 已操作时间 ==========
+    function formatElapsedTime(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        return pad(h) + ':' + pad(m) + ':' + pad(s);
+    }
+
+    function startElapsedTimer(savedTimestamp) {
+        if (elapsedTimerID) clearInterval(elapsedTimerID);
+        operationStartTimestamp = savedTimestamp || Date.now();
+        // 立即更新一次显示
+        if (elapsedSpan) {
+            const initElapsed = Date.now() - operationStartTimestamp;
+            elapsedSpan.textContent = formatElapsedTime(initElapsed);
+        }
+        elapsedTimerID = setInterval(() => {
+            if (!isRunning || !operationStartTimestamp) return;
+            const elapsed = Date.now() - operationStartTimestamp;
+            if (elapsedSpan) elapsedSpan.textContent = formatElapsedTime(elapsed);
+        }, 1000);
+    }
+    function stopElapsedTimer() {
+        if (elapsedTimerID) { clearInterval(elapsedTimerID); elapsedTimerID = null; }
+        // 保留最终时间，不重置
+    }
+    function resetElapsedDisplay() {
+        if (elapsedSpan) elapsedSpan.textContent = '00:00:00';
+    }
+
     // ========== 持久化函数 ==========
     function saveData() {
         const toSave = {
             isMultiMode, clickStrategy,
-            clickInterval: parseInt(clickIntervalInput.value) || 1100,
+            clickInterval: parseInt(clickIntervalInput.value) || 1000,
             maxClicks: maxClicksInput.value,
             missingAction: missingActionSelect.value,
             autoFillContent: autoFillInput.value,
-            isAutoRefresh,
-            refreshIntervalSec,
-            refreshLogs,
-            currentPage,
+            isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage,
+            autoStartIntervalMin: autoStartIntervalInput.value || '',
+            maxDurationMin: maxDurationInput.value || '',
             targets: targets.map(t => ({
                 strict: t.strict, loose: t.loose, fingerprint: t.fingerprint,
                 desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain || [],
@@ -1226,29 +1253,36 @@
             strategyRow.style.display = isMultiMode ? 'block' : 'none';
             clickStrategy = cfg.clickStrategy || 'simultaneous';
             strategySelect.value = clickStrategy;
-            clickInterval = cfg.clickInterval || 1100;
+            clickInterval = cfg.clickInterval || 1000;
             clickIntervalInput.value = clickInterval;
             maxClicksInput.value = cfg.maxClicks || '';
             missingActionSelect.value = cfg.missingAction || 'wait';
             autoFillContent = cfg.autoFillContent || '';
             autoFillInput.value = autoFillContent;
 
-            if (cfg.isAutoRefresh !== undefined) {
-                isAutoRefresh = cfg.isAutoRefresh;
-                autoRefreshCheckbox.checked = isAutoRefresh;
-            }
-            if (cfg.refreshIntervalSec !== undefined) {
-                refreshIntervalSec = cfg.refreshIntervalSec;
-                refreshIntervalInput.value = refreshIntervalSec;
-            }
-            if (cfg.refreshLogs && Array.isArray(cfg.refreshLogs)) {
-                refreshLogs = cfg.refreshLogs.map(item => {
-                    if (typeof item === 'string') return { time: item, msg: '页面已刷新' };
-                    return item;
-                });
-                updateLogUI();
+            // 自动启动时间间隔
+            if (cfg.autoStartIntervalMin !== undefined && cfg.autoStartIntervalMin !== '') {
+                autoStartIntervalInput.value = cfg.autoStartIntervalMin;
+                const val = parseFloat(cfg.autoStartIntervalMin);
+                if (!isNaN(val) && val > 0) {
+                    autoStartEnabled = true;
+                    autoStartIntervalMin = val;
+                }
             }
 
+            // 操作最长时间
+            if (cfg.maxDurationMin !== undefined && cfg.maxDurationMin !== '') {
+                maxDurationInput.value = cfg.maxDurationMin;
+                const val = parseFloat(cfg.maxDurationMin);
+                if (!isNaN(val) && val > 0) maxDurationMin = val;
+            }
+
+            if (cfg.isAutoRefresh !== undefined) { isAutoRefresh = cfg.isAutoRefresh; autoRefreshCheckbox.checked = isAutoRefresh; }
+            if (cfg.refreshIntervalSec !== undefined) { refreshIntervalSec = cfg.refreshIntervalSec; refreshIntervalInput.value = refreshIntervalSec; }
+            if (cfg.refreshLogs && Array.isArray(cfg.refreshLogs)) {
+                refreshLogs = cfg.refreshLogs.map(item => { if (typeof item === 'string') return { time: item, msg: '页面已刷新' }; return item; });
+                updateLogUI();
+            }
 
             targets = [];
             (cfg.targets || []).forEach(t => {
@@ -1276,10 +1310,8 @@
             updateTargetCount();
             updateAutoFillVisibility();
             refreshParentHighlights();
-            if (typeof cfg.currentPage === 'number') { currentPage = cfg.currentPage; }
-
-            if (targets.length > 0) { stateSpan.textContent = '就绪'; }
-            if (targets.length > 0) { stateSpan.textContent = '就绪'; }
+            if (typeof cfg.currentPage === 'number') currentPage = cfg.currentPage;
+            if (targets.length > 0) stateSpan.textContent = '就绪';
         } catch (e) { console.error('[AUTO_OP] loadData 异常:', e); }
     }
 
@@ -1363,7 +1395,7 @@
             if (targets.length === 0) {
                 stateSpan.textContent = '目标元素已清空';
                 if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; }
-                stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') { stateSpan.textContent = '请选取目标元素'; } stateTimerID = null; }, 1000);
+                stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000);
             } else { stateSpan.textContent = `剩余 ${targets.length} 个`; }
             refreshParentHighlights();
             saveData();
@@ -1396,12 +1428,8 @@
     toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (collapseAnimPhase === 'collapsing' || collapseAnimPhase === 'expanding') return;
-
-        if (collapseAnimPhase !== 'collapsed') {
-            performCollapse();
-        } else {
-            performExpand();
-        }
+        if (collapseAnimPhase !== 'collapsed') performCollapse();
+        else performExpand();
     });
 
     // ========== 交互事件 ==========
@@ -1412,11 +1440,24 @@
         clearSelection();
         saveData();
     });
-    strategySelect.addEventListener('change', (e) => { clickStrategy = e.target.value; saveData(); })
+    strategySelect.addEventListener('change', (e) => { clickStrategy = e.target.value; saveData(); });
     autoFillInput.addEventListener('input', (e) => { autoFillContent = e.target.value; saveData(); });
     [clickIntervalInput, maxClicksInput, missingActionSelect].forEach(el => { el.addEventListener('change', saveData); });
 
-    // 自动刷新事件监听
+    // 操作最长时间输入事件
+    maxDurationInput.addEventListener('change', (e) => {
+        let val = parseFloat(e.target.value);
+        if (isNaN(val) || val <= 0) { maxDurationMin = 0; e.target.value = ''; }
+        else { maxDurationMin = val; }
+        saveData();
+    });
+
+    // 自动启动时间间隔输入事件
+    autoStartIntervalInput.addEventListener('change', (e) => {
+        e.stopPropagation();
+        setupAutoStartFromInput();
+    });
+
     autoRefreshCheckbox.addEventListener('change', (e) => {
         e.stopPropagation();
         isAutoRefresh = e.target.checked;
@@ -1446,18 +1487,11 @@
         if (val > 86400) val = 86400;
         e.target.value = val;
         refreshIntervalSec = val;
-        if (isAutoRefresh) {
-            startAutoRefreshCountdown(true);
-        }
+        if (isAutoRefresh) startAutoRefreshCountdown(true);
         saveData();
     });
 
-    btnClearLog.addEventListener('click', (e) => {
-        e.stopPropagation();
-        refreshLogs = [];
-        updateLogUI();
-        saveData();
-    });
+    btnClearLog.addEventListener('click', (e) => { e.stopPropagation(); refreshLogs = []; updateLogUI(); saveData(); });
 
     btnPick.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1530,12 +1564,12 @@
             targets.forEach(t => {
                 if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
                 if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); }
-                if (t._nearestEl && t._nearestEl.classList) { t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); }
+                if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
             });
             targets = [targetObj];
             el.classList.add('auto-op-selected-highlight');
             exitPickMode();
-            if (targets.length > 0) { stateSpan.textContent = '就绪'; }
+            if (targets.length > 0) stateSpan.textContent = '就绪';
         }
         updateTargetUI(); updateTargetCount(); refreshParentHighlights(); saveData(); updateAutoFillVisibility();
     }
@@ -1550,15 +1584,15 @@
         document.removeEventListener('touchend', onPickTouch, true);
         document.querySelectorAll('.auto-op-highlight').forEach(el => el.classList.remove('auto-op-highlight'));
         if (isMultiMode) {
-            if (targets.length === 0) { stateSpan.textContent = '未选取目标元素'; }
-            else { stateSpan.textContent = `已选 ${targets.length} 个`; }
+            if (targets.length === 0) stateSpan.textContent = '未选取目标元素';
+            else stateSpan.textContent = `已选 ${targets.length} 个`;
         } else {
-            if (targets.length === 0) { stateSpan.textContent = '未选取目标元素'; }
-            else { stateSpan.textContent = '就绪'; }
+            if (targets.length === 0) stateSpan.textContent = '未选取目标元素';
+            else stateSpan.textContent = '就绪';
         }
         if (targets.length === 0) {
             if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; }
-            stateTimerID = setTimeout(() => { if (stateSpan.textContent === '未选取目标元素') { stateSpan.textContent = '请选取目标元素'; } stateTimerID = null; }, 1500);
+            stateTimerID = setTimeout(() => { if (stateSpan.textContent === '未选取目标元素') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1500);
         }
     }
 
@@ -1567,14 +1601,14 @@
         for (const t of targets) {
             if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
             if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); }
-            if (t._nearestEl && t._nearestEl.classList) { t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); }
+            if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
         }
         targets = [];
         currentQueueIndex = 0;
         updateTargetUI(); updateTargetCount();
         stateSpan.textContent = '目标元素已清空';
         if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; }
-        stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') { stateSpan.textContent = '请选取目标元素'; } stateTimerID = null; }, 1000);
+        stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000);
         refreshParentHighlights(); saveData(); updateAutoFillVisibility();
     }
 
@@ -1583,13 +1617,13 @@
     function handleToggleRunning(e) {
         e.stopPropagation();
         if (targets.length === 0) return;
-        if (!isRunning) { startClicking(); }
+        if (!isRunning) startClicking();
         else { stopClicking(); stateSpan.textContent = '已停止'; }
     }
     btnStart.addEventListener('click', handleToggleRunning);
     btnHeaderStart.addEventListener('click', handleToggleRunning);
 
-    function startClicking() {
+    function startClicking(savedTimestamp) {
         if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; }
         if (isPicking) exitPickMode();
         isWaiting = false;
@@ -1611,7 +1645,7 @@
         }
         discoverNewTargets();
         const intervalValue = clickIntervalInput.value.trim();
-        clickInterval = intervalValue ? parseInt(intervalValue, 10) : 1100;
+        clickInterval = intervalValue ? parseInt(intervalValue, 10) : 1000;
         isRunning = true;
         clickedCount = 0;
         currentQueueIndex = 0;
@@ -1630,9 +1664,37 @@
         clickIntervalInput.disabled = true;
         missingActionSelect.disabled = true;
         autoFillInput.disabled = true;
+        maxDurationInput.disabled = true;
+        autoStartIntervalInput.disabled = true;
         statusDiv.classList.add('running');
         stateSpan.textContent = '运行中';
         stateSpan.classList.remove('auto-op-waiting');
+
+        // 启动已操作时间计时器
+        startElapsedTimer(savedTimestamp || 0);
+
+        // 启动操作最长时间定时器
+        if (maxDurationMin > 0) {
+            const maxDurationMs = maxDurationMin * 60 * 1000;
+            if (maxDurationTimerID) clearTimeout(maxDurationTimerID);
+            const alreadyElapsed = savedTimestamp ? (Date.now() - savedTimestamp) : 0;
+            const remaining = Math.max(0, maxDurationMs - alreadyElapsed);
+            if (remaining <= 0) {
+                stopClicking();
+                stateSpan.textContent = '最长时间已到';
+                return;
+            }
+            maxDurationTimerID = setTimeout(() => {
+                if (isRunning) {
+                    stopClicking();
+                    stateSpan.textContent = '最长时间已到';
+                }
+            }, remaining);
+        }
+
+        // 暂停自动启动倒计时（操作已在运行）
+        if (autoStartCountdownTimerID) { clearInterval(autoStartCountdownTimerID); autoStartCountdownTimerID = null; }
+        if (autoStartEnabled && autoStartIntervalMin > 0 && autoStartCountdownLabel) autoStartCountdownLabel.textContent = '运行中';
 
         doClick();
         timerID = setInterval(doClick, clickInterval);
@@ -1693,7 +1755,7 @@
             });
 
             const totalCount = targets.length;
-            for (let i = 0; i < totalCount; i++) { targets[i]._isValid = status[i]; }
+            for (let i = 0; i < totalCount; i++) targets[i]._isValid = status[i];
             if (!uiThrottled) updateTargetCount(status);
 
             if (isMultiMode && clickStrategy === 'sequential') {
@@ -1704,7 +1766,7 @@
                     const t = targets[idx]; const el = t.element;
                     if (t.isInput) {
                         if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }
-                        else if (el.isContentEditable) { el.innerHTML = autoFillContent; }
+                        else if (el.isContentEditable) el.innerHTML = autoFillContent;
                     } else { el.click(); }
                     clickedCount++;
                     countSpan.textContent = clickedCount;
@@ -1728,7 +1790,7 @@
                     const el = t.element;
                     if (t.isInput) {
                         if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }
-                        else if (el.isContentEditable) { el.innerHTML = autoFillContent; }
+                        else if (el.isContentEditable) el.innerHTML = autoFillContent;
                     } else { el.click(); }
                 } else { if (missingActionSelect.value === 'stop') shouldStop = true; }
             }
@@ -1747,17 +1809,17 @@
     function cleanupAutoTargets(status) {
         for (let i = targets.length - 1; i >= 0; i--) {
             if (!targets[i].isAuto) continue;
-            if (status[i] !== undefined && status[i]) { targets[i].missCount = 0; }
+            if (status[i] !== undefined && status[i]) targets[i].missCount = 0;
             else if (status[i] === false) {
                 targets[i].missCount = (targets[i].missCount || 0) + 1;
                 if (targets[i].missCount >= 5) {
-                    if (targets[i].element && targets[i].element.classList) { targets[i].element.classList.remove('auto-op-selected-highlight'); }
+                    if (targets[i].element && targets[i].element.classList) targets[i].element.classList.remove('auto-op-selected-highlight');
                     discoveredElements.delete(targets[i].element);
                     targets.splice(i, 1);
                 }
             }
         }
-        if (targets.length > 0 && currentQueueIndex >= targets.length) { currentQueueIndex = 0; }
+        if (targets.length > 0 && currentQueueIndex >= targets.length) currentQueueIndex = 0;
         if (!uiThrottled) refreshParentHighlights();
         if (!uiThrottled) updateTargetUI();
         if (!uiThrottled) updateTargetCount();
@@ -1770,22 +1832,36 @@
         if (!isAutoRefresh) releaseWakeLock();
         if (waitTimerID) { clearTimeout(waitTimerID); waitTimerID = null; }
         clearInterval(timerID); timerID = null;
+
+        // 停止已操作时间计时器
+        stopElapsedTimer();
+
+        // 清除操作最长时间定时器
+        if (maxDurationTimerID) { clearTimeout(maxDurationTimerID); maxDurationTimerID = null; }
+
+        // 操作停止后，如果自动启动间隔已设置，重新启动倒计时
+        if (autoStartEnabled && autoStartIntervalMin > 0) {
+            autoStartNextTime = Date.now() + autoStartIntervalMin * 60 * 1000;
+            saveAutoStartState();
+            startAutoStartCountdownTimer();
+        }
+
         btnStart.textContent = '开始'; btnStart.className = 'auto-op-btn auto-op-btn-start';
         btnHeaderStart.textContent = '▶'; btnHeaderStart.classList.remove('is-stop');
         btnPick.disabled = false; multiModeCheckbox.disabled = false; strategySelect.disabled = false;
         maxClicksInput.disabled = false; clickIntervalInput.disabled = false;
         missingActionSelect.disabled = false; autoFillInput.disabled = false;
+        maxDurationInput.disabled = false; autoStartIntervalInput.disabled = false;
         statusDiv.classList.remove('running'); stateSpan.classList.remove('auto-op-waiting');
-        if (targets.length > 0) { stateSpan.textContent = '就绪'; } else { stateSpan.textContent = '请选取目标元素'; }
+        if (targets.length > 0) stateSpan.textContent = '就绪';
+        else stateSpan.textContent = '请选取目标元素';
         saveData();
     }
 
     panel.addEventListener('click', (e) => { e.stopPropagation(); });
 
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && (isRunning || isAutoRefresh)) {
-            requestWakeLock();
-        }
+        if (document.visibilityState === 'visible' && (isRunning || isAutoRefresh)) requestWakeLock();
     });
 
     // ========== 初始化加载 ==========
@@ -1802,7 +1878,7 @@
         new ResizeObserver(() => updatePageHeight()).observe(p);
     });
 
-    // ========== 恢复自动刷新状态（跨刷新保留） ==========
+    // ========== 恢复自动刷新状态 ==========
     (function restoreAutoRefreshState() {
         const refreshState = loadRefreshState();
         if (refreshState && refreshState.active) {
@@ -1813,28 +1889,64 @@
                 });
                 updateLogUI();
             }
-
             const now = Date.now();
             const remaining = refreshState.nextRefreshTime - now;
-
             if (remaining > 0) {
                 refreshStartTimestamp = now - (refreshIntervalSec * 1000 - remaining);
                 startAutoRefreshCountdown(false);
             } else {
                 startAutoRefreshCountdown(true);
             }
-
             if (refreshState.wasRunning && targets.length > 0) {
+                const savedTs = refreshState.operationStartTimestamp || 0;
                 setTimeout(() => {
                     if (!isRunning && targets.length > 0) {
-                        startClicking();
+                        startClicking(savedTs)
                     }
                 }, 600);
             }
-
             clearRefreshState();
         } else if (isAutoRefresh && refreshIntervalSec >= 10) {
             startAutoRefreshCountdown(true);
+        }
+    })();
+
+    // ========== 恢复自动启动状态（跨刷新保留） ==========
+    (function restoreAutoStartState() {
+        const asState = loadAutoStartState();
+        if (asState && asState.enabled && asState.intervalMin > 0) {
+            autoStartEnabled = true;
+            autoStartIntervalMin = asState.intervalMin;
+            autoStartIntervalInput.value = autoStartIntervalMin;
+
+            const now = Date.now();
+            if (asState.nextStart) {
+                const remaining = asState.nextStart - now;
+                if (remaining <= 0) {
+                    // 已经过了启动时间，立即启动
+                    autoStartNextTime = now + autoStartIntervalMin * 60 * 1000;
+                    saveAutoStartState();
+                    if (!isRunning && targets.length > 0) {
+                        setTimeout(() => { if (!isRunning) doAutoStart(); }, 800);
+                    }
+                } else {
+                    // 恢复倒计时
+                    autoStartNextTime = asState.nextStart;
+                    startAutoStartCountdownTimer();
+                }
+            } else {
+                autoStartNextTime = now + autoStartIntervalMin * 60 * 1000;
+                saveAutoStartState();
+                startAutoStartCountdownTimer();
+            }
+            clearAutoStartState(); // 清除临时状态，下次刷新前会重新保存
+        } else {
+            // 没有持久化的自动启动状态，从配置恢复
+            if (autoStartEnabled && autoStartIntervalMin > 0 && !isRunning) {
+                autoStartNextTime = Date.now() + autoStartIntervalMin * 60 * 1000;
+                saveAutoStartState();
+                startAutoStartCountdownTimer();
+            }
         }
     })();
 
@@ -1847,6 +1959,7 @@
             '  clickStrategy: ' + clickStrategy + '\n' +
             '  clickInterval: ' + clickInterval + 'ms\n' +
             '  maxClicks: ' + (maxClicks === Infinity ? '∞' : maxClicks) + '\n' +
+            '  maxDurationMin: ' + maxDurationMin + '\n' +
             '  missingAction: ' + missingActionSelect.value + '\n' +
             '  autoFillContent: ' + (autoFillContent || '(空)') + '\n' +
             '  targets.length: ' + targets.length + '\n' +
@@ -1855,18 +1968,20 @@
             '  isWaiting: ' + isWaiting + '\n' +
             '  clickedCount: ' + clickedCount + '\n' +
             '  currentQueueIndex: ' + currentQueueIndex + '\n' +
-            '  clickInterval: ' + clickInterval + '\n' +
             '  uiThrottled: ' + uiThrottled + '\n' +
             '  timerID: ' + timerID + '\n' +
             '  waitTimerID: ' + waitTimerID + '\n' +
             '  stateTimerID: ' + stateTimerID + '\n' +
             '  wakeLock: ' + wakeLock + '\n' +
             '  discoveredElements.size: ' + discoveredElements.size + '\n' +
-            '  _queryCache: ' + _queryCache + '\n' +
             '  isAutoRefresh: ' + isAutoRefresh + '\n' +
             '  refreshIntervalSec: ' + refreshIntervalSec + '\n' +
             '  refreshLogs.length: ' + refreshLogs.length + '\n' +
-            '  currentPage: ' + currentPage
+            '  currentPage: ' + currentPage + '\n' +
+            '  autoStartEnabled: ' + autoStartEnabled + '\n' +
+            '  autoStartIntervalMin: ' + autoStartIntervalMin + '\n' +
+            '  autoStartNextTime: ' + autoStartNextTime + '\n' +
+            '  maxDurationMin: ' + maxDurationMin
         );
     } else {
         console.log(
@@ -1877,14 +1992,15 @@
             '  操作策略       (clickStrategy) : ' + clickStrategy + '\n' +
             '  操作间隔       (clickInterval) : ' + clickInterval + 'ms\n' +
             '  操作次数           (maxClicks) : ' + (maxClicks === Infinity ? '∞' : maxClicks) + '\n' +
+            '  操作最长时间(min)(maxDurationMin): ' + (maxDurationMin > 0 ? maxDurationMin : '不限制') + '\n' +
             '  元素消失后     (missingAction) : ' + missingActionSelect.value + '\n' +
             '  自动填充     (autoFillContent) : ' + (autoFillContent || '(空)') + '\n' +
             '  移动端             (IS_MOBILE) : ' + IS_MOBILE + '\n' +
             '  自动刷新        (isAutoRefresh): ' + isAutoRefresh + '\n' +
             '  刷新间隔(s)(refreshIntervalSec): ' + refreshIntervalSec + '\n' +
             '  刷新日志条数(refreshLogs.length): ' + refreshLogs.length + '\n' +
-            '  当前分页        (currentPag e) : ' + currentPage
+            '  当前分页        (currentPage) : ' + currentPage + '\n' +
+            '  自动启动间隔(min)(autoStartIntervalMin): ' + (autoStartEnabled ? autoStartIntervalMin : '关闭')
         );
     }
-
 })();
