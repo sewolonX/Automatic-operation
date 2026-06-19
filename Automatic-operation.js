@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.0.16
+// @version      5.0.17
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
