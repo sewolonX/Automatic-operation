@@ -33,6 +33,7 @@
   let elapsedTimerID_global = null;
   let isProgrammaticClick = false;
   let pickPassThrough = false;
+  let panelFont = 'MiSans VF';
   let isPowerSave = false, powerSaveTimerID = null;
   // ===================== 配置系统 =====================
   const CONFIG_COUNT = 10;
@@ -323,6 +324,7 @@
           <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+          <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select></div>
         </div>
       </div>
       <div id="auto-op-refresh-progress" style="display: none;">
@@ -422,6 +424,7 @@
   const wakeLockCheckbox = document.getElementById('auto-op-wake-lock');
   const suppressFocusCheckbox = document.getElementById('auto-op-suppress-focus');
   const pickPassThroughCheckbox = document.getElementById('auto-op-pick-pass-through');
+  const panelFontSelect = document.getElementById('auto-op-panel-font');
   const infoOverlayEl = document.getElementById('auto-op-info-overlay');
   const infoTitleEl = document.getElementById('auto-op-info-title');
   const infoContentEl = document.getElementById('auto-op-info-content');
@@ -702,7 +705,7 @@
       localStorage.removeItem(oldKey);
     } catch (e) {}
   }
-  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked, pickPassThrough })); } catch (e) {} }
+  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked, pickPassThrough, panelFont })); } catch (e) {} }
   function loadShared() {
     try {
       const saved = localStorage.getItem(SHARED_KEY);
@@ -716,6 +719,7 @@
       if (cfg.wakeLock !== undefined) wakeLockCheckbox.checked = cfg.wakeLock;
       if (cfg.suppressFocus !== undefined) suppressFocusCheckbox.checked = cfg.suppressFocus;
       if (cfg.pickPassThrough !== undefined) { pickPassThrough = cfg.pickPassThrough; pickPassThroughCheckbox.checked = pickPassThrough; }
+      if (cfg.panelFont !== undefined) { panelFont = cfg.panelFont; panelFontSelect.value = panelFont; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); }
     } catch (e) {}
   }
   function saveData() { savePerConfig(activeConfig); saveShared(); }
@@ -1066,6 +1070,7 @@
   wakeLockCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) requestWakeLock(); else releaseWakeLock(); saveShared(); });
   suppressFocusCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) suppressFocus(); else restoreFocus(); saveShared(); });
   pickPassThroughCheckbox.addEventListener('change', e => { e.stopPropagation(); pickPassThrough = e.target.checked; saveShared(); });
+  panelFontSelect.addEventListener('change', e => { e.stopPropagation(); panelFont = e.target.value; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); saveShared(); });
 // ===================== 选取元素 =====================
   btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
   function onPickHover(e) { if (!isPicking) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; el.classList.add('auto-op-highlight'); }
