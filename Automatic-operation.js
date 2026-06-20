@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.0.17
+// @version      5.1.0
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -32,6 +32,7 @@
   let originalFocus = HTMLElement.prototype.focus, focusinHandler = null;
   let elapsedTimerID_global = null;
   let isProgrammaticClick = false;
+  let pickPassThrough = false;
   let isPowerSave = false, powerSaveTimerID = null;
   // ===================== 配置系统 =====================
   const CONFIG_COUNT = 10;
@@ -61,14 +62,17 @@
   function restoreFocus() { HTMLElement.prototype.focus = originalFocus; if (focusinHandler) { document.removeEventListener('focusin', focusinHandler, true); focusinHandler = null; } }
   // ===================== 注入样式 =====================
   const style = document.createElement('style');
+  const fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = 'https://cdn-font.hyperos.mi.com/font/css?family=MiSans_VF:VF:Chinese_Simplify,Latin&display=swap';
+  document.head.appendChild(fontLink);
   style.textContent = `
-    :root{--panel-bg:#18181b;--panel-border:#333;--panel-text:#e0e0e0;--panel-input-bg:#27272a;--panel-input-border:#333;--panel-input-text:#e0e0e0;--panel-label-text:#888;--panel-button-bg:rgba(255,255,255,0.06);--panel-button-border:rgba(255,255,255,0.1);--panel-button-text:#999;--panel-button-hover-bg:rgba(255,255,255,0.12);--panel-button-hover-text:#fff;--panel-highlight-border:#277AF7;--panel-active-border:#22c55e;--panel-active-text:#22c55e;--panel-waiting-text:#f59e0b;--panel-highlight:#f59e0b;--panel-missing-border:#dc2626;--panel-missing-text:#dc2626;--auto-op-font:system-ui}
+    :root{--panel-bg:#18181b;--panel-border:#333;--panel-text:#e0e0e0;--panel-input-bg:#27272a;--panel-input-border:#333;--panel-input-text:#e0e0e0;--panel-label-text:#888;--panel-button-bg:rgba(255,255,255,0.06);--panel-button-border:rgba(255,255,255,0.1);--panel-button-text:#999;--panel-button-hover-bg:rgba(255,255,255,0.12);--panel-button-hover-text:#fff;--panel-highlight-border:#277AF7;--panel-active-border:#22c55e;--panel-active-text:#22c55e;--panel-waiting-text:#f59e0b;--panel-highlight:#f59e0b;--panel-missing-border:#dc2626;--panel-missing-text:#dc2626;--auto-op-font:"MiSans VF", system-ui}
     [data-theme="light"]{--panel-bg:#ffffff;--panel-border:#e5e7eb;--panel-text:#1f2937;--panel-input-bg:#f9fafb;--panel-input-border:#d1d5db;--panel-input-text:#1f2937;--panel-label-text:#6b7280;--panel-button-bg:rgba(0,0,0,0.05);--panel-button-border:rgba(0,0,0,0.1);--panel-button-text:#6b7280;--panel-button-hover-bg:rgba(0,0,0,0.1);--panel-button-hover-text:#1f2937;--panel-highlight-border:#3482FF;--panel-active-border:#32d486;--panel-active-text:#32d486;--panel-waiting-text:#d97706;--panel-highlight:#d97706;--panel-missing-border:#dc2626;--panel-missing-text:#dc2626}
     [data-theme="light"] .auto-op-status{border-top-color:#999}
     [data-theme="light"] .auto-op-switch-track{border-color:#d1d5db;background:#dedede}
     [data-theme="light"] .auto-op-switch-thumb{background:#ffffff}
-    [data-theme="light"] .auto-op-match-mode{opacity:0.75 !important}
-    [data-theme="light"] .auto-op-modal-overlay{background:rgba(0,0,0,0.2)}
+[data-theme="light"] .auto-op-modal-overlay{background:rgba(0,0,0,0.2)}
     [data-theme="light"] .auto-op-log-entry{border-bottom-color:rgba(0,0,0,0.04)}
     [data-theme="light"] .auto-op-config-btn{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:#6b7280}
     [data-theme="light"] .auto-op-config-btn:hover{background:rgba(0,0,0,0.1);color:#1f2937}
@@ -103,7 +107,7 @@
     .auto-op-header-start.is-stop:hover{background:#ef4444;opacity:1 !important}
     .auto-op-header-start:active{transform:scale(0.85) !important}
     .auto-op-header-start:disabled{opacity:0.4 !important;cursor:not-allowed}
-    .auto-op-body{padding:14px;overflow:hidden;max-height:60vh;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease;opacity:1}
+    .auto-op-body{padding:14px;overflow:hidden auto;max-height:65vh;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease;opacity:1}
     .auto-op-body::-webkit-scrollbar{display:none}
     #auto-op-panel.collapsing .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,margin 0.25s ease,border-width 0.25s ease,opacity 0.3s ease}
     #auto-op-panel.collapsed{gap:0 !important}
@@ -139,10 +143,14 @@
     .auto-op-btn-info{display:block;margin-top:4px;margin-bottom:2px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn-info:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border)}
     .auto-op-btn-info:active{transform:scale(0.85) !important}
-    .auto-op-match-mode{position:absolute !important;right:24px !important;top:4px !important;width:42px !important;height:16px !important;font-size:10px !important;font-weight:500 !important;font-family:var(--auto-op-font) !important;padding:0px 4px !important;background:var(--panel-button-bg) !important;border:1px solid var(--panel-button-border)!important;color:var(--panel-button-text) !important;border-radius:4px !important;opacity:0.8 !important}
-    .auto-op-btn-item-del{position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
+.auto-op-btn-item-del{position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn-item-del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
     .auto-op-btn-item-del:active{transform:scale(0.85) !important}
+    .auto-op-btn-move{position:absolute;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;z-index:1;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-btn-move:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
+    .auto-op-btn-move:active{transform:scale(0.85) !important}
+    .auto-op-btn-move-up{top:4px;right:44px}
+    .auto-op-btn-move-down{top:4px;right:24px}
     .auto-op-btn-group{display:flex;gap:8px;margin-top:14px}
     .auto-op-btn{flex:1;padding:9px 0;border:none;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--auto-op-font);cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn:active{transform:scale(0.96) !important}
@@ -220,6 +228,36 @@
     .ps-switch-area .auto-op-switch-thumb{width:14px;height:14px;background:#444;border-radius:50%;transition:transform 0.3s;pointer-events:none;transform:translateX(3px)}
     .ps-switch-area .auto-op-switch input:checked+.auto-op-switch-track{background:#333;border-color:#666}
     .ps-switch-area .auto-op-switch input:checked+.auto-op-switch-track .auto-op-switch-thumb{transform:translateX(18px);background:#777}
+    .auto-op-info-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--panel-bg);z-index:5;display:none;flex-direction:column;border-radius:0 0 12px 12px;overflow:hidden;transform:translateX(105%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1)}
+    .auto-op-info-overlay.open{display:flex;transform:translateX(0)}
+    .auto-op-info-panel-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--panel-border);flex-shrink:0}
+    .auto-op-info-back-btn{width:28px;height:28px;padding:0;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:14px;font-weight:700;font-family:var(--auto-op-font);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-info-back-btn:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
+    .auto-op-info-back-btn:active{transform:scale(0.96) !important}
+    .auto-op-info-title{flex:1;text-align:center;font-size:13px;font-weight:600;color:var(--panel-text);font-family:var(--auto-op-font);padding:0 8px}
+    .auto-op-info-content{flex:1;padding:0;overflow-y:auto;color:var(--panel-label-text);font-size:12px;font-family:var(--auto-op-font);display:flex;flex-direction:column;scrollbar-width:none;-ms-overflow-style:none}
+    .auto-op-info-content::-webkit-scrollbar{display:none}
+    .auto-op-info-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
+    .auto-op-info-section{padding:10px 14px}
+    .auto-op-info-section:last-child{border-bottom:none}
+    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+    .auto-op-info-row-switch label:first-child{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);letter-spacing:0.5px}
+    .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:4px 0;gap:8px}
+    .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);white-space:nowrap;flex-shrink:0}
+    .auto-op-info-field-value{font-size:11px;font-family:var(--auto-op-font);color:var(--panel-text);word-break:break-all;text-align:right;flex:1;min-width:0}
+    .auto-op-info-field input[type="text"]{flex:1;min-width:0;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-field input[type="text"]:focus{border-color:var(--panel-highlight-border)}
+    .auto-op-info-field select{background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer}
+    .auto-op-info-field select:focus{border-color:var(--panel-highlight-border)}
+    .auto-op-info-field select option{background:var(--panel-input-bg);color:var(--panel-input-text)}
+    .auto-op-info-attrs-list{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+    .auto-op-info-attr-row{display:flex;align-items:center;gap:6px}
+    .auto-op-info-attr-row .auto-op-info-attr-key{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);white-space:nowrap;flex-shrink:0;min-width:50px;overflow:hidden;text-overflow:ellipsis}
+    .auto-op-info-attr-row input[type="text"]{flex:1;min-width:0;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-attr-row input[type="text"]:focus{border-color:var(--panel-highlight-border)}
+    .auto-op-target-item.disabled{border-color:var(--panel-label-text) !important;color:var(--panel-label-text) !important;opacity:0.6}
+    .auto-op-target-item.disabled span{color:var(--panel-label-text) !important}
+    .auto-op-target-item.disabled .auto-op-target-parent{color:var(--panel-label-text) !important}
   `;
   document.head.appendChild(style);
   function detectBrowserTheme() { const h = document.documentElement, b = document.body; const d = (el) => el.classList.contains('dark') || el.classList.contains('dark-mode') || el.classList.contains('night') || el.classList.contains('theme-dark') || el.getAttribute('data-theme') === 'dark' || el.getAttribute('data-color-scheme') === 'dark'; isDarkMode = d(h) || d(b) || window.matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => { isDarkMode = e.matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); }); }
@@ -281,6 +319,7 @@
           <div class="auto-op-row-switch"><label>自动刷新网页</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-auto-refresh"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row" id="auto-op-refresh-interval-row"><label>刷新间隔 (s) 范围：10 ~ 86400</label><input type="number" id="auto-op-refresh-interval" min="10" max="86400" placeholder="60" value="60"></div>
           <div class="auto-op-row"><div class="auto-op-log-header"><label>刷新日志</label><button class="auto-op-btn-clear" id="auto-op-btn-clear-log">清空</button></div><div class="auto-op-log-container" id="auto-op-log-container"><div class="auto-op-log-empty">暂无日志</div></div></div>
+<div class="auto-op-row-switch"><label>选取元素放行点击</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-pick-pass-through"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
@@ -309,6 +348,20 @@
     </div>
   `;
   document.body.appendChild(panel);
+  // 元素详情信息面板
+  const infoOverlay = document.createElement('div');
+  infoOverlay.className = 'auto-op-info-overlay';
+  infoOverlay.id = 'auto-op-info-overlay';
+  infoOverlay.innerHTML = `
+    <div class="auto-op-info-panel-header">
+      <button class="auto-op-info-back-btn" id="auto-op-info-back-btn"><</button>
+      <span class="auto-op-info-title" id="auto-op-info-title">元素详情</span>
+    </div>
+    <div class="auto-op-info-content" id="auto-op-info-content">
+      <span class="auto-op-info-empty">暂无详情信息</span>
+    </div>
+  `;
+  panel.appendChild(infoOverlay);
   // 省电模式遮罩
   const powerSaveOverlay = document.createElement('div');
   powerSaveOverlay.id = 'auto-op-power-save-overlay';
@@ -368,6 +421,11 @@
   const psSwitchEl = document.getElementById('ps-switch');
   const wakeLockCheckbox = document.getElementById('auto-op-wake-lock');
   const suppressFocusCheckbox = document.getElementById('auto-op-suppress-focus');
+  const pickPassThroughCheckbox = document.getElementById('auto-op-pick-pass-through');
+  const infoOverlayEl = document.getElementById('auto-op-info-overlay');
+  const infoTitleEl = document.getElementById('auto-op-info-title');
+  const infoContentEl = document.getElementById('auto-op-info-content');
+  const infoBackBtn = document.getElementById('auto-op-info-back-btn');
   // ===================== 配置下拉菜单逻辑 =====================
   function closeConfigMenu() { if (!configMenuEl.classList.contains('open')) return; configMenuEl.classList.remove('open'); configMenuEl.classList.add('closing'); setTimeout(() => { configMenuEl.classList.remove('closing'); }, 200); }
   function buildConfigMenu() {
@@ -502,6 +560,7 @@
   // ===================== switchConfig =====================
   function switchConfig(newIndex) {
     if (isPicking) exitPickMode();
+    hideInfoPanel(false);
     const old = cv();
     old.clickInterval = parseInt(clickIntervalInput.value) || 1000;
     old.autoFillContent = autoFillInput.value;
@@ -531,7 +590,7 @@
           t.element = null;
         }
       }
-      t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t.fingerprint, t.matchMode);
+      t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
     });
     c.targets.forEach(t => { if (t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight'); });
     multiModeCheckbox.checked = c.isMultiMode;
@@ -590,7 +649,11 @@
         targets: c.targets.map(t => ({
           strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc,
           isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector,
-          parentChain: t.parentChain || [], isAuto: !!t.isAuto
+          parentChain: t.parentChain || [], isAuto: !!t.isAuto,
+          enabled: t.enabled !== false, matchTag: t.matchTag !== false,
+          matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact',
+          matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false,
+          matchOnclick: t.matchOnclick !== false, autoDiscover: t.autoDiscover !== false
         }))
       }));
     } catch (e) { console.error('[AUTO_OP] savePerConfig 异常:', e); }
@@ -610,7 +673,8 @@
       if (cfg.maxDurationMin !== undefined && cfg.maxDurationMin !== '' && parseFloat(cfg.maxDurationMin) > 0) c.maxDurationMin = parseFloat(cfg.maxDurationMin);
       c.targets = [];
       (cfg.targets || []).forEach(t => {
-        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, matchMode: t.matchMode || 'strict', parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null };
+        const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
+        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null, enabled: t.enabled !== false, matchTag: t.matchTag !== false, matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact', matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false, matchOnclick: t.matchOnclick !== false, autoDiscover };
         const found = tryFindTarget({ ...base, element: null });
         if (found && found.length > 0) {
           found.forEach(el => {
@@ -620,7 +684,7 @@
           });
         } else { c.targets.push({ ...base, element: null }); }
       });
-      c.targets.forEach(t => { t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t.fingerprint, t.matchMode); });
+      c.targets.forEach(t => { t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t); });
     } catch (e) { console.error('[AUTO_OP] loadPerConfig 异常:', e); }
   }
   function migrateOldData() {
@@ -638,7 +702,7 @@
       localStorage.removeItem(oldKey);
     } catch (e) {}
   }
-  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked })); } catch (e) {} }
+  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked, pickPassThrough })); } catch (e) {} }
   function loadShared() {
     try {
       const saved = localStorage.getItem(SHARED_KEY);
@@ -651,6 +715,7 @@
       if (typeof cfg.activeConfig === 'number' && cfg.activeConfig >= 0 && cfg.activeConfig < CONFIG_COUNT) activeConfig = cfg.activeConfig;
       if (cfg.wakeLock !== undefined) wakeLockCheckbox.checked = cfg.wakeLock;
       if (cfg.suppressFocus !== undefined) suppressFocusCheckbox.checked = cfg.suppressFocus;
+      if (cfg.pickPassThrough !== undefined) { pickPassThrough = cfg.pickPassThrough; pickPassThroughCheckbox.checked = pickPassThrough; }
     } catch (e) {}
   }
   function saveData() { savePerConfig(activeConfig); saveShared(); }
@@ -678,14 +743,14 @@
   function isInputField(el) { if (!el) return false; if (el.isContentEditable || el.tagName === 'TEXTAREA') return true; if (el.tagName === 'INPUT') { const t = (el.type || '').toLowerCase(); return t !== 'checkbox' && t !== 'radio' && t !== 'hidden' && t !== 'file' && t !== 'color' && t !== 'submit' && t !== 'button' && t !== 'reset' && t !== 'image'; } return false; }
   function getElText(el) { let text = (el.textContent || '').trim(); if (!text) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim() && val.trim().length < 50) { text = val.trim(); break; } } } if (!text && el.children.length > 0) { for (const child of el.children) { const cText = (child.textContent || '').trim(); if (cText) { text = cText; break; } for (const attr of ['alt', 'title']) { const val = child.getAttribute(attr); if (val && val.trim()) { text = val.trim(); break; } } if (text) break; } } if (!text) { try { for (const pseudo of ['::before', '::after']) { const computedStyle = window.getComputedStyle(el, pseudo); let content = computedStyle.getPropertyValue('content'); if (content && content !== 'none' && content !== 'normal' && content !== '""') { content = content.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim(); if (content && !(content.length <= 2 && /[\uE000-\uF8FF]/.test(content))) { text = content; break; } } } } catch (e) {} } return text; }
   function getElementFingerprint(el) { const dataAttrs = {}, attrs = {}; const keyAttrs = ['href', 'src', 'value', 'type', 'name', 'role', 'alt', 'title', 'placeholder', 'action', 'method', 'onclick']; Array.from(el.attributes).forEach(attr => { if (attr.name.startsWith('data-')) dataAttrs[attr.name] = attr.value; else if (keyAttrs.includes(attr.name)) attrs[attr.name] = attr.value; }); let onclickParam = ''; if (attrs.onclick) { const match = attrs.onclick.match(/useItem\((\d+)\)/); if (match) onclickParam = match[1]; } let text = getElText(el); if (!text && isInputField(el) && el.value != null && String(el.value).trim()) text = String(el.value).trim(); return { tagName: el.tagName.toLowerCase(), text, dataAttrs, attrs, onclickParam, hasStrong: !!el.id || Object.keys(dataAttrs).length > 0 || keyAttrs.some(k => attrs[k]) }; }
-  function matchesFingerprint(el, fp, matchMode) { if (!el || el.tagName.toLowerCase() !== fp.tagName) return false; if (matchMode === 'strict') { for (const [k, v] of Object.entries(fp.dataAttrs)) { if (el.getAttribute(k) !== v) return false; } for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) return false; } if (fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) return false; } if (fp.text) { let elText; if (fp.hasStrong) { elText = (el.textContent || '').trim(); if (!elText) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } } if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) elText = String(el.value).trim(); } else { elText = getElText(el); } if (elText !== fp.text) return false; } return true; } else { if (fp.text) { let elText = (el.textContent || '').trim(); if (!elText) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } } if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) elText = String(el.value).trim(); if (!elText) elText = getElText(el); if (elText !== fp.text) return false; } else { if (!isInputField(el)) return false; } return true; } }
+  function matchesFingerprint(el, t) { if (!el) return false; const fp = t.fingerprint; const matchTag = t.matchTag !== false, matchText = t.matchText !== false, matchDataAttrs = t.matchDataAttrs !== false, matchAttrs = t.matchAttrs !== false, matchOnclick = t.matchOnclick !== false, textMode = t.matchTextMode || 'exact'; if (matchTag && el.tagName.toLowerCase() !== fp.tagName) return false; if (matchDataAttrs) { for (const [k, v] of Object.entries(fp.dataAttrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchAttrs) { for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchOnclick && fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) return false; } if (matchText && fp.text) { let elText; if (fp.hasStrong) { elText = (el.textContent || '').trim(); if (!elText) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } } if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) elText = String(el.value).trim(); } else { elText = getElText(el); } if (!elText) return false; if (textMode === 'fuzzy') { if (!elText.includes(fp.text)) return false; } else { if (elText !== fp.text) return false; } } return true; }
   let _queryCache = null;
   function beginQueryCycle() { _queryCache = new Map(); }
   function cachedQuery(root, selector) { if (!_queryCache) _queryCache = new Map(); const key = (root === document ? '_doc' : root) + '|' + selector; if (_queryCache.has(key)) return _queryCache.get(key); const result = Array.from(root.querySelectorAll(selector)); _queryCache.set(key, result); return result; }
-  function tryFindTarget(targetObj) { if (!targetObj || !targetObj.fingerprint) return null; const fp = targetObj.fingerprint; function verifyList(list) { const matched = []; for (const el of list) { if (panel.contains(el)) continue; if (matchesFingerprint(el, fp, targetObj.matchMode)) matched.push(el); } return matched.length > 0 ? matched : null; } let root = document; if (targetObj.parentSelector) { try { const p = document.querySelector(targetObj.parentSelector); if (p) root = p; } catch (e) {} } try { if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) return found; } const found = verifyList(cachedQuery(root, fp.tagName)); if (found) return found; } catch (e) {} if (root !== document) { try { if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) return found; } } catch (e) {} } return null; }
+  function tryFindTarget(targetObj) { if (!targetObj || !targetObj.fingerprint) return null; const fp = targetObj.fingerprint; function verifyList(list) { const matched = []; for (const el of list) { if (panel.contains(el)) continue; if (matchesFingerprint(el, targetObj)) matched.push(el); } return matched.length > 0 ? matched : null; } let root = document; if (targetObj.parentSelector) { try { const p = document.querySelector(targetObj.parentSelector); if (p) root = p; } catch (e) {} } try { if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) return found; } const found = verifyList(cachedQuery(root, fp.tagName)); if (found) return found; } catch (e) {} if (root !== document) { try { if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) return found; } } catch (e) {} } return null; }
   function resolveParentInfo(el) { const result = { nearestParent: el.parentElement, blueParent: null }; let ancestor = el.parentElement; while (ancestor && ancestor !== document.body) { const s = buildBaseSelector(ancestor); if (s !== ancestor.tagName.toLowerCase()) { result.blueParent = ancestor; break; } ancestor = ancestor.parentElement; } return result; }
   function refreshParentHighlights() { if (isPowerSave) return; const c = cv(); const newBlueMap = new Map(), newNearestMap = new Map(); for (const t of c.targets) { if (!t.element || !document.contains(t.element)) continue; if (t.blueParent && document.contains(t.blueParent) && !panel.contains(t.blueParent)) { if (!newBlueMap.has(t.blueParent)) newBlueMap.set(t.blueParent, []); newBlueMap.get(t.blueParent).push(t.element); } let nearest = t.nearestParent || t.element.parentElement; if (nearest && document.contains(nearest) && !panel.contains(nearest)) { if (!newNearestMap.has(nearest)) newNearestMap.set(nearest, []); newNearestMap.get(nearest).push(t.element); } } for (const t of c.targets) { if (t._blueParent && !newBlueMap.has(t._blueParent)) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); t._blueParent = null; } if (t._nearestEl && !newNearestMap.has(t._nearestEl)) { t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); t._nearestEl = null; } } for (const [parent, children] of newBlueMap) { const isOverlap = newNearestMap.has(parent); if (isOverlap) { parent.classList.remove('auto-op-parent-highlight'); parent.classList.add('auto-op-parent-highlight-Overlap'); } else { parent.classList.remove('auto-op-parent-highlight-Overlap'); parent.classList.add('auto-op-parent-highlight'); } for (const child of children) { const t = c.targets.find(tt => tt.element === child); if (t) t._blueParent = parent; } } for (const [parent, children] of newNearestMap) { if (newBlueMap.has(parent)) continue; if (!parent.classList.contains('auto-op-nearest-parent-highlight')) parent.classList.add('auto-op-nearest-parent-highlight'); for (const child of children) { const t = c.targets.find(tt => tt.element === child); if (t) t._nearestEl = parent; } } }
-  function discoverNewTargetsFor(ci) { const c = configs[ci]; if (c.targets.length === 0 || !c.targets.some(t => t.matchMode === 'loose')) return; const existingElements = new Set(c.targets.map(t => t.element)); for (const el of c.discoveredElements) { if (!document.contains(el)) c.discoveredElements.delete(el); } const newTargets = [], seenKeys = new Set(); for (const t of c.targets) { if (t.matchMode !== 'loose' || !t.parentSelector) continue; const selector = t.loose || t.strict, seenKey = selector + '|' + t.parentSelector; if (seenKeys.has(seenKey)) continue; seenKeys.add(seenKey); let parent; try { parent = document.querySelector(t.parentSelector); } catch (e) {} if (!parent) continue; let candidates; try { candidates = parent.querySelectorAll(selector); } catch (e) { candidates = []; } if (!candidates || candidates.length === 0) { try { candidates = parent.querySelectorAll(t.fingerprint.tagName); } catch (e) { candidates = []; } } for (const el of candidates) { if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t.fingerprint, t.matchMode)) continue; c.discoveredElements.add(el); if (ci === activeConfig) el.classList.add('auto-op-selected-highlight'); const pi = resolveParentInfo(el); newTargets.push({ element: el, strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain, nearestParent: pi.nearestParent, blueParent: pi.blueParent, isAuto: true, missCount: 0 }); } } if (newTargets.length > 0) c.targets.push(...newTargets); }
+  function discoverNewTargetsFor(ci) { const c = configs[ci]; if (c.targets.length === 0 || !c.targets.some(t => t.autoDiscover !== false)) return; const existingElements = new Set(c.targets.map(t => t.element)); for (const el of c.discoveredElements) { if (!document.contains(el)) c.discoveredElements.delete(el); } const newTargets = [], seenKeys = new Set(); for (const t of c.targets) { if (t.autoDiscover === false || !t.parentSelector) continue; const selector = t.loose || t.strict, seenKey = selector + '|' + t.parentSelector; if (seenKeys.has(seenKey)) continue; seenKeys.add(seenKey); let parent; try { parent = document.querySelector(t.parentSelector); } catch (e) {} if (!parent) continue; let candidates; try { candidates = parent.querySelectorAll(selector); } catch (e) { candidates = []; } if (!candidates || candidates.length === 0) { try { candidates = parent.querySelectorAll(t.fingerprint.tagName); } catch (e) { candidates = []; } } for (const el of candidates) { if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t)) continue; c.discoveredElements.add(el); if (ci === activeConfig) el.classList.add('auto-op-selected-highlight'); const pi = resolveParentInfo(el); newTargets.push({ element: el, strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain, nearestParent: pi.nearestParent, blueParent: pi.blueParent, isAuto: true, missCount: 0, enabled: t.enabled, matchTag: t.matchTag, matchText: t.matchText, matchTextMode: t.matchTextMode, matchDataAttrs: t.matchDataAttrs, matchAttrs: t.matchAttrs, matchOnclick: t.matchOnclick, autoDiscover: t.autoDiscover }); } } if (newTargets.length > 0) c.targets.push(...newTargets); }
   // ===================== 分页 =====================
   function updatePageHeight() { const pages = pageContainer.querySelectorAll('.auto-op-page'), el = pages[currentPage]; if (!el) return; const h = el.offsetHeight; if (h > 0) pageContainer.style.height = (h + 2) + 'px'; }
   function goToPage(page, animated) {
@@ -710,7 +775,7 @@
     panel.style.width = savedWidth || ''; panel.style.transition = savedTransition;
     if (!wasCollapsed) panel.classList.remove('collapsed');
   }
-  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; }, 200); }
+  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; }, 350); }
   function performExpand() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'expanding'; panel.style.width = collapsedWidth + 'px'; void panel.offsetWidth; panel.style.width = '300px'; setTimeout(() => { panel.classList.remove('collapsed'); panel.style.width = ''; toggleBtn.textContent = '−'; setTimeout(() => { body.style.overflow = 'auto'; collapseAnimPhase = 'expanded'; }, 150); }, 120); }
   // ===================== 对话框 =====================
   function showConfirm(text) { return new Promise(resolve => { const modal = document.getElementById('auto-op-modal'), modalText = document.getElementById('auto-op-modal-text'), btnOk = document.getElementById('auto-op-modal-ok'), btnCancel = document.getElementById('auto-op-modal-cancel'), overlay = modal.querySelector('.auto-op-modal-overlay'), box = modal.querySelector('.auto-op-modal-box'); modalText.textContent = text; modal.style.display = 'block'; const onBoxClick = e => e.stopPropagation(); box.addEventListener('click', onBoxClick); function cleanup() { modal.style.display = 'none'; btnOk.removeEventListener('click', onOk); btnCancel.removeEventListener('click', onCancel); overlay.removeEventListener('click', onOverlay); box.removeEventListener('click', onBoxClick); } function onOk() { cleanup(); resolve(true); } function onCancel() { cleanup(); resolve(false); } function onOverlay() { cleanup(); resolve(false); } btnOk.addEventListener('click', onOk); btnCancel.addEventListener('click', onCancel); overlay.addEventListener('click', onOverlay); }); }
@@ -783,6 +848,10 @@
     if (!action) return;
     const index = parseInt(target.dataset.index), c = cv();
     if (isNaN(index) || !c.targets[index]) { updateTargetUI(); return; }
+    if (action === 'info') {
+      showInfoPanel(index);
+      return;
+    }
     if (action === 'delete') {
       const t = c.targets[index];
       if (IS_MOBILE && !await showConfirm('确定删除该目标元素？\n\n' + t.desc)) return;
@@ -795,8 +864,150 @@
       if (c.targets.length === 0) { stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); } else { stateSpan.textContent = `剩余 ${c.targets.length} 个`; }
       refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility();
     }
+    if (action === 'move-up' && index > 0) {
+      const listEl = targetListContainer.querySelector('.auto-op-target-list');
+      const scrollTop = listEl ? listEl.scrollTop : 0;
+      [c.targets[index], c.targets[index - 1]] = [c.targets[index - 1], c.targets[index]];
+      if (c.currentQueueIndex === index) c.currentQueueIndex = index - 1;
+      else if (c.currentQueueIndex === index - 1) c.currentQueueIndex = index;
+      updateTargetUI(); updateTargetCount(); refreshParentHighlights();
+      const newListEl = targetListContainer.querySelector('.auto-op-target-list');
+      if (newListEl) newListEl.scrollTop = scrollTop;
+      savePerConfig(activeConfig);
+    }
+    if (action === 'move-down' && index < c.targets.length - 1) {
+      const listEl = targetListContainer.querySelector('.auto-op-target-list');
+      const scrollTop = listEl ? listEl.scrollTop : 0;
+      [c.targets[index], c.targets[index + 1]] = [c.targets[index + 1], c.targets[index]];
+      if (c.currentQueueIndex === index) c.currentQueueIndex = index + 1;
+      else if (c.currentQueueIndex === index + 1) c.currentQueueIndex = index;
+      updateTargetUI(); updateTargetCount(); refreshParentHighlights();
+      const newListEl = targetListContainer.querySelector('.auto-op-target-list');
+      if (newListEl) newListEl.scrollTop = scrollTop;
+      savePerConfig(activeConfig);
+    }
   });
-  targetListContainer.addEventListener('change', e => { const target = e.target; if (target.dataset.action === 'match-mode') { const index = parseInt(target.dataset.index), c = cv(); if (isNaN(index) || !c.targets[index]) { updateTargetUI(); return; } c.targets[index].matchMode = target.value; savePerConfig(activeConfig); } });
+  // ===================== 元素详情信息面板 =====================
+  let infoAnimTimer = null, infoCurrentIndex = -1;
+  function showInfoPanel(index) {
+    const c = cv();
+    const t = c.targets[index];
+    if (!t) return;
+    infoCurrentIndex = index;
+    if (infoAnimTimer) { clearTimeout(infoAnimTimer); infoAnimTimer = null; }
+    infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
+    infoTitleEl.textContent = t.desc || '元素详情';
+    const fp = t.fingerprint || {};
+    const dataAttrKeys = Object.keys(fp.dataAttrs || {});
+    const attrKeys = Object.keys(fp.attrs || {}).filter(k => fp.attrs[k]);
+    let html = '';
+    // 启用开关
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    // 自动发现
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    // 标签匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
+    // 文字匹配
+    const textMode = t.matchTextMode || 'exact';
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
+    // 属性匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+    if (dataAttrKeys.length > 0 || attrKeys.length > 0) {
+      html += '<div class="auto-op-info-attrs-list">';
+      dataAttrKeys.forEach(k => {
+        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+      });
+      attrKeys.forEach(k => {
+        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="auto-op-info-field"><span class="auto-op-info-field-value">无特殊属性</span></div>';
+    }
+    html += '</div>';
+    infoContentEl.innerHTML = html;
+    infoOverlayEl.style.display = 'flex';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        infoOverlayEl.classList.add('open');
+      });
+    });
+  }
+  function hideInfoPanel(animate) {
+    infoCurrentIndex = -1;
+    if (infoAnimTimer) { clearTimeout(infoAnimTimer); infoAnimTimer = null; }
+    if (animate) {
+      infoOverlayEl.classList.remove('open');
+      infoOverlayEl.addEventListener('transitionend', onInfoCloseTransition);
+    } else {
+      infoOverlayEl.classList.remove('open');
+      infoOverlayEl.style.display = 'none';
+      infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
+    }
+  }
+  function onInfoCloseTransition(e) {
+    if (e.propertyName !== 'transform') return;
+    infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
+    infoOverlayEl.style.display = 'none';
+  }
+  // 信息面板表单事件委托
+  infoContentEl.addEventListener('change', e => {
+    if (infoCurrentIndex < 0) return;
+    const c = cv(), t = c.targets[infoCurrentIndex];
+    if (!t) return;
+    const target = e.target, action = target.dataset.infoAction;
+    if (!action) return;
+    switch (action) {
+      case 'toggle-enabled':
+        t.enabled = target.checked;
+        break;
+      case 'toggle-matchTag':
+        t.matchTag = target.checked;
+        break;
+      case 'toggle-matchText':
+        t.matchText = target.checked;
+        break;
+      case 'change-matchTextMode':
+        t.matchTextMode = target.value;
+        break;
+      case 'toggle-matchAttrs':
+        t.matchAttrs = target.checked;
+        t.matchDataAttrs = target.checked;
+        break;
+      case 'toggle-autoDiscover':
+        t.autoDiscover = target.checked;
+        break;
+    }
+    t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+    updateTargetUI(); updateTargetCount(); savePerConfig(activeConfig);
+  });
+  infoContentEl.addEventListener('input', e => {
+    if (infoCurrentIndex < 0) return;
+    const c = cv(), t = c.targets[infoCurrentIndex];
+    if (!t) return;
+    const target = e.target, action = target.dataset.infoAction;
+    if (action === 'change-text') {
+      t.fingerprint.text = target.value;
+    } else if (action === 'change-attr') {
+      const key = target.dataset.attrKey;
+      if (key && t.fingerprint) {
+        if (key.startsWith('data-')) {
+          if (!t.fingerprint.dataAttrs) t.fingerprint.dataAttrs = {};
+          t.fingerprint.dataAttrs[key] = target.value;
+        } else {
+          if (!t.fingerprint.attrs) t.fingerprint.attrs = {};
+          t.fingerprint.attrs[key] = target.value;
+        }
+      }
+    }
+    t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+    if (action === 'change-text') { updateTargetUI(); }
+    updateTargetCount(); savePerConfig(activeConfig);
+  });
+  infoBackBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    hideInfoPanel(true);
+  });
   // ===================== UI 更新 =====================
   function updateTargetUI() {
     if (isPowerSave) return;
@@ -805,8 +1016,12 @@
     btnClearAll.style.display = 'inline-block'; btnStart.disabled = false; btnHeaderStart.disabled = false;
     let html = '';
     c.targets.forEach((t, i) => {
+      const isDisabled = t.enabled === false;
       const isValid = t._isValid !== undefined ? t._isValid : (t.element && document.contains(t.element));
-      html += `<div class="auto-op-target-item ${isValid ? 'active' : 'missing'}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="查看详情">ⓘ</button>${t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}<select class="auto-op-match-mode" data-action="match-mode" data-index="${i}"><option value="strict" ${t.matchMode === 'strict' ? 'selected' : ''}>严格</option><option value="loose" ${t.matchMode === 'loose' ? 'selected' : ''}>宽松</option></select><button class="auto-op-btn-item-del" data-action="delete" data-index="${i}">✕</button></div>`;
+      let stateClass = 'active';
+      if (isDisabled) stateClass = 'disabled';
+      else if (!isValid) stateClass = 'missing';
+      html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="查看详情">ⓘ</button>${t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up" data-action="move-up" data-index="${i}" title="上移">↑</button><button class="auto-op-btn-move auto-op-btn-move-down" data-action="move-down" data-index="${i}" title="下移">↓</button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}">✕</button></div>`;
     });
     targetListContainer.innerHTML = '<div class="auto-op-target-list">' + html + '</div>';
     updateTargetCount();
@@ -816,19 +1031,22 @@
     if (isPowerSave) return;
     const c = cv();
     if (!status) { let existCount = 0, missingCount = 0; for (const t of c.targets) { if (t.element && document.contains(t.element) && t._isValid) existCount++; else missingCount++; } targetCountSpan.innerHTML = '[<span class="auto-op-target-count-exist">' + existCount + '</span>/<span class="auto-op-target-count-missing">' + missingCount + '</span>/<span class="auto-op-target-count-total">' + c.targets.length + '</span>]'; return; }
-    let existCount = status.filter(Boolean).length;
+    let existCount = status.filter(s => s && s !== 'disabled').length;
     targetCountSpan.innerHTML = '[<span class="auto-op-target-count-exist">' + existCount + '</span>/<span class="auto-op-target-count-missing">' + (status.length - existCount) + '</span>/<span class="auto-op-target-count-total">' + c.targets.length + '</span>]';
   }
-  function updateTargetItemStyle(index, isMissing) { if (isPowerSave) return; const c = cv(); if (c.uiThrottled) return; const item = targetListContainer.querySelector(`.auto-op-target-item[data-index="${index}"]`); if (!item) return; if (isMissing) { item.classList.remove('active'); item.classList.add('missing'); } else { item.classList.remove('missing'); item.classList.add('active'); } }
+  function updateTargetItemStyle(index, state) { if (isPowerSave) return; const c = cv(); if (c.uiThrottled) return; const item = targetListContainer.querySelector(`.auto-op-target-item[data-index="${index}"]`); if (!item) return; item.classList.remove('active', 'missing', 'disabled'); if (state === true) { item.classList.add('missing'); } else if (state === false) { item.classList.add('active'); } else if (state === null) { item.classList.add('disabled'); } }
   function updateRunningDisplay(ci, countText, stateText) { if (isPowerSave || ci !== activeConfig) return; countSpan.textContent = countText; stateSpan.textContent = stateText; stateSpan.classList.remove('auto-op-waiting'); }
   // ===================== 拖拽 =====================
   let isDragging = false, dragOffX = 0, dragOffY = 0;
   function getEventPos(e) { return e.touches && e.touches.length > 0 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY }; }
-  function onDragStart(e) { if (e.target === toggleBtn || toggleBtn.contains(e.target) || e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || e.target === configBtnEl || configBtnEl.contains(e.target)) return; isDragging = true; closeConfigMenu(); const pos = getEventPos(e), rect = panel.getBoundingClientRect(); dragOffX = pos.x - rect.left; dragOffY = pos.y - rect.top; e.preventDefault(); }
+  function onDragStart(e) { if (e.target === toggleBtn || toggleBtn.contains(e.target) || e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || e.target === configBtnEl || configBtnEl.contains(e.target) || e.target === infoBackBtn || infoBackBtn.contains(e.target)) return; isDragging = true; closeConfigMenu(); const pos = getEventPos(e), rect = panel.getBoundingClientRect(); dragOffX = pos.x - rect.left; dragOffY = pos.y - rect.top; e.preventDefault(); }
   function onDragMove(e) { if (!isDragging) return; const pos = getEventPos(e); panel.style.left = (pos.x - dragOffX) + 'px'; panel.style.top = (pos.y - dragOffY) + 'px'; panel.style.right = 'auto'; e.preventDefault(); }
   function onDragEnd() { isDragging = false; }
   dragHandle.addEventListener('mousedown', onDragStart); document.addEventListener('mousemove', onDragMove); document.addEventListener('mouseup', onDragEnd);
   dragHandle.addEventListener('touchstart', onDragStart, { passive: false }); document.addEventListener('touchmove', onDragMove, { passive: false }); document.addEventListener('touchend', onDragEnd); document.addEventListener('touchcancel', onDragEnd);
+  const infoDragHandle = infoOverlayEl.querySelector('.auto-op-info-panel-header');
+  infoDragHandle.addEventListener('mousedown', onDragStart);
+  infoDragHandle.addEventListener('touchstart', onDragStart, { passive: false });
   toggleBtn.addEventListener('click', e => { e.stopPropagation(); if (collapseAnimPhase === 'collapsing' || collapseAnimPhase === 'expanding') return; if (collapseAnimPhase !== 'collapsed') performCollapse(); else performExpand(); });
   // ===================== UI 交互事件 =====================
   multiModeCheckbox.addEventListener('change', e => { const c = cv(); c.isMultiMode = e.target.checked; strategyRow.style.display = c.isMultiMode ? 'block' : 'none'; c.clickStrategy = strategySelect.value; clearSelection(); savePerConfig(activeConfig); });
@@ -847,12 +1065,13 @@
   btnClearLog.addEventListener('click', e => { e.stopPropagation(); refreshLogs = []; updateLogUI(); saveShared(); });
   wakeLockCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) requestWakeLock(); else releaseWakeLock(); saveShared(); });
   suppressFocusCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) suppressFocus(); else restoreFocus(); saveShared(); });
-  // ===================== 选取元素 =====================
-  btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
+  pickPassThroughCheckbox.addEventListener('change', e => { e.stopPropagation(); pickPassThrough = e.target.checked; saveShared(); });
+// ===================== 选取元素 =====================
+  btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
   function onPickHover(e) { if (!isPicking) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; el.classList.add('auto-op-highlight'); }
   function onPickHoverOut(e) { e.target.classList.remove('auto-op-highlight'); }
-  function onPickTouch(e) { if (!isPicking || isDragging) return; const touch = e.changedTouches[0], el = document.elementFromPoint(touch.clientX, touch.clientY); if (!el || panel.contains(el) || configMenuEl.contains(el)) return; e.preventDefault(); e.stopPropagation(); selectTarget(el); }
-  function onPickClick(e) { if (!isPicking || !e.isTrusted) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; e.preventDefault(); e.stopPropagation(); selectTarget(el); }
+  function onPickTouch(e) { if (!isPicking || isDragging) return; const touch = e.changedTouches[0], el = document.elementFromPoint(touch.clientX, touch.clientY); if (!el || panel.contains(el) || configMenuEl.contains(el)) return; if (!pickPassThrough) { e.preventDefault(); e.stopPropagation(); } selectTarget(el); }
+  function onPickClick(e) { if (!isPicking || !e.isTrusted) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; if (!pickPassThrough) { e.preventDefault(); e.stopPropagation(); } selectTarget(el); }
   function selectTarget(el) {
     if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; }
     el.classList.remove('auto-op-highlight');
@@ -865,7 +1084,7 @@
     const isInput = isInputField(el); if (isInput) desc += ' (isInput)';
     let parentSelector = '', parentChain = [], nearestParent = el.parentElement, blueParent = null, ancestor = el.parentElement;
     while (ancestor && ancestor !== document.body) { const s = buildBaseSelector(ancestor); if (s !== ancestor.tagName.toLowerCase()) { if (!parentSelector) parentSelector = s; if (!blueParent) blueParent = ancestor; let pdesc = ancestor.tagName.toLowerCase(); if (ancestor.id) pdesc += '#' + ancestor.id; if (ancestor.className && typeof ancestor.className === 'string') { const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.'); if (cls) pdesc += '.' + cls; } parentChain.push({ selector: s, desc: pdesc }); } ancestor = ancestor.parentElement; }
-    const targetObj = { element: el, strict: sels.strict, loose: sels.loose, fingerprint: fp, desc, isInput, matchMode: isInput ? 'loose' : 'strict', parentSelector, parentChain, nearestParent, blueParent, isAuto: false, missCount: 0, _isValid: true };
+    const targetObj = { element: el, strict: sels.strict, loose: sels.loose, fingerprint: fp, desc, isInput, parentSelector, parentChain, nearestParent, blueParent, isAuto: false, missCount: 0, _isValid: true, enabled: true, matchTag: true, matchText: true, matchTextMode: 'exact', matchDataAttrs: true, matchAttrs: true, matchOnclick: true, autoDiscover: false };
     if (c.isMultiMode) { c.targets.push(targetObj); el.classList.add('auto-op-selected-highlight'); stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`; }
     else { c.targets.forEach(t => { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); }); c.targets = [targetObj]; el.classList.add('auto-op-selected-highlight'); exitPickMode(); if (c.targets.length > 0) stateSpan.textContent = '就绪'; }
     updateTargetUI(); updateTargetCount(); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility();
@@ -883,7 +1102,7 @@
   async function clearSelection(manual) { const c = cv(); if (manual && IS_MOBILE && c.targets.length > 0 && !await showConfirm('确定清空 ' + c.targets.length + ' 个目标元素？')) return; for (const t of c.targets) { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); } c.targets = []; c.currentQueueIndex = 0; updateTargetUI(); updateTargetCount(); stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility(); }
   btnClearAll.addEventListener('click', e => { e.stopPropagation(); clearSelection(true); });
   // ===================== 开始/停止 =====================
-  function handleToggleRunning(e) { e.stopPropagation(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) startClickingFor(activeConfig); else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
+  function handleToggleRunning(e) { e.stopPropagation(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) { hideInfoPanel(false); startClickingFor(activeConfig); } else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
   btnStart.addEventListener('click', handleToggleRunning); btnHeaderStart.addEventListener('click', handleToggleRunning);
   function startClickingFor(ci, savedTimestamp) {
     const c = configs[ci];
@@ -949,17 +1168,18 @@
     isProgrammaticClick = true;
     try {
       const c = configs[ci];
-      if (c.targets.length === 0) { stopClickingFor(ci); return; }
+      if (!c.isRunning || c.targets.length === 0) { stopClickingFor(ci); return; }
       beginQueryCycle(); discoverNewTargetsFor(ci);
       if (!c.doClickLastUIUpdate) c.doClickLastUIUpdate = 0;
       const now = Date.now(); c.uiThrottled = (now - c.doClickLastUIUpdate) < 100;
       if (!c.uiThrottled) c.doClickLastUIUpdate = now;
       const missingAction = c.missingAction || 'wait';
       const status = c.targets.map((t, i) => {
+        if (t.enabled === false) { if (ci === activeConfig) updateTargetItemStyle(i, null); return 'disabled'; }
         let el = t.element;
-        let isValid = el && document.contains(el) && matchesFingerprint(el, t.fingerprint, t.matchMode);
+        let isValid = el && document.contains(el) && matchesFingerprint(el, t);
         if (!isValid) { const found = tryFindTarget(t); if (found && found.length > 0) { if (t.element && document.contains(t.element)) t.element.classList.remove('auto-op-selected-highlight'); t.element = found[0]; const parentInfo = resolveParentInfo(found[0]); t.nearestParent = parentInfo.nearestParent; t.blueParent = parentInfo.blueParent; if (ci === activeConfig) found[0].classList.add('auto-op-selected-highlight'); isValid = true; } }
-        if (ci === activeConfig) updateTargetItemStyle(i, !isValid);
+        if (ci === activeConfig) updateTargetItemStyle(i, isValid ? false : true);
         return isValid;
       });
       const totalCount = c.targets.length;
@@ -968,7 +1188,11 @@
 
       if (c.isMultiMode && c.clickStrategy === 'sequential') {
         const idx = c.currentQueueIndex; if (idx >= totalCount) { c.currentQueueIndex = 0; return; }
-        if (status[idx]) {
+        if (status[idx] === 'disabled') {
+          if (c.isWaiting) { c.isWaiting = false; if (c.waitTimerID) { clearTimeout(c.waitTimerID); c.waitTimerID = null; } }
+          updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}/${totalCount}] 已禁用跳过`);
+          c.currentQueueIndex = (idx + 1) % totalCount;
+        } else if (status[idx]) {
           if (c.isWaiting) { c.isWaiting = false; if (c.waitTimerID) { clearTimeout(c.waitTimerID); c.waitTimerID = null; } }
           const t = c.targets[idx], el = t.element;
           if (t.isInput) { if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = c.autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = c.autoFillContent; } else { el.click(); }
@@ -982,9 +1206,9 @@
         cleanupAutoTargetsFor(ci, status); return;
       }
       let shouldStop = false, anyClicked = 0;
-      for (let i = 0; i < totalCount; i++) { const t = c.targets[i]; if (status[i]) { anyClicked++; const el = t.element; if (t.isInput) { if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = c.autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = c.autoFillContent; } else { el.click(); } } else { if (missingAction === 'stop') shouldStop = true; } }
+      for (let i = 0; i < totalCount; i++) { const t = c.targets[i]; if (status[i] === 'disabled') { continue; } if (status[i]) { if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; break; } anyClicked++; c.clickedCount++; const el = t.element; if (t.isInput) { if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = c.autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = c.autoFillContent; } else { el.click(); } } else { if (missingAction === 'stop') shouldStop = true; } }
       if (shouldStop) { stopClickingFor(ci); updateRunningDisplay(ci, c.clickedCount, '元素已消失'); return; }
-      if (anyClicked) { c.clickedCount += anyClicked; updateRunningDisplay(ci, c.clickedCount, c.isMultiMode && c.clickStrategy === 'simultaneous' ? '同时操作运行中' : '运行中'); if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; } }
+      if (anyClicked) { updateRunningDisplay(ci, c.clickedCount, c.isMultiMode && c.clickStrategy === 'simultaneous' ? '同时操作运行中' : '运行中'); if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; } }
       cleanupAutoTargetsFor(ci, status);
     } catch (e) { console.error('[AUTO_OP] doClickFor 异常:', e); }
     isProgrammaticClick = false;
