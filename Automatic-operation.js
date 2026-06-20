@@ -36,6 +36,7 @@
   let panelFont = 'MiSans VF';
   let isPowerSave = false, powerSaveTimerID = null;
   let _testHighlightedElements = [];
+  let panelTransparentTimer = null, panelClickRestoreTimer = null, isPanelTransparent = false;
   // ===================== 配置系统 =====================
   const CONFIG_COUNT = 10;
   const CONFIG_NAMES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
@@ -83,7 +84,7 @@
     [data-theme="light"] .auto-op-config-item{color:#1f2937}
     [data-theme="light"] .auto-op-config-item:hover{background:rgba(0,0,0,0.06)}
     [data-theme="light"] .auto-op-config-item.active{color:#3482FF;background:rgba(0,0,0,0.04)}
-    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;font-family:var(--auto-op-font) !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.3s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important}
+    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;font-family:var(--auto-op-font) !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.4s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important}
     .auto-op-header{position:sticky;top:0;background:var(--panel-bg);border-bottom:1px solid var(--panel-border);padding:14px;cursor:move;touch-action:none;z-index:1;display:flex;align-items:center;flex-shrink:0}
     .auto-op-header h3{margin:0;font-size:18px;font-weight:800;font-family:inherit;color:var(--panel-text);display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap;flex:1 1 auto;text-align:right;justify-content:flex-end}
     .auto-op-toggle{flex-shrink:0;width:30px;height:30px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:18px;font-family:var(--auto-op-font);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;border-radius:6px;line-height:1;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -513,6 +514,7 @@
 
   configBtnEl.addEventListener('click', e => {
     e.stopPropagation();
+    onPanelClickRestore();
     if (configMenuEl.classList.contains('open')) closeConfigMenu();
     else openConfigMenu();
   });
@@ -833,8 +835,40 @@
     panel.style.width = savedWidth || ''; panel.style.transition = savedTransition;
     if (!wasCollapsed) panel.classList.remove('collapsed');
   }
-  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; }, 200); }
-  function performExpand() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'expanding'; panel.style.width = collapsedWidth + 'px'; void panel.offsetWidth; panel.style.width = '300px'; setTimeout(() => { panel.classList.remove('collapsed'); panel.style.width = ''; toggleBtn.textContent = '−'; setTimeout(() => { body.style.overflow = 'auto'; collapseAnimPhase = 'expanded'; }, 150); }, 120); }
+  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; schedulePanelTransparent(1000); }, 200); }
+  function performExpand() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'expanding'; panel.style.width = collapsedWidth + 'px'; void panel.offsetWidth; panel.style.width = '300px'; setTimeout(() => { panel.classList.remove('collapsed'); panel.style.width = ''; toggleBtn.textContent = '−'; setTimeout(() => { body.style.overflow = 'auto'; collapseAnimPhase = 'expanded'; }, 150); }, 120); restorePanelOpacity(); if (isPicking) setPanelTransparent(); }
+  // ===================== 面板透明逻辑 =====================
+  function setPanelTransparent() {
+    if (isPanelTransparent) return;
+    isPanelTransparent = true;
+    panel.style.opacity = '0.65';
+  }
+  function restorePanelOpacity() {
+    if (panelTransparentTimer) { clearTimeout(panelTransparentTimer); panelTransparentTimer = null; }
+    if (panelClickRestoreTimer) { clearTimeout(panelClickRestoreTimer); panelClickRestoreTimer = null; }
+    if (!isPanelTransparent) return;
+    isPanelTransparent = false;
+    panel.style.opacity = '';
+    // 如果折叠状态下退出了选取模式，重新调度折叠透明计时器
+    if (!isPicking && collapseAnimPhase === 'collapsed') schedulePanelTransparent(1000);
+  }
+  function schedulePanelTransparent(delayMs) {
+    if (panelTransparentTimer) clearTimeout(panelTransparentTimer);
+    panelTransparentTimer = setTimeout(() => {
+      panelTransparentTimer = null;
+      setPanelTransparent();
+    }, delayMs);
+  }
+  function onPanelClickRestore() {
+    if (!isPanelTransparent) return;
+    restorePanelOpacity();
+    if (panelClickRestoreTimer) clearTimeout(panelClickRestoreTimer);
+    panelClickRestoreTimer = setTimeout(() => {
+      panelClickRestoreTimer = null;
+      // 仅在仍处于透明触发状态时恢复透明
+      if (isPicking || collapseAnimPhase === 'collapsed') setPanelTransparent();
+    }, 2000);
+  }
   // ===================== 对话框 =====================
   function showConfirm(text) { return new Promise(resolve => { const modal = document.getElementById('auto-op-modal'), modalText = document.getElementById('auto-op-modal-text'), btnOk = document.getElementById('auto-op-modal-ok'), btnCancel = document.getElementById('auto-op-modal-cancel'), overlay = modal.querySelector('.auto-op-modal-overlay'), box = modal.querySelector('.auto-op-modal-box'); modalText.textContent = text; modal.style.display = 'block'; const onBoxClick = e => e.stopPropagation(); box.addEventListener('click', onBoxClick); function cleanup() { modal.style.display = 'none'; btnOk.removeEventListener('click', onOk); btnCancel.removeEventListener('click', onCancel); overlay.removeEventListener('click', onOverlay); box.removeEventListener('click', onBoxClick); } function onOk() { cleanup(); resolve(true); } function onCancel() { cleanup(); resolve(false); } function onOverlay() { cleanup(); resolve(false); } btnOk.addEventListener('click', onOk); btnCancel.addEventListener('click', onCancel); overlay.addEventListener('click', onOverlay); }); }
   // ===================== 自动刷新 =====================
@@ -1265,7 +1299,7 @@
   const infoDragHandle = infoOverlayEl.querySelector('.auto-op-info-panel-header');
   infoDragHandle.addEventListener('mousedown', onDragStart);
   infoDragHandle.addEventListener('touchstart', onDragStart, { passive: false });
-  toggleBtn.addEventListener('click', e => { e.stopPropagation(); if (collapseAnimPhase === 'collapsing' || collapseAnimPhase === 'expanding') return; if (collapseAnimPhase !== 'collapsed') performCollapse(); else performExpand(); });
+  toggleBtn.addEventListener('click', e => { e.stopPropagation(); onPanelClickRestore(); if (collapseAnimPhase === 'collapsing' || collapseAnimPhase === 'expanding') return; if (collapseAnimPhase !== 'collapsed') performCollapse(); else performExpand(); });
   // ===================== UI 交互事件 =====================
   multiModeCheckbox.addEventListener('change', e => { const c = cv(); c.isMultiMode = e.target.checked; strategyRow.style.display = c.isMultiMode ? 'block' : 'none'; c.clickStrategy = strategySelect.value; clearSelection(); savePerConfig(activeConfig); });
   strategySelect.addEventListener('change', e => { cv().clickStrategy = e.target.value; savePerConfig(activeConfig); });
@@ -1286,7 +1320,7 @@
   pickPassThroughCheckbox.addEventListener('change', e => { e.stopPropagation(); pickPassThrough = e.target.checked; saveShared(); });
   panelFontSelect.addEventListener('change', e => { e.stopPropagation(); panelFont = e.target.value; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); saveShared(); });
 // ===================== 选取元素 =====================
-  btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
+  btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); setPanelTransparent(); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
   function onPickHover(e) { if (!isPicking) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; el.classList.add('auto-op-highlight'); }
   function onPickHoverOut(e) { e.target.classList.remove('auto-op-highlight'); }
   function onPickTouch(e) { if (!isPicking || isDragging) return; const touch = e.changedTouches[0], el = document.elementFromPoint(touch.clientX, touch.clientY); if (!el || panel.contains(el) || configMenuEl.contains(el)) return; if (!pickPassThrough) { e.preventDefault(); e.stopPropagation(); } selectTarget(el); }
@@ -1313,6 +1347,7 @@
     document.removeEventListener('mouseover', onPickHover, true); document.removeEventListener('mouseout', onPickHoverOut, true);
     document.removeEventListener('click', onPickClick, true); document.removeEventListener('touchend', onPickTouch, true);
     document.querySelectorAll('.auto-op-highlight').forEach(el => el.classList.remove('auto-op-highlight'));
+    restorePanelOpacity();
     const c = cv();
     if (c.isMultiMode) { stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : `已选 ${c.targets.length} 个`; }
     else { stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : '就绪'; }
@@ -1321,7 +1356,7 @@
   async function clearSelection(manual) { const c = cv(); if (manual && IS_MOBILE && c.targets.length > 0 && !await showConfirm('确定清空 ' + c.targets.length + ' 个目标元素？')) return; for (const t of c.targets) { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); } c.targets = []; c.currentQueueIndex = 0; updateTargetUI(); updateTargetCount(); stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility(); }
   btnClearAll.addEventListener('click', e => { e.stopPropagation(); clearSelection(true); });
   // ===================== 开始/停止 =====================
-  function handleToggleRunning(e) { e.stopPropagation(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) { hideInfoPanel(false); startClickingFor(activeConfig); } else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
+  function handleToggleRunning(e) { e.stopPropagation(); onPanelClickRestore(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) { hideInfoPanel(false); startClickingFor(activeConfig); } else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
   btnStart.addEventListener('click', handleToggleRunning); btnHeaderStart.addEventListener('click', handleToggleRunning);
   function startClickingFor(ci, savedTimestamp) {
     const c = configs[ci];
@@ -1441,6 +1476,7 @@
   }
   // ===================== 全局事件 =====================
   panel.addEventListener('click', (e) => { if (e.target === configBtnEl || configBtnEl.contains(e.target)) return; closeConfigMenu(); }, true);
+  panel.addEventListener('mousedown', (e) => { if (isPanelTransparent) onPanelClickRestore(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (configs.some(c => c.isRunning) || isAutoRefresh)) requestWakeLock(); });
   // ===================== 初始化 =====================
   detectBrowserTheme();
@@ -1455,6 +1491,7 @@
   void panel.offsetWidth;
   panel.style.transition = '';
   if (initBody) initBody.style.transition = '';
+  schedulePanelTransparent(1000);
   goToPage(currentPage, false);
   pageContainer.querySelectorAll('.auto-op-page').forEach(p => { new ResizeObserver(() => updatePageHeight()).observe(p); });
   (function restoreAutoRefreshState() {
