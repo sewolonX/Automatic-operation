@@ -250,16 +250,16 @@
     .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
     .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all}
     .auto-op-info-field-value{font-size:11px;font-family:var(--auto-op-font);color:var(--panel-text);word-break:break-all;text-align:right;flex:1;min-width:0}
-    .auto-op-info-field input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
-    .auto-op-info-field input[type="text"]:focus{border-color:var(--panel-highlight-border)}
-    .auto-op-info-field select{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
-    .auto-op-info-field select:focus{border-color:var(--panel-highlight-border)}
-    .auto-op-info-field select option{background:var(--panel-input-bg);color:var(--panel-input-text)}
+    .auto-op-info-field input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-field input[type="text"]:focus{border-color:var(--panel-highlight-border) !important}
+    .auto-op-info-field select{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
+    .auto-op-info-field select:focus{border-color:var(--panel-highlight-border) !important}
+    .auto-op-info-field select option{background:var(--panel-input-bg) !important;color:var(--panel-input-text) !important}
     .auto-op-info-attrs-list{display:flex;flex-direction:column;gap:0;margin-top:0}
     .auto-op-info-attr-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
     .auto-op-info-attr-row .auto-op-info-attr-key{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all;overflow:hidden;text-overflow:ellipsis}
-    .auto-op-info-attr-row input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
-    .auto-op-info-attr-row input[type="text"]:focus{border-color:var(--panel-highlight-border)}
+    .auto-op-info-attr-row input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-attr-row input[type="text"]:focus{border-color:var(--panel-highlight-border) !important}
     .auto-op-target-item.disabled{border-color:var(--panel-label-text) !important;color:var(--panel-label-text) !important;opacity:0.6}
     .auto-op-target-item.disabled span{color:var(--panel-label-text) !important}
     .auto-op-target-item.disabled .auto-op-target-parent{color:var(--panel-label-text) !important}
@@ -274,11 +274,44 @@
     .auto-op-test-css-result.fail{color:var(--panel-missing-text)}
     .auto-op-test-count{font-size:10px;font-weight:700;font-family:var(--auto-op-font);color:var(--panel-active-text);margin-right:4px;white-space:nowrap;flex-shrink:0;min-width:18px;text-align:right}
     .auto-op-test-count.zero{color:var(--panel-missing-text)}
-    .auto-op-test-highlight{outline:2px solid var(--panel-active-border) !important;outline-offset:1px !important}
+    .auto-op-test-highlight{outline:2px dashed #F8BBD0 !important;outline-offset:-2px !important}
     .auto-op-font-failed{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-missing-text);margin-left:6px;white-space:nowrap}
   `;
   document.head.appendChild(style);
-  function detectBrowserTheme() { const h = document.documentElement, b = document.body; const d = (el) => el.classList.contains('dark') || el.classList.contains('dark-mode') || el.classList.contains('night') || el.classList.contains('theme-dark') || el.getAttribute('data-theme') === 'dark' || el.getAttribute('data-color-scheme') === 'dark'; isDarkMode = d(h) || d(b) || window.matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => { isDarkMode = e.matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); }); }
+  function detectBrowserTheme() {
+    const h = document.documentElement;
+    const darkCls = ['dark','dark-mode','night','theme-dark','tw-dark','bp3-dark','chakra-ui-dark'];
+    const lightCls = ['light','light-mode','theme-light','tw-light'];
+    function scan(el) {
+      if (!el) return null;
+      for (const c of darkCls) if (el.classList.contains(c)) return 'dark';
+      for (const c of lightCls) if (el.classList.contains(c)) return 'light';
+      const st = el.getAttribute('style') || '';
+      if (st.includes('color-scheme: dark')) return 'dark';
+      if (st.includes('color-scheme: light')) return 'light';
+      try {
+        for (const attr of el.attributes) {
+          const v = attr.value; if (!v) continue;
+          if (v === 'dark' || v === 'dark-mode' || v === 'Dark') return 'dark';
+          if (v === 'light' || v === 'light-mode' || v === 'Light') return 'light';
+        }
+      } catch (e) {}
+      return null;
+    }
+    function apply() {
+      const r = scan(h) || scan(document.body);
+      if (r === 'dark') isDarkMode = true;
+      else if (r === 'light') isDarkMode = false;
+      else isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    }
+    let themeTimer = null;
+    function debouncedApply() { if (themeTimer) return; themeTimer = setTimeout(() => { themeTimer = null; apply(); }, 200); }
+    apply();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => apply());
+    try { new MutationObserver(() => debouncedApply()).observe(h, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+    if (document.body) try { new MutationObserver(() => debouncedApply()).observe(document.body, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+  }
   // ===================== 创建面板 =====================
   const panel = document.createElement('div');
   panel.id = 'auto-op-panel';
@@ -929,7 +962,7 @@
     infoTitleEl.textContent = t.desc || '元素详情';
     const fp = t.fingerprint || {};
     const dataAttrKeys = Object.keys(fp.dataAttrs || {});
-    const attrKeys = Object.keys(fp.attrs || {}).filter(k => fp.attrs[k]);
+    const attrKeys = Object.keys(fp.attrs || {});
     let html = '';
     const textMode = t.matchTextMode || 'exact';
     // 启用开关 + 测试按钮
