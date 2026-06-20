@@ -35,6 +35,7 @@
   let pickPassThrough = false;
   let panelFont = 'MiSans VF';
   let isPowerSave = false, powerSaveTimerID = null;
+  let _testHighlightedElements = [];
   // ===================== 配置系统 =====================
   const CONFIG_COUNT = 10;
   const CONFIG_NAMES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
@@ -66,6 +67,7 @@
   const fontLink = document.createElement('link');
   fontLink.rel = 'stylesheet';
   fontLink.href = 'https://cdn-font.hyperos.mi.com/font/css?family=MiSans_VF:VF:Chinese_Simplify,Latin&display=swap';
+  fontLink.onerror = () => { fontLink.remove(); try { document.getElementById('auto-op-font-failed').style.display = 'inline'; } catch (e) {} };
   document.head.appendChild(fontLink);
   style.textContent = `
     :root{--panel-bg:#18181b;--panel-border:#333;--panel-text:#e0e0e0;--panel-input-bg:#27272a;--panel-input-border:#333;--panel-input-text:#e0e0e0;--panel-label-text:#888;--panel-button-bg:rgba(255,255,255,0.06);--panel-button-border:rgba(255,255,255,0.1);--panel-button-text:#999;--panel-button-hover-bg:rgba(255,255,255,0.12);--panel-button-hover-text:#fff;--panel-highlight-border:#277AF7;--panel-active-border:#22c55e;--panel-active-text:#22c55e;--panel-waiting-text:#f59e0b;--panel-highlight:#f59e0b;--panel-missing-border:#dc2626;--panel-missing-text:#dc2626;--auto-op-font:"MiSans VF", system-ui}
@@ -81,7 +83,7 @@
     [data-theme="light"] .auto-op-config-item{color:#1f2937}
     [data-theme="light"] .auto-op-config-item:hover{background:rgba(0,0,0,0.06)}
     [data-theme="light"] .auto-op-config-item.active{color:#3482FF;background:rgba(0,0,0,0.04)}
-    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.3s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important}
+    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;font-family:var(--auto-op-font) !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.3s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important}
     .auto-op-header{position:sticky;top:0;background:var(--panel-bg);border-bottom:1px solid var(--panel-border);padding:14px;cursor:move;touch-action:none;z-index:1;display:flex;align-items:center;flex-shrink:0}
     .auto-op-header h3{margin:0;font-size:18px;font-weight:800;font-family:inherit;color:var(--panel-text);display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap;flex:1 1 auto;text-align:right;justify-content:flex-end}
     .auto-op-toggle{flex-shrink:0;width:30px;height:30px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:18px;font-family:var(--auto-op-font);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;border-radius:6px;line-height:1;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -108,14 +110,14 @@
     .auto-op-header-start.is-stop:hover{background:#ef4444;opacity:1 !important}
     .auto-op-header-start:active{transform:scale(0.85) !important}
     .auto-op-header-start:disabled{opacity:0.4 !important;cursor:not-allowed}
-    .auto-op-body{padding:14px;overflow:hidden auto;max-height:65vh;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease;opacity:1}
+    .auto-op-body{padding:14px;overflow:hidden auto;max-height:65vh;transition:max-height 0.25s ease,padding 0.25s ease,opacity 0.3s ease;opacity:1}
     .auto-op-body::-webkit-scrollbar{display:none}
     #auto-op-panel.collapsing .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,margin 0.25s ease,border-width 0.25s ease,opacity 0.3s ease}
     #auto-op-panel.collapsed{gap:0 !important}
     #auto-op-panel.collapsed .auto-op-header{justify-content:flex-start;border-bottom-color:transparent}
     #auto-op-panel.collapsed .auto-op-header h3{flex:0 0 auto !important;margin-left:auto}
     #auto-op-panel.collapsed .auto-op-header-start{display:flex;opacity:0;animation:auto-op-fade-in 0.3s ease 0.1s forwards}
-    #auto-op-panel.collapsed .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;visibility:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
+    #auto-op-panel.collapsed .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;visibility:hidden;contain:layout !important}
     #auto-op-panel.body-hidden .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
     .auto-op-row{margin-bottom:12px;min-height:0}
     .auto-op-row label{display:block;font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);margin-bottom:5px;letter-spacing:0.5px}
@@ -242,7 +244,8 @@
     .auto-op-info-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
     .auto-op-info-section{margin-bottom:12px}
     .auto-op-info-section:last-child{margin-bottom:0}
-    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:space-between;padding:0;margin-bottom:5px}
+    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:flex-start;padding:0;margin-bottom:5px;gap:4px;flex-wrap:wrap}
+    .auto-op-info-row-switch .auto-op-switch{margin-left:auto}
     .auto-op-info-row-switch label:first-child{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);letter-spacing:0.5px}
     .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
     .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all}
@@ -260,6 +263,19 @@
     .auto-op-target-item.disabled{border-color:var(--panel-label-text) !important;color:var(--panel-label-text) !important;opacity:0.6}
     .auto-op-target-item.disabled span{color:var(--panel-label-text) !important}
     .auto-op-target-item.disabled .auto-op-target-parent{color:var(--panel-label-text) !important}
+    .auto-op-test-btn{font-size:10px;font-weight:600;font-family:var(--auto-op-font);padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--panel-button-border);background:var(--panel-button-bg);color:var(--panel-button-text);margin-left:8px;transition:all 0.3s;white-space:nowrap;flex-shrink:0}
+    .auto-op-test-btn:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border)}
+    .auto-op-test-btn:active{transform:scale(0.92)}
+    .auto-op-test-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:6px;white-space:nowrap;flex-shrink:0}
+    .auto-op-test-result.pass{color:var(--panel-active-text)}
+    .auto-op-test-result.fail{color:var(--panel-missing-text)}
+    .auto-op-test-css-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:6px;white-space:nowrap}
+    .auto-op-test-css-result.pass{color:var(--panel-active-text)}
+    .auto-op-test-css-result.fail{color:var(--panel-missing-text)}
+    .auto-op-test-count{font-size:10px;font-weight:700;font-family:var(--auto-op-font);color:var(--panel-active-text);margin-right:4px;white-space:nowrap;flex-shrink:0;min-width:18px;text-align:right}
+    .auto-op-test-count.zero{color:var(--panel-missing-text)}
+    .auto-op-test-highlight{outline:2px solid var(--panel-active-border) !important;outline-offset:1px !important}
+    .auto-op-font-failed{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-missing-text);margin-left:6px;white-space:nowrap}
   `;
   document.head.appendChild(style);
   function detectBrowserTheme() { const h = document.documentElement, b = document.body; const d = (el) => el.classList.contains('dark') || el.classList.contains('dark-mode') || el.classList.contains('night') || el.classList.contains('theme-dark') || el.getAttribute('data-theme') === 'dark' || el.getAttribute('data-color-scheme') === 'dark'; isDarkMode = d(h) || d(b) || window.matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => { isDarkMode = e.matches; document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light'); }); }
@@ -325,7 +341,7 @@
           <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
-          <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select></div>
+          <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
         </div>
       </div>
       <div id="auto-op-refresh-progress" style="display: none;">
@@ -784,7 +800,7 @@
     panel.style.width = savedWidth || ''; panel.style.transition = savedTransition;
     if (!wasCollapsed) panel.classList.remove('collapsed');
   }
-  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; }, 350); }
+  function performCollapse() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'collapsing'; body.style.overflow = 'hidden'; toggleBtn.textContent = '+'; panel.classList.add('body-hidden'); setTimeout(() => { panel.classList.remove('body-hidden'); panel.classList.add('collapsed'); const h3W = dragHandle.querySelector('h3').scrollWidth; collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2; panel.style.width = '300px'; void panel.offsetWidth; panel.style.width = collapsedWidth + 'px'; collapseAnimPhase = 'collapsed'; }, 200); }
   function performExpand() { closeConfigMenu(); const body = panel.querySelector('.auto-op-body'); collapseAnimPhase = 'expanding'; panel.style.width = collapsedWidth + 'px'; void panel.offsetWidth; panel.style.width = '300px'; setTimeout(() => { panel.classList.remove('collapsed'); panel.style.width = ''; toggleBtn.textContent = '−'; setTimeout(() => { body.style.overflow = 'auto'; collapseAnimPhase = 'expanded'; }, 150); }, 120); }
   // ===================== 对话框 =====================
   function showConfirm(text) { return new Promise(resolve => { const modal = document.getElementById('auto-op-modal'), modalText = document.getElementById('auto-op-modal-text'), btnOk = document.getElementById('auto-op-modal-ok'), btnCancel = document.getElementById('auto-op-modal-cancel'), overlay = modal.querySelector('.auto-op-modal-overlay'), box = modal.querySelector('.auto-op-modal-box'); modalText.textContent = text; modal.style.display = 'block'; const onBoxClick = e => e.stopPropagation(); box.addEventListener('click', onBoxClick); function cleanup() { modal.style.display = 'none'; btnOk.removeEventListener('click', onOk); btnCancel.removeEventListener('click', onCancel); overlay.removeEventListener('click', onOverlay); box.removeEventListener('click', onBoxClick); } function onOk() { cleanup(); resolve(true); } function onCancel() { cleanup(); resolve(false); } function onOverlay() { cleanup(); resolve(false); } btnOk.addEventListener('click', onOk); btnCancel.addEventListener('click', onCancel); overlay.addEventListener('click', onOverlay); }); }
@@ -903,6 +919,11 @@
     const t = c.targets[index];
     if (!t) return;
     infoCurrentIndex = index;
+    clearTestHighlights();
+    // 清除父级容器高亮 + 目标元素高亮
+    document.querySelectorAll('.auto-op-parent-highlight,.auto-op-parent-highlight-Overlap,.auto-op-nearest-parent-highlight,.auto-op-selected-highlight').forEach(el => {
+      el.classList.remove('auto-op-parent-highlight', 'auto-op-parent-highlight-Overlap', 'auto-op-nearest-parent-highlight', 'auto-op-selected-highlight');
+    });
     if (infoAnimTimer) { clearTimeout(infoAnimTimer); infoAnimTimer = null; }
     infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
     infoTitleEl.textContent = t.desc || '元素详情';
@@ -911,12 +932,12 @@
     const attrKeys = Object.keys(fp.attrs || {}).filter(k => fp.attrs[k]);
     let html = '';
     const textMode = t.matchTextMode || 'exact';
-    // 启用开关
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    // 启用开关 + 测试按钮
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><button class="auto-op-test-btn" id="auto-op-test-btn">测试</button><span class="auto-op-test-css-result" id="auto-op-test-css-result"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
     // 文字匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
     // 标准属性匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标准属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标准属性匹配</label><span class="auto-op-test-result" data-test-criterion="attrs"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
     if (attrKeys.length > 0) {
       html += '<div class="auto-op-info-attrs-list">';
       attrKeys.forEach(k => {
@@ -928,13 +949,13 @@
     }
     html += '</div>';
     // 标签匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><span class="auto-op-test-result" data-test-criterion="tag"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-test-count" data-test-criterion="tag"></span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
     // id 匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>id 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchId" ${t.matchId !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">id</span><span class="auto-op-info-field-value">${fp.id ? '#' + fp.id : '-'}</span></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>id 匹配</label><span class="auto-op-test-result" data-test-criterion="id"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchId" ${t.matchId !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">id</span><span class="auto-op-test-count" data-test-criterion="id"></span><span class="auto-op-info-field-value">${fp.id ? '#' + fp.id : '-'}</span></div></div>`;
     // class 匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>class 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchClass" ${t.matchClass !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">class</span><span class="auto-op-info-field-value">${fp.className || '-'}</span></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>class 匹配</label><span class="auto-op-test-result" data-test-criterion="class"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchClass" ${t.matchClass !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">class</span><span class="auto-op-test-count" data-test-criterion="class"></span><span class="auto-op-info-field-value">${fp.className || '-'}</span></div></div>`;
     // data-* 属性匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>data-* 属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchDataAttrs" ${t.matchDataAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>data-* 属性匹配</label><span class="auto-op-test-result" data-test-criterion="dataAttrs"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchDataAttrs" ${t.matchDataAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
     if (dataAttrKeys.length > 0) {
       html += '<div class="auto-op-info-attrs-list">';
       dataAttrKeys.forEach(k => {
@@ -947,14 +968,14 @@
     html += '</div>';
     // onclick 匹配
     if (fp.onclickParam) {
-      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>onclick 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchOnclick" ${t.matchOnclick !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">参数</span><span class="auto-op-info-field-value">${fp.onclickParam}</span></div></div>`;
+      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>onclick 匹配</label><span class="auto-op-test-result" data-test-criterion="onclick"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchOnclick" ${t.matchOnclick !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">参数</span><span class="auto-op-test-count" data-test-criterion="onclick"></span><span class="auto-op-info-field-value">${fp.onclickParam}</span></div></div>`;
     }
     // 父级容器匹配
     if (t.parentSelector) {
-      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-info-field-value">${t.parentSelector}</span></div></div>`;
+      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><span class="auto-op-test-result" data-test-criterion="parent"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div></div>`;
     }
     // 自动发现
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><span class="auto-op-test-result" data-test-criterion="autoDiscover"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
     infoContentEl.innerHTML = html;
     infoOverlayEl.style.display = 'flex';
     requestAnimationFrame(() => {
@@ -965,6 +986,14 @@
   }
   function hideInfoPanel(animate) {
     infoCurrentIndex = -1;
+    clearTestHighlights();
+    refreshParentHighlights();
+    // 恢复目标元素高亮
+    const c = cv();
+    c.targets.forEach(t => {
+      if (t.element && t.element.classList && document.contains(t.element))
+        t.element.classList.add('auto-op-selected-highlight');
+    });
     if (infoAnimTimer) { clearTimeout(infoAnimTimer); infoAnimTimer = null; }
     if (animate) {
       infoOverlayEl.classList.remove('open');
@@ -980,6 +1009,118 @@
     infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
     infoOverlayEl.style.display = 'none';
   }
+  // ===================== 元素测试 =====================
+  function clearTestHighlights() {
+    _testHighlightedElements.forEach(el => { if (el && el.classList) el.classList.remove('auto-op-test-highlight'); });
+    _testHighlightedElements = [];
+    const results = infoContentEl.querySelectorAll('.auto-op-test-result, .auto-op-test-css-result');
+    results.forEach(r => { r.textContent = ''; r.className = r.className.replace(/\s*(pass|fail)/g, ''); });
+    const counts = infoContentEl.querySelectorAll('.auto-op-test-count');
+    counts.forEach(c => { c.textContent = ''; c.className = c.className.replace(/\s*zero/g, ''); });
+  }
+  function runElementTest() {
+    if (infoCurrentIndex < 0) return;
+    const c = cv(), t = c.targets[infoCurrentIndex];
+    if (!t || !t.fingerprint) return;
+    clearTestHighlights();
+    const fp = t.fingerprint;
+    const cssResult = document.getElementById('auto-op-test-css-result');
+    const isEnabled = t.enabled !== false;
+    if (!isEnabled) {
+      if (cssResult) { cssResult.textContent = '⊘ 已禁用'; cssResult.className = 'auto-op-test-css-result fail'; }
+      return;
+    }
+    function setResult(criterion, found, count) {
+      const el = infoContentEl.querySelector(`.auto-op-test-result[data-test-criterion="${criterion}"]`);
+      if (el) { el.textContent = found ? `✓ ${count}` : '✕'; el.className = `auto-op-test-result ${found ? 'pass' : 'fail'}`; }
+    }
+    function setCount(criterion, count) {
+      const el = infoContentEl.querySelector(`.auto-op-test-count[data-test-criterion="${criterion}"]`);
+      if (el) { el.textContent = count > 0 ? count : ''; el.className = `auto-op-test-count${count === 0 ? ' zero' : ''}`; }
+    }
+    // CSS 选择器测试
+    let cssFound = false, cssCount = 0, cssElements = [];
+    try {
+      if (t.strict) { const els = document.querySelectorAll(t.strict); cssElements = Array.from(els).filter(e => !panel.contains(e)); if (cssElements.length > 0) { cssFound = true; cssCount = cssElements.length; } }
+      if (!cssFound && t.loose) { const els = document.querySelectorAll(t.loose); cssElements = Array.from(els).filter(e => !panel.contains(e)); if (cssElements.length > 0) { cssFound = true; cssCount = cssElements.length; } }
+      if (!cssFound && fp.tagName) { const els = document.querySelectorAll(fp.tagName); cssElements = Array.from(els).filter(e => !panel.contains(e)); cssCount = cssElements.length; }
+    } catch (e) {}
+    if (cssResult) { cssResult.textContent = cssFound ? `✓ ${cssCount}` : '✕'; cssResult.className = `auto-op-test-css-result ${cssFound ? 'pass' : 'fail'}`; }
+    // 高亮 CSS 匹配到的元素
+    cssElements.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); });
+    // 标签匹配测试
+    if (t.matchTag !== false && fp.tagName) {
+      const els = Array.from(document.querySelectorAll(fp.tagName)).filter(e => !panel.contains(e));
+      setResult('tag', els.length > 0, els.length); setCount('tag', els.length);
+      els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); });
+    }
+    // id 匹配测试
+    if (t.matchId !== false && fp.id) {
+      const el = document.getElementById(fp.id);
+      const found = el && !panel.contains(el);
+      setResult('id', found, found ? 1 : 0); setCount('id', found ? 1 : 0);
+      if (found) { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }
+    }
+    // class 匹配测试
+    if (t.matchClass !== false && fp.className) {
+      const fpClasses = fp.className.split(/\s+/).filter(Boolean);
+      if (fpClasses.length > 0) {
+        const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e) && typeof e.className === 'string' && fpClasses.every(c => e.className.split(/\s+/).includes(c)));
+        setResult('class', els.length > 0, els.length); setCount('class', els.length);
+        els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); });
+      }
+    }
+    // 标准属性匹配测试
+    if (t.matchAttrs !== false && Object.keys(fp.attrs || {}).some(k => fp.attrs[k])) {
+      let sel = fp.tagName || '*';
+      for (const [k, v] of Object.entries(fp.attrs)) { if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`; }
+      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('attrs', els.length > 0, els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('attrs', false, 0); }
+    }
+    // data-* 属性匹配测试
+    if (t.matchDataAttrs !== false && Object.keys(fp.dataAttrs || {}).some(k => fp.dataAttrs[k])) {
+      let sel = fp.tagName || '*';
+      for (const [k, v] of Object.entries(fp.dataAttrs)) { if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`; }
+      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('dataAttrs', els.length > 0, els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('dataAttrs', false, 0); }
+    }
+    // onclick 匹配测试
+    if (t.matchOnclick !== false && fp.onclickParam) {
+      const els = Array.from(document.querySelectorAll('[onclick]')).filter(e => !panel.contains(e) && (e.getAttribute('onclick') || '').includes(fp.onclickParam));
+      setResult('onclick', els.length > 0, els.length); setCount('onclick', els.length);
+      els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); });
+    }
+    // 父级容器匹配测试
+    if (t.matchParent !== false && t.parentSelector) {
+      try { const els = Array.from(document.querySelectorAll(t.parentSelector)).filter(e => !panel.contains(e)); setResult('parent', els.length > 0, els.length); setCount('parent', els.length); } catch (e) { setResult('parent', false, 0); setCount('parent', 0); }
+    }
+    // 自动发现测试（检查父容器下是否有同类元素）
+    if (t.autoDiscover !== false && t.parentSelector) {
+      try {
+        const parent = document.querySelector(t.parentSelector);
+        if (parent) {
+          let candidates = parent.querySelectorAll(t.loose || t.strict || fp.tagName);
+          const matched = Array.from(candidates).filter(el => !panel.contains(el) && matchesFingerprint(el, t));
+          setResult('autoDiscover', matched.length > 0, matched.length);
+        } else { setResult('autoDiscover', false, 0); }
+      } catch (e) { setResult('autoDiscover', false, 0); }
+    }
+    // 文字匹配测试
+    if (t.matchText !== false && fp.text) {
+      const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
+      let matched;
+      const textMode = t.matchTextMode || 'exact';
+      if (textMode === 'fuzzy') matched = els.filter(e => { const txt = getElText(e); return txt && txt.includes(fp.text); });
+      else matched = els.filter(e => { const txt = getElText(e); return txt === fp.text; });
+      setResult('text', matched.length > 0, matched.length); setCount('text', matched.length);
+      matched.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); });
+    }
+  }
+  // 测试按钮点击
+  infoContentEl.addEventListener('click', e => {
+    const btn = e.target.closest('#auto-op-test-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    runElementTest();
+  });
   // 信息面板表单事件委托
   infoContentEl.addEventListener('change', e => {
     if (infoCurrentIndex < 0) return;
