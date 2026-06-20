@@ -35,6 +35,7 @@
   let pickPassThrough = false;
   let panelFont = 'MiSans VF';
   let isPowerSave = false, powerSaveTimerID = null;
+  let themeMode = 'auto'; // 'auto' | 'system' | 'light' | 'dark'
   let _testHighlightedElements = [];
   let panelTransparentTimer = null, panelClickRestoreTimer = null, isPanelTransparent = false;
   // ===================== 配置系统 =====================
@@ -279,39 +280,54 @@
     .auto-op-font-failed{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-missing-text);margin-left:6px;white-space:nowrap}
   `;
   document.head.appendChild(style);
+  // ===================== 主题检测 =====================
+  const DARK_CLS = ['dark','dark-mode','night','theme-dark','tw-dark','bp3-dark','chakra-ui-dark'];
+  const LIGHT_CLS = ['light','light-mode','theme-light','tw-light'];
+  function scanWebpageTheme(el) {
+    if (!el) return null;
+    for (const c of DARK_CLS) if (el.classList.contains(c)) return 'dark';
+    for (const c of LIGHT_CLS) if (el.classList.contains(c)) return 'light';
+    const st = el.getAttribute('style') || '';
+    if (st.includes('color-scheme: dark')) return 'dark';
+    if (st.includes('color-scheme: light')) return 'light';
+    try {
+      for (const attr of el.attributes) {
+        const v = attr.value; if (!v) continue;
+        if (v === 'dark' || v === 'dark-mode' || v === 'Dark') return 'dark';
+        if (v === 'light' || v === 'light-mode' || v === 'Light') return 'light';
+      }
+    } catch (e) {}
+    return null;
+  }
+  function getSystemTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+  function resolveTheme() {
+    switch (themeMode) {
+      case 'light': return 'light';
+      case 'dark': return 'dark';
+      case 'system': return getSystemTheme();
+      default: { // 'auto' — follow webpage, fallback to system
+        const r = scanWebpageTheme(document.documentElement) || scanWebpageTheme(document.body);
+        if (r === 'dark') return 'dark';
+        if (r === 'light') return 'light';
+        return getSystemTheme();
+      }
+    }
+  }
+  function applyTheme() {
+    const theme = resolveTheme();
+    isDarkMode = (theme === 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  let _themeTimer = null;
+  function debouncedApplyTheme() { if (_themeTimer) return; _themeTimer = setTimeout(() => { _themeTimer = null; applyTheme(); }, 200); }
   function detectBrowserTheme() {
+    applyTheme();
+    // 系统主题变化监听（system 模式 + auto 模式兜底）
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (themeMode === 'system' || themeMode === 'auto') applyTheme(); });
+    // 网页 class/style 变化监听（auto 模式）
     const h = document.documentElement;
-    const darkCls = ['dark','dark-mode','night','theme-dark','tw-dark','bp3-dark','chakra-ui-dark'];
-    const lightCls = ['light','light-mode','theme-light','tw-light'];
-    function scan(el) {
-      if (!el) return null;
-      for (const c of darkCls) if (el.classList.contains(c)) return 'dark';
-      for (const c of lightCls) if (el.classList.contains(c)) return 'light';
-      const st = el.getAttribute('style') || '';
-      if (st.includes('color-scheme: dark')) return 'dark';
-      if (st.includes('color-scheme: light')) return 'light';
-      try {
-        for (const attr of el.attributes) {
-          const v = attr.value; if (!v) continue;
-          if (v === 'dark' || v === 'dark-mode' || v === 'Dark') return 'dark';
-          if (v === 'light' || v === 'light-mode' || v === 'Light') return 'light';
-        }
-      } catch (e) {}
-      return null;
-    }
-    function apply() {
-      const r = scan(h) || scan(document.body);
-      if (r === 'dark') isDarkMode = true;
-      else if (r === 'light') isDarkMode = false;
-      else isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-    }
-    let themeTimer = null;
-    function debouncedApply() { if (themeTimer) return; themeTimer = setTimeout(() => { themeTimer = null; apply(); }, 200); }
-    apply();
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => apply());
-    try { new MutationObserver(() => debouncedApply()).observe(h, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
-    if (document.body) try { new MutationObserver(() => debouncedApply()).observe(document.body, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+    try { new MutationObserver(() => { if (themeMode === 'auto') debouncedApplyTheme(); }).observe(h, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+    if (document.body) try { new MutationObserver(() => { if (themeMode === 'auto') debouncedApplyTheme(); }).observe(document.body, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
   }
   // ===================== 创建面板 =====================
   const panel = document.createElement('div');
@@ -375,6 +391,7 @@
           <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+          <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="auto">跟随网页</option><option value="system">跟随系统</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
           <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
         </div>
       </div>
@@ -476,6 +493,7 @@
   const suppressFocusCheckbox = document.getElementById('auto-op-suppress-focus');
   const pickPassThroughCheckbox = document.getElementById('auto-op-pick-pass-through');
   const panelFontSelect = document.getElementById('auto-op-panel-font');
+  const themeModeSelect = document.getElementById('auto-op-theme-mode');
   const infoOverlayEl = document.getElementById('auto-op-info-overlay');
   const infoTitleEl = document.getElementById('auto-op-info-title');
   const infoContentEl = document.getElementById('auto-op-info-content');
@@ -761,7 +779,7 @@
       localStorage.removeItem(oldKey);
     } catch (e) {}
   }
-  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked, pickPassThrough, panelFont })); } catch (e) {} }
+  function saveShared() { try { localStorage.setItem(SHARED_KEY, JSON.stringify({ isAutoRefresh, refreshIntervalSec, refreshLogs, currentPage, activeConfig, wakeLock: wakeLockCheckbox.checked, suppressFocus: suppressFocusCheckbox.checked, pickPassThrough, panelFont, themeMode })); } catch (e) {} }
   function loadShared() {
     try {
       const saved = localStorage.getItem(SHARED_KEY);
@@ -776,6 +794,7 @@
       if (cfg.suppressFocus !== undefined) suppressFocusCheckbox.checked = cfg.suppressFocus;
       if (cfg.pickPassThrough !== undefined) { pickPassThrough = cfg.pickPassThrough; pickPassThroughCheckbox.checked = pickPassThrough; }
       if (cfg.panelFont !== undefined) { panelFont = cfg.panelFont; panelFontSelect.value = panelFont; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); }
+      if (cfg.themeMode !== undefined) { themeMode = cfg.themeMode; themeModeSelect.value = themeMode; applyTheme(); }
     } catch (e) {}
   }
   function saveData() { savePerConfig(activeConfig); saveShared(); }
@@ -1319,6 +1338,7 @@
   suppressFocusCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) suppressFocus(); else restoreFocus(); saveShared(); });
   pickPassThroughCheckbox.addEventListener('change', e => { e.stopPropagation(); pickPassThrough = e.target.checked; saveShared(); });
   panelFontSelect.addEventListener('change', e => { e.stopPropagation(); panelFont = e.target.value; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); saveShared(); });
+  themeModeSelect.addEventListener('change', e => { e.stopPropagation(); themeMode = e.target.value; applyTheme(); saveShared(); });
 // ===================== 选取元素 =====================
   btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); setPanelTransparent(); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
   function onPickHover(e) { if (!isPicking) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; el.classList.add('auto-op-highlight'); }
