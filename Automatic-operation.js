@@ -112,14 +112,15 @@
     .auto-op-body::-webkit-scrollbar{display:none}
     #auto-op-panel.collapsing .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,margin 0.25s ease,border-width 0.25s ease,opacity 0.3s ease}
     #auto-op-panel.collapsed{gap:0 !important}
-    #auto-op-panel.collapsed .auto-op-header{justify-content:flex-start}
+    #auto-op-panel.collapsed .auto-op-header{justify-content:flex-start;border-bottom-color:transparent}
     #auto-op-panel.collapsed .auto-op-header h3{flex:0 0 auto !important;margin-left:auto}
     #auto-op-panel.collapsed .auto-op-header-start{display:flex;opacity:0;animation:auto-op-fade-in 0.3s ease 0.1s forwards}
     #auto-op-panel.collapsed .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;visibility:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
     #auto-op-panel.body-hidden .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
     .auto-op-row{margin-bottom:12px;min-height:0}
     .auto-op-row label{display:block;font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);margin-bottom:5px;letter-spacing:0.5px}
-    .auto-op-row input[type="number"],.auto-op-row select,.auto-op-row input[type="text"]{width:100%;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:6px;color:var(--panel-input-text) !important;padding:7px 10px;font-size:13px;font-family:var(--auto-op-font);font-variant-numeric:tabular-nums;box-sizing:border-box;outline:none;-webkit-appearance:none}
+    .auto-op-row input[type="number"],.auto-op-row select,.auto-op-row input[type="text"]{width:100%;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:6px;color:var(--panel-input-text) !important;padding:7px 10px;font-size:13px;font-family:var(--auto-op-font);font-variant-numeric:tabular-nums;box-sizing:border-box;outline:none}
+    .auto-op-row select{-webkit-appearance:none;appearance:none}
     .auto-op-row input[type="number"]:focus,.auto-op-row select:focus,.auto-op-row input[type="text"]:focus{border-color:var(--panel-highlight-border) !important}
     .auto-op-row input[type="number"]::placeholder{color:var(--panel-label-text)}
     .auto-op-row select option{background:var(--panel-input-bg);color:var(--panel-input-text)}
@@ -141,7 +142,7 @@
     .auto-op-target-item.missing{border-color:var(--panel-missing-border);color:var(--panel-missing-text)}
     .auto-op-target-item span{display:block;padding-right:20px;white-space:pre-wrap;font-weight:600}
     .auto-op-target-parent{display:block;padding-right:0px !important;font-size:11px;font-weight:600;color:var(--panel-highlight-border);margin-bottom:2px}
-    .auto-op-btn-info{display:block;margin-top:4px;margin-bottom:2px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-btn-info{position:absolute;top:22px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn-info:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border)}
     .auto-op-btn-info:active{transform:scale(0.85) !important}
 .auto-op-btn-item-del{position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:10px;font-family:var(--auto-op-font);line-height:14px;text-align:center;border-radius:4px;cursor:pointer;padding:0;transition:all 0.3s;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -231,30 +232,30 @@
     .ps-switch-area .auto-op-switch input:checked+.auto-op-switch-track .auto-op-switch-thumb{transform:translateX(18px);background:#777}
     .auto-op-info-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--panel-bg);z-index:5;display:none;flex-direction:column;border-radius:0 0 12px 12px;overflow:hidden;transform:translateX(105%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1)}
     .auto-op-info-overlay.open{display:flex;transform:translateX(0)}
-    .auto-op-info-panel-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--panel-border);flex-shrink:0}
+    .auto-op-info-panel-header{display:flex;align-items:center;padding:14px;border-bottom:1px solid var(--panel-border);flex-shrink:0;line-height:1.2}
     .auto-op-info-back-btn{width:28px;height:28px;padding:0;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:14px;font-weight:700;font-family:var(--auto-op-font);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-info-back-btn:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
     .auto-op-info-back-btn:active{transform:scale(0.96) !important}
-    .auto-op-info-title{flex:1;text-align:center;font-size:13px;font-weight:600;color:var(--panel-text);font-family:var(--auto-op-font);padding:0 8px}
-    .auto-op-info-content{flex:1;padding:0;overflow-y:auto;color:var(--panel-label-text);font-size:12px;font-family:var(--auto-op-font);display:flex;flex-direction:column;scrollbar-width:none;-ms-overflow-style:none}
+    .auto-op-info-title{flex:1;text-align:left;font-size:13px;font-weight:600;color:var(--panel-text);font-family:var(--auto-op-font);padding:0 8px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-all}
+    .auto-op-info-content{flex:1;padding:14px;overflow-y:auto;color:var(--panel-label-text);font-size:12px;font-family:var(--auto-op-font);display:flex;flex-direction:column;scrollbar-width:none;-ms-overflow-style:none}
     .auto-op-info-content::-webkit-scrollbar{display:none}
     .auto-op-info-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
-    .auto-op-info-section{padding:10px 14px}
-    .auto-op-info-section:last-child{border-bottom:none}
-    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+    .auto-op-info-section{margin-bottom:12px}
+    .auto-op-info-section:last-child{margin-bottom:0}
+    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:space-between;padding:0;margin-bottom:5px}
     .auto-op-info-row-switch label:first-child{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);letter-spacing:0.5px}
-    .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:4px 0;gap:8px}
-    .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);white-space:nowrap;flex-shrink:0}
+    .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
+    .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all}
     .auto-op-info-field-value{font-size:11px;font-family:var(--auto-op-font);color:var(--panel-text);word-break:break-all;text-align:right;flex:1;min-width:0}
-    .auto-op-info-field input[type="text"]{flex:1;min-width:0;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-field input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
     .auto-op-info-field input[type="text"]:focus{border-color:var(--panel-highlight-border)}
-    .auto-op-info-field select{background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer}
+    .auto-op-info-field select{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
     .auto-op-info-field select:focus{border-color:var(--panel-highlight-border)}
     .auto-op-info-field select option{background:var(--panel-input-bg);color:var(--panel-input-text)}
-    .auto-op-info-attrs-list{display:flex;flex-direction:column;gap:3px;margin-top:4px}
-    .auto-op-info-attr-row{display:flex;align-items:center;gap:6px}
-    .auto-op-info-attr-row .auto-op-info-attr-key{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);white-space:nowrap;flex-shrink:0;min-width:50px;overflow:hidden;text-overflow:ellipsis}
-    .auto-op-info-attr-row input[type="text"]{flex:1;min-width:0;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-attrs-list{display:flex;flex-direction:column;gap:0;margin-top:0}
+    .auto-op-info-attr-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
+    .auto-op-info-attr-row .auto-op-info-attr-key{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all;overflow:hidden;text-overflow:ellipsis}
+    .auto-op-info-attr-row input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg);border:1px solid var(--panel-input-border);border-radius:4px;color:var(--panel-input-text);padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
     .auto-op-info-attr-row input[type="text"]:focus{border-color:var(--panel-highlight-border)}
     .auto-op-target-item.disabled{border-color:var(--panel-label-text) !important;color:var(--panel-label-text) !important;opacity:0.6}
     .auto-op-target-item.disabled span{color:var(--panel-label-text) !important}
@@ -656,7 +657,9 @@
           enabled: t.enabled !== false, matchTag: t.matchTag !== false,
           matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact',
           matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false,
-          matchOnclick: t.matchOnclick !== false, autoDiscover: t.autoDiscover !== false
+          matchOnclick: t.matchOnclick !== false, autoDiscover: t.autoDiscover !== false,
+          matchParent: t.matchParent !== false,
+          matchId: t.matchId !== false, matchClass: t.matchClass !== false
         }))
       }));
     } catch (e) { console.error('[AUTO_OP] savePerConfig 异常:', e); }
@@ -677,7 +680,9 @@
       c.targets = [];
       (cfg.targets || []).forEach(t => {
         const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
-        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null, enabled: t.enabled !== false, matchTag: t.matchTag !== false, matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact', matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false, matchOnclick: t.matchOnclick !== false, autoDiscover };
+        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null, enabled: t.enabled !== false, matchTag: t.matchTag !== false, matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact', matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false, matchOnclick: t.matchOnclick !== false, autoDiscover,
+          matchParent: t.matchParent !== false,
+          matchId: t.matchId !== false, matchClass: t.matchClass !== false };
         const found = tryFindTarget({ ...base, element: null });
         if (found && found.length > 0) {
           found.forEach(el => {
@@ -746,15 +751,15 @@
   function buildSelectors(el) { const base = buildBaseSelector(el); if (el.id) return { strict: base, loose: base }; let strict = base; const parent = el.parentElement; if (parent) { try { const sameTagSiblings = Array.from(parent.children).filter(c => c.tagName === el.tagName); if (sameTagSiblings.length > 1) strict += ':nth-of-type(' + (sameTagSiblings.indexOf(el) + 1) + ')'; } catch (e) {} } return { strict, loose: base }; }
   function isInputField(el) { if (!el) return false; if (el.isContentEditable || el.tagName === 'TEXTAREA') return true; if (el.tagName === 'INPUT') { const t = (el.type || '').toLowerCase(); return t !== 'checkbox' && t !== 'radio' && t !== 'hidden' && t !== 'file' && t !== 'color' && t !== 'submit' && t !== 'button' && t !== 'reset' && t !== 'image'; } return false; }
   function getElText(el) { let text = (el.textContent || '').trim(); if (!text) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim() && val.trim().length < 50) { text = val.trim(); break; } } } if (!text && el.children.length > 0) { for (const child of el.children) { const cText = (child.textContent || '').trim(); if (cText) { text = cText; break; } for (const attr of ['alt', 'title']) { const val = child.getAttribute(attr); if (val && val.trim()) { text = val.trim(); break; } } if (text) break; } } if (!text) { try { for (const pseudo of ['::before', '::after']) { const computedStyle = window.getComputedStyle(el, pseudo); let content = computedStyle.getPropertyValue('content'); if (content && content !== 'none' && content !== 'normal' && content !== '""') { content = content.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim(); if (content && !(content.length <= 2 && /[\uE000-\uF8FF]/.test(content))) { text = content; break; } } } } catch (e) {} } return text; }
-  function getElementFingerprint(el) { const dataAttrs = {}, attrs = {}; const keyAttrs = ['href', 'src', 'value', 'type', 'name', 'role', 'alt', 'title', 'placeholder', 'action', 'method', 'onclick']; Array.from(el.attributes).forEach(attr => { if (attr.name.startsWith('data-')) dataAttrs[attr.name] = attr.value; else if (keyAttrs.includes(attr.name)) attrs[attr.name] = attr.value; }); let onclickParam = ''; if (attrs.onclick) { const match = attrs.onclick.match(/useItem\((\d+)\)/); if (match) onclickParam = match[1]; } let text = getElText(el); if (!text && isInputField(el) && el.value != null && String(el.value).trim()) text = String(el.value).trim(); return { tagName: el.tagName.toLowerCase(), text, dataAttrs, attrs, onclickParam, hasStrong: !!el.id || Object.keys(dataAttrs).length > 0 || keyAttrs.some(k => attrs[k]) }; }
-  function matchesFingerprint(el, t) { if (!el) return false; const fp = t.fingerprint; const matchTag = t.matchTag !== false, matchText = t.matchText !== false, matchDataAttrs = t.matchDataAttrs !== false, matchAttrs = t.matchAttrs !== false, matchOnclick = t.matchOnclick !== false, textMode = t.matchTextMode || 'exact'; if (matchTag && el.tagName.toLowerCase() !== fp.tagName) return false; if (matchDataAttrs) { for (const [k, v] of Object.entries(fp.dataAttrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchAttrs) { for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchOnclick && fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) return false; } if (matchText && fp.text) { let elText; if (fp.hasStrong) { elText = (el.textContent || '').trim(); if (!elText) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } } if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) elText = String(el.value).trim(); } else { elText = getElText(el); } if (!elText) return false; if (textMode === 'fuzzy') { if (!elText.includes(fp.text)) return false; } else { if (elText !== fp.text) return false; } } return true; }
+  function getElementFingerprint(el) { const dataAttrs = {}, attrs = {}; const keyAttrs = ['href', 'src', 'value', 'type', 'name', 'role', 'alt', 'title', 'placeholder', 'action', 'method', 'onclick']; Array.from(el.attributes).forEach(attr => { if (attr.name.startsWith('data-')) dataAttrs[attr.name] = attr.value; else if (keyAttrs.includes(attr.name)) attrs[attr.name] = attr.value; }); let onclickParam = ''; if (attrs.onclick) { const match = attrs.onclick.match(/useItem\((\d+)\)/); if (match) onclickParam = match[1]; } let text = getElText(el); if (!text && isInputField(el) && el.value != null && String(el.value).trim()) text = String(el.value).trim(); return { tagName: el.tagName.toLowerCase(), text, dataAttrs, attrs, onclickParam, id: el.id || '', className: (typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('auto-op-')).join(' ') : ''), hasStrong: !!el.id || Object.keys(dataAttrs).length > 0 || keyAttrs.some(k => attrs[k]) }; }
+  function matchesFingerprint(el, t) { if (!el) return false; const fp = t.fingerprint; const matchTag = t.matchTag !== false, matchText = t.matchText !== false, matchDataAttrs = t.matchDataAttrs !== false, matchAttrs = t.matchAttrs !== false, matchOnclick = t.matchOnclick !== false, matchId = t.matchId !== false, matchClass = t.matchClass !== false, textMode = t.matchTextMode || 'exact'; if (matchTag && el.tagName.toLowerCase() !== fp.tagName) return false; if (matchId && fp.id && el.id !== fp.id) return false; if (matchClass && fp.className) { const elCls = (typeof el.className === 'string' ? el.className.trim() : ''); const fpClasses = fp.className.split(/\s+/).filter(Boolean); const elClasses = elCls.split(/\s+/).filter(Boolean); if (!fpClasses.every(c => elClasses.includes(c))) return false; } if (matchDataAttrs) { for (const [k, v] of Object.entries(fp.dataAttrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchAttrs) { for (const [k, v] of Object.entries(fp.attrs)) { if (v && el.getAttribute(k) !== v) return false; } } if (matchOnclick && fp.onclickParam) { const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/); if (m && m[1] !== fp.onclickParam) return false; } if (matchText && fp.text) { let elText; if (fp.hasStrong) { elText = (el.textContent || '').trim(); if (!elText) { for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) { const val = el.getAttribute(attr); if (val && val.trim()) { elText = val.trim(); break; } } } if (!elText && isInputField(el) && el.value != null && String(el.value).trim()) elText = String(el.value).trim(); } else { elText = getElText(el); } if (!elText) return false; if (textMode === 'fuzzy') { if (!elText.includes(fp.text)) return false; } else { if (elText !== fp.text) return false; } } return true; }
   let _queryCache = null;
   function beginQueryCycle() { _queryCache = new Map(); }
   function cachedQuery(root, selector) { if (!_queryCache) _queryCache = new Map(); const key = (root === document ? '_doc' : root) + '|' + selector; if (_queryCache.has(key)) return _queryCache.get(key); const result = Array.from(root.querySelectorAll(selector)); _queryCache.set(key, result); return result; }
-  function tryFindTarget(targetObj) { if (!targetObj || !targetObj.fingerprint) return null; const fp = targetObj.fingerprint; function verifyList(list) { const matched = []; for (const el of list) { if (panel.contains(el)) continue; if (matchesFingerprint(el, targetObj)) matched.push(el); } return matched.length > 0 ? matched : null; } let root = document; if (targetObj.parentSelector) { try { const p = document.querySelector(targetObj.parentSelector); if (p) root = p; } catch (e) {} } try { if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) return found; } const found = verifyList(cachedQuery(root, fp.tagName)); if (found) return found; } catch (e) {} if (root !== document) { try { if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) return found; } } catch (e) {} } return null; }
+  function tryFindTarget(targetObj) { if (!targetObj || !targetObj.fingerprint) return null; const fp = targetObj.fingerprint; function verifyList(list) { const matched = []; for (const el of list) { if (panel.contains(el)) continue; if (matchesFingerprint(el, targetObj)) matched.push(el); } return matched.length > 0 ? matched : null; } let root = document; const useParent = targetObj.matchParent !== false && targetObj.parentSelector; if (useParent) { try { const p = document.querySelector(targetObj.parentSelector); if (p) root = p; } catch (e) {} } try { if (targetObj.strict) { const found = verifyList(cachedQuery(root, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(root, targetObj.loose)); if (found) return found; } const found = verifyList(cachedQuery(root, fp.tagName)); if (found) return found; } catch (e) {} if (root !== document) { try { if (targetObj.strict) { const found = verifyList(cachedQuery(document, targetObj.strict)); if (found) return found; } if (targetObj.loose) { const found = verifyList(cachedQuery(document, targetObj.loose)); if (found) return found; } } catch (e) {} } return null; }
   function resolveParentInfo(el) { const result = { nearestParent: el.parentElement, blueParent: null }; let ancestor = el.parentElement; while (ancestor && ancestor !== document.body) { const s = buildBaseSelector(ancestor); if (s !== ancestor.tagName.toLowerCase()) { result.blueParent = ancestor; break; } ancestor = ancestor.parentElement; } return result; }
   function refreshParentHighlights() { if (isPowerSave) return; const c = cv(); const newBlueMap = new Map(), newNearestMap = new Map(); for (const t of c.targets) { if (!t.element || !document.contains(t.element)) continue; if (t.blueParent && document.contains(t.blueParent) && !panel.contains(t.blueParent)) { if (!newBlueMap.has(t.blueParent)) newBlueMap.set(t.blueParent, []); newBlueMap.get(t.blueParent).push(t.element); } let nearest = t.nearestParent || t.element.parentElement; if (nearest && document.contains(nearest) && !panel.contains(nearest)) { if (!newNearestMap.has(nearest)) newNearestMap.set(nearest, []); newNearestMap.get(nearest).push(t.element); } } for (const t of c.targets) { if (t._blueParent && !newBlueMap.has(t._blueParent)) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); t._blueParent = null; } if (t._nearestEl && !newNearestMap.has(t._nearestEl)) { t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); t._nearestEl = null; } } for (const [parent, children] of newBlueMap) { const isOverlap = newNearestMap.has(parent); if (isOverlap) { parent.classList.remove('auto-op-parent-highlight'); parent.classList.add('auto-op-parent-highlight-Overlap'); } else { parent.classList.remove('auto-op-parent-highlight-Overlap'); parent.classList.add('auto-op-parent-highlight'); } for (const child of children) { const t = c.targets.find(tt => tt.element === child); if (t) t._blueParent = parent; } } for (const [parent, children] of newNearestMap) { if (newBlueMap.has(parent)) continue; if (!parent.classList.contains('auto-op-nearest-parent-highlight')) parent.classList.add('auto-op-nearest-parent-highlight'); for (const child of children) { const t = c.targets.find(tt => tt.element === child); if (t) t._nearestEl = parent; } } }
-  function discoverNewTargetsFor(ci) { const c = configs[ci]; if (c.targets.length === 0 || !c.targets.some(t => t.autoDiscover !== false)) return; const existingElements = new Set(c.targets.map(t => t.element)); for (const el of c.discoveredElements) { if (!document.contains(el)) c.discoveredElements.delete(el); } const newTargets = [], seenKeys = new Set(); for (const t of c.targets) { if (t.autoDiscover === false || !t.parentSelector) continue; const selector = t.loose || t.strict, seenKey = selector + '|' + t.parentSelector; if (seenKeys.has(seenKey)) continue; seenKeys.add(seenKey); let parent; try { parent = document.querySelector(t.parentSelector); } catch (e) {} if (!parent) continue; let candidates; try { candidates = parent.querySelectorAll(selector); } catch (e) { candidates = []; } if (!candidates || candidates.length === 0) { try { candidates = parent.querySelectorAll(t.fingerprint.tagName); } catch (e) { candidates = []; } } for (const el of candidates) { if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t)) continue; c.discoveredElements.add(el); if (ci === activeConfig) el.classList.add('auto-op-selected-highlight'); const pi = resolveParentInfo(el); newTargets.push({ element: el, strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain, nearestParent: pi.nearestParent, blueParent: pi.blueParent, isAuto: true, missCount: 0, enabled: t.enabled, matchTag: t.matchTag, matchText: t.matchText, matchTextMode: t.matchTextMode, matchDataAttrs: t.matchDataAttrs, matchAttrs: t.matchAttrs, matchOnclick: t.matchOnclick, autoDiscover: t.autoDiscover }); } } if (newTargets.length > 0) c.targets.push(...newTargets); }
+  function discoverNewTargetsFor(ci) { const c = configs[ci]; if (c.targets.length === 0 || !c.targets.some(t => t.autoDiscover !== false)) return; const existingElements = new Set(c.targets.map(t => t.element)); for (const el of c.discoveredElements) { if (!document.contains(el)) c.discoveredElements.delete(el); } const newTargets = [], seenKeys = new Set(); for (const t of c.targets) { if (t.autoDiscover === false || !t.parentSelector) continue; const selector = t.loose || t.strict, seenKey = selector + '|' + t.parentSelector; if (seenKeys.has(seenKey)) continue; seenKeys.add(seenKey); let parent; try { parent = document.querySelector(t.parentSelector); } catch (e) {} if (!parent) continue; let candidates; try { candidates = parent.querySelectorAll(selector); } catch (e) { candidates = []; } if (!candidates || candidates.length === 0) { try { candidates = parent.querySelectorAll(t.fingerprint.tagName); } catch (e) { candidates = []; } } for (const el of candidates) { if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t)) continue; c.discoveredElements.add(el); if (ci === activeConfig) el.classList.add('auto-op-selected-highlight'); const pi = resolveParentInfo(el); newTargets.push({ element: el, strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: t.isInput, matchMode: t.matchMode, parentSelector: t.parentSelector, parentChain: t.parentChain, nearestParent: pi.nearestParent, blueParent: pi.blueParent, isAuto: true, missCount: 0, enabled: t.enabled, matchTag: t.matchTag, matchText: t.matchText, matchTextMode: t.matchTextMode, matchDataAttrs: t.matchDataAttrs, matchAttrs: t.matchAttrs, matchOnclick: t.matchOnclick, autoDiscover: t.autoDiscover, matchParent: t.matchParent, matchId: t.matchId, matchClass: t.matchClass }); } }if (newTargets.length > 0) c.targets.push(...newTargets); }
   // ===================== 分页 =====================
   function updatePageHeight() { const pages = pageContainer.querySelectorAll('.auto-op-page'), el = pages[currentPage]; if (!el) return; const h = el.offsetHeight; if (h > 0) pageContainer.style.height = (h + 2) + 'px'; }
   function goToPage(page, animated) {
@@ -905,22 +910,15 @@
     const dataAttrKeys = Object.keys(fp.dataAttrs || {});
     const attrKeys = Object.keys(fp.attrs || {}).filter(k => fp.attrs[k]);
     let html = '';
+    const textMode = t.matchTextMode || 'exact';
     // 启用开关
     html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
-    // 自动发现
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
-    // 标签匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
     // 文字匹配
-    const textMode = t.matchTextMode || 'exact';
     html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
-    // 属性匹配
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
-    if (dataAttrKeys.length > 0 || attrKeys.length > 0) {
+    // 标准属性匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标准属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+    if (attrKeys.length > 0) {
       html += '<div class="auto-op-info-attrs-list">';
-      dataAttrKeys.forEach(k => {
-        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
-      });
       attrKeys.forEach(k => {
         html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
       });
@@ -929,6 +927,34 @@
       html += '<div class="auto-op-info-field"><span class="auto-op-info-field-value">无特殊属性</span></div>';
     }
     html += '</div>';
+    // 标签匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
+    // id 匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>id 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchId" ${t.matchId !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">id</span><span class="auto-op-info-field-value">${fp.id ? '#' + fp.id : '-'}</span></div></div>`;
+    // class 匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>class 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchClass" ${t.matchClass !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">class</span><span class="auto-op-info-field-value">${fp.className || '-'}</span></div></div>`;
+    // data-* 属性匹配
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>data-* 属性匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchDataAttrs" ${t.matchDataAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+    if (dataAttrKeys.length > 0) {
+      html += '<div class="auto-op-info-attrs-list">';
+      dataAttrKeys.forEach(k => {
+        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="auto-op-info-field"><span class="auto-op-info-field-value">无 data-* 属性</span></div>';
+    }
+    html += '</div>';
+    // onclick 匹配
+    if (fp.onclickParam) {
+      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>onclick 匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchOnclick" ${t.matchOnclick !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">参数</span><span class="auto-op-info-field-value">${fp.onclickParam}</span></div></div>`;
+    }
+    // 父级容器匹配
+    if (t.parentSelector) {
+      html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-info-field-value">${t.parentSelector}</span></div></div>`;
+    }
+    // 自动发现
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
     infoContentEl.innerHTML = html;
     infoOverlayEl.style.display = 'flex';
     requestAnimationFrame(() => {
@@ -976,7 +1002,21 @@
         break;
       case 'toggle-matchAttrs':
         t.matchAttrs = target.checked;
+        break;
+      case 'toggle-matchDataAttrs':
         t.matchDataAttrs = target.checked;
+        break;
+      case 'toggle-matchOnclick':
+        t.matchOnclick = target.checked;
+        break;
+      case 'toggle-matchId':
+        t.matchId = target.checked;
+        break;
+      case 'toggle-matchClass':
+        t.matchClass = target.checked;
+        break;
+      case 'toggle-matchParent':
+        t.matchParent = target.checked;
         break;
       case 'toggle-autoDiscover':
         t.autoDiscover = target.checked;
@@ -1025,7 +1065,7 @@
       let stateClass = 'active';
       if (isDisabled) stateClass = 'disabled';
       else if (!isValid) stateClass = 'missing';
-      html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="查看详情">ⓘ</button>${t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up" data-action="move-up" data-index="${i}" title="上移">↑</button><button class="auto-op-btn-move auto-op-btn-move-down" data-action="move-down" data-index="${i}" title="下移">↓</button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}">✕</button></div>`;
+      html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span>${t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up" data-action="move-up" data-index="${i}" title="上移">↑</button><button class="auto-op-btn-move auto-op-btn-move-down" data-action="move-down" data-index="${i}" title="下移">↓</button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}">✕</button><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="查看详情">ⓘ</button></div>`;
     });
     targetListContainer.innerHTML = '<div class="auto-op-target-list">' + html + '</div>';
     updateTargetCount();
@@ -1089,7 +1129,7 @@
     const isInput = isInputField(el); if (isInput) desc += ' (isInput)';
     let parentSelector = '', parentChain = [], nearestParent = el.parentElement, blueParent = null, ancestor = el.parentElement;
     while (ancestor && ancestor !== document.body) { const s = buildBaseSelector(ancestor); if (s !== ancestor.tagName.toLowerCase()) { if (!parentSelector) parentSelector = s; if (!blueParent) blueParent = ancestor; let pdesc = ancestor.tagName.toLowerCase(); if (ancestor.id) pdesc += '#' + ancestor.id; if (ancestor.className && typeof ancestor.className === 'string') { const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.'); if (cls) pdesc += '.' + cls; } parentChain.push({ selector: s, desc: pdesc }); } ancestor = ancestor.parentElement; }
-    const targetObj = { element: el, strict: sels.strict, loose: sels.loose, fingerprint: fp, desc, isInput, parentSelector, parentChain, nearestParent, blueParent, isAuto: false, missCount: 0, _isValid: true, enabled: true, matchTag: true, matchText: true, matchTextMode: 'exact', matchDataAttrs: true, matchAttrs: true, matchOnclick: true, autoDiscover: false };
+    const targetObj = { element: el, strict: sels.strict, loose: sels.loose, fingerprint: fp, desc, isInput, parentSelector, parentChain, nearestParent, blueParent, isAuto: false, missCount: 0, _isValid: true, enabled: true, matchTag: true, matchText: true, matchTextMode: 'exact', matchDataAttrs: true, matchAttrs: true, autoDiscover: false, matchParent: !!parentSelector, matchOnclick: !!fp.onclickParam, matchId: !!fp.id, matchClass: !!fp.className };
     if (c.isMultiMode) { c.targets.push(targetObj); el.classList.add('auto-op-selected-highlight'); stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`; }
     else { c.targets.forEach(t => { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); }); c.targets = [targetObj]; el.classList.add('auto-op-selected-highlight'); exitPickMode(); if (c.targets.length > 0) stateSpan.textContent = '就绪'; }
     updateTargetUI(); updateTargetCount(); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility();
