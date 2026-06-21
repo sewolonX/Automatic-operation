@@ -2,8 +2,57 @@
 
 [油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充）元素。
 
+## 仓库概览
+
+| 项目 | 说明 |
+| --- | --- |
+| **仓库地址** | [github.com/sewolonX/Automatic-operation](https://github.com/sewolonX/Automatic-operation) |
+| **主分支** | `main` |
+| **许可证** | MIT |
+| **语言** | JavaScript（纯 JS，无构建工具） |
+| **运行时** | Tampermonkey / Greasemonkey / Violentmonkey |
+| **运行位置** | `document-idle`，匹配 `*://*/*`（所有 HTTP(S) 页面） |
+| **外部依赖** | 无（字体 CDN 可选，加载失败自动回退 `system-ui`） |
+
+### 文件结构
+
+```text
+Automatic-operation/
+├── Automatic-operation.js    # 主脚本（~1580 行），全部功能
+├── Automatic-clicker.js      # 早期简化版（~777 行），单目标点击器
+├── README.md                 # 本文档
+└── LICENSE                   # MIT 许可证
+```
+
+### 主脚本代码行数分布
+
+| 模块 | 大致行数 | 内容 |
+| --- | --- | --- |
+| 用户脚本元数据 | 1–12 | `@name` `@version` `@match` 等 |
+| 全局状态 & 配置初始化 | 13–60 | 变量声明、10 套 `configs[]` |
+| CSS 注入 | 67–293 | 暗/亮双主题 ~200 行 CSS |
+| 主题检测 & 监听管理 | 294–355 | `scanWebpageTheme` `startThemeWatchers` `stopThemeWatchers` |
+| DOM 构建（面板 + 覆盖层） | 356–460 | 3 页面板、信息覆盖层、省电覆盖层、配置菜单 |
+| DOM 引用缓存 | 461–520 | 所有 `getElementById` 引用 |
+| 配置菜单 & 省电模式 | 521–660 | 菜单开关、随机位置、全屏管理 |
+| `switchConfig` — 配置切换 | 661–730 | 保存当前→清高亮→加载新→同步 UI |
+| 持久化（save / load / migrate） | 731–840 | 3 级存储键、旧数据迁移 |
+| 元素工具函数 | 841–855 | `buildSelectors` `getElText` `getElementFingerprint` `matchesFingerprint` |
+| 查找 & 发现 & 查询缓存 | 856–870 | `tryFindTarget` `discoverNewTargetsFor` `cachedQuery` `beginQueryCycle` |
+| 分页 & 折叠 & 透明度 & 对话框 | 871–910 | `goToPage` `performCollapse` `performExpand` `showConfirm` |
+| 自动刷新 | 911–960 | 进度条、触发刷新、日志 |
+| 自动启动 & 运行计时 | 961–980 | 倒计时、`startElapsedTimer` |
+| 目标列表事件委托 | 981–1020 | `delete` `info` `move-up` `move-down` |
+| 信息面板（show / hide） | 1021–1115 | 详情 HTML 构建、滑入/滑出动画 |
+| 元素测试 `runElementTest` | 1116–1220 | 9 项逐一测试 + `setResult` / `setCount` |
+| 信息面板事件委托 | 1221–1295 | 14 种 `data-info-action` 分发 |
+| UI 更新 & 拖拽 & 全局事件 | 1296–1370 | `updateTargetUI` `updateTargetCount` 拖拽处理 |
+| 元素选取 & 开始/停止操作 | 1371–1565 | `selectTarget` `startClickingFor` `doClickFor` `stopClickingFor` |
+| 初始化 | 1566–1588 | 主题→加载→折叠→恢复状态→自动启动 |
+
 ## 目录
 
+- [仓库概览](#仓库概览)
 - [架构概览](#架构概览)
 - [安装](#安装)
 - [界面概览](#界面概览)
@@ -23,6 +72,9 @@
   - [十三、面板交互](#十三面板交互)
   - [十四、存储与持久化](#十四存储与持久化)
   - [十五、跨刷新状态恢复](#十五跨刷新状态恢复)
+- [十六、SVG 图标一览](#十六svg-图标一览)
+- [十七、主题监听优化](#十七主题监听优化)
+- [十八、元素详情面板按钮透明度](#十八元素详情面板按钮透明度)
 - [参数参考](#参数参考)
 - [技术参考](#技术参考)
 - [文件](#文件)
@@ -86,8 +138,12 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展
-2. [点击安装脚本](https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js)
-3. 打开任意网页，左上角出现 **自动操作** 面板（初始为折叠状态）
+2. 选择版本安装脚本，打开任意网页，左上角出现 **自动操作** 面板（初始为折叠状态）
+
+| 版本 | 链接 | 说明 |
+| --- | --- | --- |
+| **正式版** | [点击安装](https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js) | OSS CDN，稳定版本 |
+| **Dev 版** | [点击安装](https://github.com/sewolonX/Automatic-operation/raw/refs/heads/main/Automatic-operation.js) | GitHub 直连，随 `main` 分支更新 |
 
 ---
 
@@ -186,14 +242,35 @@ selectTarget(el)
 | **标准属性匹配** | `matchAttrs` | `true` | 每个 `fp.attrs[key] === el.getAttribute(key)`，值留空则只检查属性存在 |
 | **data-\* 匹配** | `matchDataAttrs` | `true` | 每个 `fp.dataAttrs[key] === el.getAttribute(key)`，值留空则只检查属性存在 |
 | **onclick 匹配** | `matchOnclick` | `true` | `el.onclick` 中包含 `useItem(fp.onclickParam)` |
-| **父级容器匹配** | `matchParent` | `true` | 限定在 `parentSelector` 内查找 |
+| **父级容器匹配** | `matchParent` | `!!parentSelector` | `parentSelector` 容器存在 + 元素在其内部（`parent.contains(el)`），双重校验（搜索范围 + 指纹匹配） |
 | **自动发现** | `autoDiscover` | `true` | 运行时扫描父容器中断增的匹配元素 |
 
-#### 2.2 `matchesFingerprint(el, t)` — 核心匹配函数
+#### 2.2 `parentSelector` — 父级容器生成
+
+选取元素时，从目标父级向上遍历祖先，找到**第一个有 id 或 class 的祖先**：
+
+```text
+body → div#app → div.main-content → ul.list → li → [目标 button]
+                                            ↑ 有 class，选中
+                                            parentSelector = "ul.list"
+```
+
+- `buildBaseSelector(ancestor)` 返回纯标签名（如 `li`）→ 跳过
+- 返回 `#id` 或 `tag.class` → 设为 `parentSelector`
+- 后续祖先继续收集到 `parentChain`（详情面板显示层级关系）
+- `matchParent` 开关在有 `parentSelector` 时默认 `true`
+
+#### 2.3 `matchesFingerprint(el, t)` — 核心匹配函数
 
 ```js
 function matchesFingerprint(el, t) {
   const fp = t.fingerprint;
+  // 0. 父级容器校验 —— 元素必须在 parentSelector 容器内
+  if (matchParent && t.parentSelector) {
+    let parent;
+    try { parent = document.querySelector(t.parentSelector); } catch(e) {}
+    if (!parent || !parent.contains(el)) return false;
+  }
   // 1. 标签匹配（开关控制）
   if (matchTag && el.tagName.toLowerCase() !== fp.tagName) return false;
   // 2. id 匹配
@@ -227,7 +304,7 @@ function matchesFingerprint(el, t) {
 }
 ```
 
-#### 2.3 `tryFindTarget(targetObj)` — 目标查找
+#### 2.4 `tryFindTarget(targetObj)` — 目标查找
 
 ```
 tryFindTarget(targetObj)
@@ -243,7 +320,7 @@ tryFindTarget(targetObj)
   └─ 若 root != document 时未找到 → 回退到 document 全局查找
 ```
 
-#### 2.4 `discoverNewTargetsFor(ci)` — 自动发现
+#### 2.5 `discoverNewTargetsFor(ci)` — 自动发现
 
 运行时在每个操作周期调用，扫描父容器中新增的匹配元素：
 
@@ -701,6 +778,49 @@ saveRefreshState()
     │           └─ 恢复运行计时和操作计数
     └─ 无刷新状态但有 isAutoRefresh → 正常启动倒计时
 ```
+
+### 十六、SVG 图标一览
+
+面板内所有图标均为内联 SVG，通过 `fill="currentColor"` 继承按钮文字色。
+
+| 图标 | 位置 | 尺寸 | 说明 |
+| --- | --- | --- | --- |
+| chevron 箭头 | 页面切换 `<` `>` 按钮 | 14px | 左 / 右（`scaleX(-1)` 镜像） |
+| 长箭头 + 横线 | 详情面板返回按钮 | 14px | 指向左侧 |
+| 长箭头（旋转） | 目标元素上移 / 下移 | 10px | `rotate(90deg)` ↑ / `rotate(-90deg)` ↓ |
+| 三角播放 | 折叠标题栏播放按钮 | 14px | 停止状态显示，绿色背景 |
+| 双竖线停止 | 折叠标题栏停止按钮 | 14px | 运行状态显示，红色背景（`is-stop`） |
+| 展开箭头 | 折叠/展开按钮 | 14px | 面板折叠时显示（箭头向外） |
+| 收起箭头 | 折叠/展开按钮 | 14px | 面板展开时显示（箭头向内） |
+| 列表图标 | 目标元素查看详情 ⓘ | 12px | 3 条横线 + 展开角标 |
+| 垃圾桶 | 目标元素删除 ✕ | 10px | hover 变红 `#dc2626` |
+| ① ~ ⑩ 编号 | 配置切换按钮 + 下拉菜单 | 20px / 20px | 圆角矩形框内数字 |
+
+> **兼容修复**：按钮内嵌 SVG 后，`e.target` 可能指向 `<path>` 元素。目标列表事件委托已改用 `e.target.closest('[data-action]')` 向上查找，确保点击 SVG 内部仍能触发。
+
+### 十七、主题监听优化
+
+为减少不必要的 DOM 监听，系统主题检测器在非 `auto` 模式下自动关闭：
+
+```text
+startThemeWatchers()
+  ├─ stopThemeWatchers()           → 先清理旧监听
+  ├─ mode = 'system' | 'auto'      → matchMedia 监听系统主题切换
+  ├─ mode = 'auto'                 → + MutationObserver 监听网页 class/style 变化
+  └─ mode = 'light' | 'dark'       → 无监听（颜色固定）
+```
+
+| 模式 | matchMedia | MutationObserver × 2 |
+| --- | :---: | :---: |
+| `light` / `dark` | 关闭 | 关闭 |
+| `system` | 开启 | 关闭 |
+| `auto` | 开启 | 开启 |
+
+切换模式时自动调用 `startThemeWatchers()` 重建，确保零浪费。
+
+### 十八、元素详情面板按钮透明度
+
+目标列表中的小按钮（上移、下移、删除、查看详情）默认 `opacity: 0.9`，hover 恢复 `opacity: 1`。避免按钮过于醒目干扰目标文字阅读，悬停时完整显示。
 
 ---
 

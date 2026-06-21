@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.1.2
+// @version      5.1.3
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -332,14 +332,28 @@
   }
   let _themeTimer = null;
   function debouncedApplyTheme() { if (_themeTimer) return; _themeTimer = setTimeout(() => { _themeTimer = null; applyTheme(); }, 200); }
+  let _sysThemeListener = null, _htmlObserver = null, _bodyObserver = null;
+  function startThemeWatchers() {
+    stopThemeWatchers();
+    if (themeMode === 'system' || themeMode === 'auto') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', applyTheme);
+      _sysThemeListener = { mq, fn: applyTheme };
+    }
+    if (themeMode === 'auto') {
+      const h = document.documentElement;
+      try { _htmlObserver = new MutationObserver(() => debouncedApplyTheme()); _htmlObserver.observe(h, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+      if (document.body) try { _bodyObserver = new MutationObserver(() => debouncedApplyTheme()); _bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+    }
+  }
+  function stopThemeWatchers() {
+    if (_sysThemeListener) { _sysThemeListener.mq.removeEventListener('change', _sysThemeListener.fn); _sysThemeListener = null; }
+    if (_htmlObserver) { _htmlObserver.disconnect(); _htmlObserver = null; }
+    if (_bodyObserver) { _bodyObserver.disconnect(); _bodyObserver = null; }
+  }
   function detectBrowserTheme() {
     applyTheme();
-    // 系统主题变化监听（system 模式 + auto 模式兜底）
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (themeMode === 'system' || themeMode === 'auto') applyTheme(); });
-    // 网页 class/style 变化监听（auto 模式）
-    const h = document.documentElement;
-    try { new MutationObserver(() => { if (themeMode === 'auto') debouncedApplyTheme(); }).observe(h, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
-    if (document.body) try { new MutationObserver(() => { if (themeMode === 'auto') debouncedApplyTheme(); }).observe(document.body, { attributes: true, attributeFilter: ['class','style'] }); } catch (e) {}
+    startThemeWatchers();
   }
   // ===================== 创建面板 =====================
   const panel = document.createElement('div');
@@ -806,7 +820,7 @@
       if (cfg.suppressFocus !== undefined) suppressFocusCheckbox.checked = cfg.suppressFocus;
       if (cfg.pickPassThrough !== undefined) { pickPassThrough = cfg.pickPassThrough; pickPassThroughCheckbox.checked = pickPassThrough; }
       if (cfg.panelFont !== undefined) { panelFont = cfg.panelFont; panelFontSelect.value = panelFont; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); }
-      if (cfg.themeMode !== undefined) { themeMode = cfg.themeMode; themeModeSelect.value = themeMode; applyTheme(); }
+      if (cfg.themeMode !== undefined) { themeMode = cfg.themeMode; themeModeSelect.value = themeMode; applyTheme(); startThemeWatchers(); }
     } catch (e) {}
   }
   function saveData() { savePerConfig(activeConfig); saveShared(); }
@@ -1351,7 +1365,7 @@
   suppressFocusCheckbox.addEventListener('change', e => { e.stopPropagation(); if (e.target.checked) suppressFocus(); else restoreFocus(); saveShared(); });
   pickPassThroughCheckbox.addEventListener('change', e => { e.stopPropagation(); pickPassThrough = e.target.checked; saveShared(); });
   panelFontSelect.addEventListener('change', e => { e.stopPropagation(); panelFont = e.target.value; document.documentElement.style.setProperty('--auto-op-font', `"${panelFont}", system-ui`); saveShared(); });
-  themeModeSelect.addEventListener('change', e => { e.stopPropagation(); themeMode = e.target.value; applyTheme(); saveShared(); });
+  themeModeSelect.addEventListener('change', e => { e.stopPropagation(); themeMode = e.target.value; applyTheme(); startThemeWatchers(); saveShared(); });
 // ===================== 选取元素 =====================
   btnPick.addEventListener('click', e => { e.stopPropagation(); if (cv().isRunning) return; isPicking = !isPicking; if (isPicking) { hideInfoPanel(false); setPanelTransparent(); btnPick.textContent = '取消选取'; btnPick.classList.add('picking'); stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素'; stateSpan.classList.remove('auto-op-waiting'); document.addEventListener('mouseover', onPickHover, true); document.addEventListener('mouseout', onPickHoverOut, true); document.addEventListener('click', onPickClick, true); document.addEventListener('touchend', onPickTouch, true); } else { exitPickMode(); } });
   function onPickHover(e) { if (!isPicking) return; const el = e.target; if (panel.contains(el) || configMenuEl.contains(el)) return; el.classList.add('auto-op-highlight'); }
