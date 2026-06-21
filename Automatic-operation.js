@@ -4986,8 +4986,15 @@
 	}
 
 	function onDragStart(e) {
-		if (e.target === toggleBtn || toggleBtn.contains(e.target) || e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || e.target === configBtnEl || configBtnEl.contains(e.target) || e.target === infoBackBtn || infoBackBtn.contains(e.target) || e.target === settingsBackBtn || settingsBackBtn.contains(e.target) || e.target === networkBackBtn || networkBackBtn.contains(e.target) || e.target === networkToggle || networkToggle.contains(e.target)) return;
-		isDragging = true;
+    if (e.target === toggleBtn || toggleBtn.contains(e.target) || 
+        e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || 
+        e.target === configBtnEl || configBtnEl.contains(e.target) || 
+        e.target === infoBackBtn || infoBackBtn.contains(e.target) || 
+        e.target === settingsBackBtn || settingsBackBtn.contains(e.target) || 
+        e.target === networkBackBtn || networkBackBtn.contains(e.target) || 
+        e.target === networkToggle || networkToggle.contains(e.target) ||
+        e.target.closest('.auto-op-switch')) return;
+        isDragging = true;
 		closeConfigMenu();
 		const pos = getEventPos(e),
 			rect = panel.getBoundingClientRect();
