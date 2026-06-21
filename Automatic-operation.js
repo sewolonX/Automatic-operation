@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.1.3
+// @version      5.1.4
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -58,7 +58,7 @@
   for (let i = 0; i < CONFIG_COUNT; i++) {
     configs.push({
       targets: [], isRunning: false, timerID: null, clickedCount: 0,
-      maxClicks: Infinity, clickInterval: 1000, autoFillContent: '',
+      maxClicks: Infinity, clickInterval: 1000,
       isMultiMode: false, clickStrategy: 'simultaneous',
       currentQueueIndex: 0, waitStartTime: 0, isWaiting: false, waitTimerID: null,
       operationStartTimestamp: 0,
@@ -97,7 +97,7 @@
     [data-theme="light"] .auto-op-config-item{color:#1f2937}
     [data-theme="light"] .auto-op-config-item:hover{background:rgba(0,0,0,0.06)}
     [data-theme="light"] .auto-op-config-item.active{color:#3482FF;background:rgba(0,0,0,0.04)}
-    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;font-family:var(--auto-op-font) !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.4s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important}
+    #auto-op-panel{position:fixed;top:85px;left:35px;z-index:2147483647 !important;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:12px;padding:0;width:300px;font-size:13px !important;font-family:var(--auto-op-font) !important;box-shadow:0 0 6px rgba(0,0,0,0.15);transition:opacity 0.4s,width 0.2s cubic-bezier(0.4,0,0.2,1);overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums !important;text-align:left !important;contain:layout style !important;isolation:isolate !important;will-change:width}
     .auto-op-header{position:sticky;top:0;background:var(--panel-bg);border-bottom:1px solid var(--panel-border);padding:14px;cursor:move;touch-action:none;z-index:1;display:flex;align-items:center;flex-shrink:0}
     .auto-op-header h3{margin:0;font-size:18px;font-weight:800;font-family:inherit;color:var(--panel-text);display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap;flex:1 1 auto;text-align:right;justify-content:flex-end}
     .auto-op-toggle{flex-shrink:0;width:30px;height:30px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:18px;font-family:var(--auto-op-font);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;border-radius:6px;line-height:1;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -107,7 +107,7 @@
     .auto-op-config-btn{width:30px;height:30px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:15px;font-weight:500;font-family:var(--auto-op-font);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;border-radius:6px;line-height:1;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none;white-space:nowrap;overflow:hidden}
     .auto-op-config-btn:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
     .auto-op-config-btn:active{transform:scale(0.85) !important}
-    .auto-op-config-menu{display:block;position:fixed;background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:2147483647;width:64px;scrollbar-width:none;opacity:0;transform:scale(0.4);transform-origin:top left;transition:opacity 0.24s ease,transform 0.24s ease;pointer-events:none}
+    .auto-op-config-menu{display:block;position:fixed;background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:2147483647;width:64px;scrollbar-width:none;opacity:0;transform:scale(0.4);transform-origin:top left;transition:opacity 0.24s ease,transform 0.24s ease;pointer-events:none;will-change:transform,opacity}
     .auto-op-config-menu::-webkit-scrollbar{display:none}
     .auto-op-config-menu.open{opacity:1;transform:scale(1);pointer-events:auto}
     .auto-op-config-menu.closing{opacity:0;transform:scale(0.4);pointer-events:none}
@@ -124,15 +124,15 @@
     .auto-op-header-start.is-stop:hover{background:#ef4444;opacity:1 !important}
     .auto-op-header-start:active{transform:scale(0.85) !important}
     .auto-op-header-start:disabled{opacity:0.4 !important;cursor:not-allowed}
-    .auto-op-body{padding:14px;overflow:hidden auto;max-height:65vh;transition:max-height 0.25s ease,padding 0.25s ease,opacity 0.3s ease;opacity:1}
+    .auto-op-body{padding:14px;overflow:hidden auto;max-height:65vh;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),min-height 0.4s cubic-bezier(0.4,0,0.2,1),padding 0.25s ease,opacity 0.3s ease;opacity:1}
     .auto-op-body::-webkit-scrollbar{display:none}
-    #auto-op-panel.collapsing .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,margin 0.25s ease,border-width 0.25s ease,opacity 0.3s ease}
+    #auto-op-panel.collapsing .auto-op-body{max-height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,margin 0.25s ease,border-width 0.25s ease,opacity 0.3s ease}
     #auto-op-panel.collapsed{gap:0 !important}
     #auto-op-panel.collapsed .auto-op-header{justify-content:flex-start;border-bottom-color:transparent}
     #auto-op-panel.collapsed .auto-op-header h3{flex:0 0 auto !important;margin-left:auto}
     #auto-op-panel.collapsed .auto-op-header-start{display:flex;opacity:0;animation:auto-op-fade-in 0.3s ease 0.1s forwards}
-    #auto-op-panel.collapsed .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;visibility:hidden;contain:layout !important}
-    #auto-op-panel.body-hidden .auto-op-body{max-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
+    #auto-op-panel.collapsed .auto-op-body{max-height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;visibility:hidden;contain:layout !important}
+    #auto-op-panel.body-hidden .auto-op-body{max-height:0 !important;min-height:0 !important;padding:0 !important;margin:0 !important;border-width:0 !important;opacity:0;overflow:hidden;contain:layout !important;transition:max-height 0.35s ease,padding 0.25s ease,opacity 0.3s ease}
     .auto-op-row{padding-top:3px;margin-bottom:12px;min-height:0}
     .auto-op-row label{display:block;font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);margin-bottom:5px;letter-spacing:0.5px}
     .auto-op-row input[type="number"],.auto-op-row select,.auto-op-row input[type="text"]{width:100%;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:6px;color:var(--panel-input-text) !important;padding:7px 10px;font-size:13px;font-family:var(--auto-op-font);font-variant-numeric:tabular-nums;box-sizing:border-box;outline:none}
@@ -158,9 +158,12 @@
     .auto-op-target-item.missing{border-color:var(--panel-missing-border);color:var(--panel-missing-text)}
     .auto-op-target-item span{display:block;padding-right:20px;white-space:pre-wrap;font-weight:600}
     .auto-op-target-parent{display:block;padding-right:0px !important;font-size:11px;font-weight:600;color:var(--panel-highlight-border);margin-bottom:2px}
-    .auto-op-btn-info{position:absolute;top:22px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);border-radius:4px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transition:all 0.3s;opacity:0.9;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-btn-info{position:absolute;top:24px;right:24px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);border-radius:4px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transition:all 0.3s;opacity:0.9;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn-info:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border);opacity:1}
     .auto-op-btn-info:active{transform:scale(0.85) !important}
+    .auto-op-btn-settings{position:absolute;top:24px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);border-radius:4px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transition:all 0.3s;opacity:0.9;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-btn-settings:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border);opacity:1}
+    .auto-op-btn-settings:active{transform:scale(0.85) !important}
 .auto-op-btn-item-del{position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);border-radius:4px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transition:all 0.3s;opacity:0.9;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-btn-item-del:hover{background:#dc2626;color:#fff;border-color:#dc2626;opacity:1}
     .auto-op-btn-item-del:active{transform:scale(0.85) !important}
@@ -246,9 +249,9 @@
     .ps-switch-area .auto-op-switch-thumb{width:14px;height:14px;background:#444;border-radius:50%;transition:transform 0.3s;pointer-events:none;transform:translateX(3px)}
     .ps-switch-area .auto-op-switch input:checked+.auto-op-switch-track{background:#333;border-color:#666}
     .ps-switch-area .auto-op-switch input:checked+.auto-op-switch-track .auto-op-switch-thumb{transform:translateX(18px);background:#777}
-    .auto-op-info-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--panel-bg);z-index:5;display:none;flex-direction:column;border-radius:0 0 12px 12px;overflow:hidden;transform:translateX(105%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1)}
+    .auto-op-info-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--panel-bg);z-index:5;display:none;flex-direction:column;border-radius:0 0 12px 12px;overflow:hidden;transform:translateX(105%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);will-change:transform}
     .auto-op-info-overlay.open{display:flex;transform:translateX(0)}
-    .auto-op-info-panel-header{display:flex;align-items:center;padding:14px;border-bottom:1px solid var(--panel-border);flex-shrink:0;line-height:1.2}
+    .auto-op-info-panel-header{display:flex;align-items:center;padding:14px;border-bottom:1px solid var(--panel-border);flex-shrink:0;line-height:1.2;cursor:move;touch-action:none}
     .auto-op-info-back-btn{width:28px;height:28px;padding:0;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:14px;font-weight:700;font-family:var(--auto-op-font);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
     .auto-op-info-back-btn:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
     .auto-op-info-back-btn:active{transform:scale(0.96) !important}
@@ -256,6 +259,16 @@
     .auto-op-info-content{flex:1;padding:14px;overflow-y:auto;color:var(--panel-label-text);font-size:12px;font-family:var(--auto-op-font);display:flex;flex-direction:column;scrollbar-width:none;-ms-overflow-style:none}
     .auto-op-info-content::-webkit-scrollbar{display:none}
     .auto-op-info-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
+    .auto-op-settings-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--panel-bg);z-index:5;display:none;flex-direction:column;border-radius:0 0 12px 12px;overflow:hidden;transform:translateX(105%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);will-change:transform}
+    .auto-op-settings-overlay.open{display:flex;transform:translateX(0)}
+    .auto-op-settings-panel-header{display:flex;align-items:center;padding:14px;border-bottom:1px solid var(--panel-border);flex-shrink:0;line-height:1.2;cursor:move;touch-action:none}
+    .auto-op-settings-back-btn{width:28px;height:28px;padding:0;background:var(--panel-button-bg);border:1px solid var(--panel-button-border);color:var(--panel-button-text);font-size:14px;font-weight:700;font-family:var(--auto-op-font);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.3s,color 0.3s,transform 0.15s ease;-webkit-tap-highlight-color:transparent;user-select:none}
+    .auto-op-settings-back-btn:hover{background:var(--panel-button-hover-bg);color:var(--panel-button-hover-text)}
+    .auto-op-settings-back-btn:active{transform:scale(0.96) !important}
+    .auto-op-settings-title{flex:1;text-align:left;font-size:13px;font-weight:600;color:var(--panel-text);font-family:var(--auto-op-font);padding:0 8px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-all}
+    .auto-op-settings-content{flex:1;padding:14px;overflow-y:auto;color:var(--panel-label-text);font-size:12px;font-family:var(--auto-op-font);display:flex;flex-direction:column;scrollbar-width:none;-ms-overflow-style:none}
+    .auto-op-settings-content::-webkit-scrollbar{display:none}
+    .auto-op-settings-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
     .auto-op-info-section{margin-bottom:12px}
     .auto-op-info-section:last-child{margin-bottom:0}
     .auto-op-info-row-switch{display:flex;align-items:center;justify-content:flex-start;padding:0;margin-bottom:5px;gap:2px;flex-wrap:wrap}
@@ -264,8 +277,8 @@
     .auto-op-info-field{display:flex;align-items:center;justify-content:flex-start;padding:2px 0;gap:2px}
     .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all}
     .auto-op-info-field-value{font-size:11px;font-family:var(--auto-op-font);color:var(--panel-text);word-break:break-all;text-align:right;flex:1;min-width:0}
-    .auto-op-info-field input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
-    .auto-op-info-field input[type="text"]:focus{border-color:var(--panel-highlight-border) !important}
+    .auto-op-info-field input[type="text"],.auto-op-info-field input[type="number"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
+    .auto-op-info-field input[type="text"]:focus,.auto-op-info-field input[type="number"]:focus{border-color:var(--panel-highlight-border) !important}
     .auto-op-info-field select{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 6px;font-size:11px;font-family:var(--auto-op-font);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
     .auto-op-info-field select:focus{border-color:var(--panel-highlight-border) !important}
     .auto-op-info-field select option{background:var(--panel-input-bg) !important;color:var(--panel-input-text) !important}
@@ -277,15 +290,17 @@
     .auto-op-target-item.disabled{border-color:var(--panel-label-text) !important;color:var(--panel-label-text) !important;opacity:0.6}
     .auto-op-target-item.disabled span{color:var(--panel-label-text) !important}
     .auto-op-target-item.disabled .auto-op-target-parent{color:var(--panel-label-text) !important}
-    .auto-op-test-btn{font-size:10px;font-weight:600;font-family:var(--auto-op-font);padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--panel-button-border);background:var(--panel-button-bg);color:var(--panel-button-text);margin-left:8px;transition:all 0.3s;white-space:nowrap;flex-shrink:0}
+    .auto-op-test-btn{font-size:10px;font-weight:600;font-family:var(--auto-op-font);padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--panel-button-border);background:var(--panel-button-bg);color:var(--panel-button-text);transition:all 0.3s;white-space:nowrap;flex-shrink:0}
     .auto-op-test-btn:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border)}
     .auto-op-test-btn:active{transform:scale(0.92)}
     .auto-op-test-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:0;white-space:nowrap;flex-shrink:0}
     .auto-op-test-result.pass{color:var(--panel-active-text)}
     .auto-op-test-result.fail{color:var(--panel-missing-text)}
+    .auto-op-test-result.disabled{color:var(--panel-label-text)}
     .auto-op-test-css-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:0;white-space:nowrap}
     .auto-op-test-css-result.pass{color:var(--panel-active-text)}
     .auto-op-test-css-result.fail{color:var(--panel-missing-text)}
+    .auto-op-test-css-result.disabled{color:var(--panel-label-text)}
     .auto-op-test-count{font-size:10px;font-weight:700;font-family:var(--auto-op-font);color:var(--panel-active-text);margin:0;white-space:nowrap;flex-shrink:0;min-width:0;text-align:left}
     .auto-op-test-count.zero{color:var(--panel-missing-text)}
     .auto-op-test-highlight{outline:2px dashed #F8BBD0 !important;outline-offset:-2px !important}
@@ -397,16 +412,12 @@
               <div class="auto-op-target-info">未选取，请点击下方按钮选取</div>
             </div>
           </div>
-          <div class="auto-op-row" id="auto-op-auto-fill-row" style="display: none;">
-            <label>自动填充内容</label>
-            <input type="text" id="auto-op-auto-fill" placeholder="输入内容（留空为清空）">
-          </div>
         </div>
         <div class="auto-op-page" data-page="1">
           <div class="auto-op-row"><label>操作次数</label><input type="number" id="auto-op-max-clicks" min="0" placeholder="留空为无限"></div>
           <div class="auto-op-row"><label>操作时间 (min)</label><input type="number" id="auto-op-max-duration" min="0" step="0.0001" placeholder="留空为无限 支持小数"></div>
-          <div class="auto-op-row"><label>操作间隔 (ms)</label><input type="number" id="auto-op-click-interval" min="1" placeholder="1000" value="1000"></div>
           <div class="auto-op-row"><div class="auto-op-label-with-countdown"><label style="margin-bottom:0;">自动启动 (min)</label><span class="auto-op-autostart-countdown" id="auto-op-autostart-countdown"></span></div><input type="number" id="auto-op-autostart-interval" min="0" step="0.0001" placeholder="留空为关闭 支持小数"></div>
+          <div class="auto-op-row"><label>操作间隔 (ms)</label><input type="number" id="auto-op-click-interval" min="1" placeholder="1000" value="1000"></div>
           <div class="auto-op-row"><label>元素消失后</label><select id="auto-op-missing-action"><option value="wait">等待重试（自动继续）</option><option value="stop">立即停止</option></select></div>
         </div>
         <div class="auto-op-page" data-page="2">
@@ -458,6 +469,20 @@
     </div>
   `;
   panel.appendChild(infoOverlay);
+  // 元素设置面板
+  const settingsOverlay = document.createElement('div');
+  settingsOverlay.className = 'auto-op-settings-overlay';
+  settingsOverlay.id = 'auto-op-settings-overlay';
+  settingsOverlay.innerHTML = `
+    <div class="auto-op-settings-panel-header">
+      <button class="auto-op-settings-back-btn" id="auto-op-settings-back-btn"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+      <span class="auto-op-settings-title" id="auto-op-settings-title">元素设置</span>
+    </div>
+    <div class="auto-op-settings-content" id="auto-op-settings-content">
+      <span class="auto-op-settings-empty">暂无设置项</span>
+    </div>
+  `;
+  panel.appendChild(settingsOverlay);
   // 省电模式遮罩
   const powerSaveOverlay = document.createElement('div');
   powerSaveOverlay.id = 'auto-op-power-save-overlay';
@@ -476,7 +501,6 @@
   document.body.appendChild(configMenuEl);
   // ===================== DOM 引用 =====================
   const targetListContainer = document.getElementById('auto-op-target-list-container'),
-    autoFillInput = document.getElementById('auto-op-auto-fill'),
     maxClicksInput = document.getElementById('auto-op-max-clicks'),
     clickIntervalInput = document.getElementById('auto-op-click-interval'),
     missingActionSelect = document.getElementById('auto-op-missing-action'),
@@ -524,6 +548,10 @@
   const infoTitleEl = document.getElementById('auto-op-info-title');
   const infoContentEl = document.getElementById('auto-op-info-content');
   const infoBackBtn = document.getElementById('auto-op-info-back-btn');
+  const settingsOverlayEl = document.getElementById('auto-op-settings-overlay');
+  const settingsTitleEl = document.getElementById('auto-op-settings-title');
+  const settingsContentEl = document.getElementById('auto-op-settings-content');
+  const settingsBackBtn = document.getElementById('auto-op-settings-back-btn');
   // ===================== 配置下拉菜单逻辑 =====================
   function closeConfigMenu() { if (!configMenuEl.classList.contains('open')) return; configMenuEl.classList.remove('open'); configMenuEl.classList.add('closing'); setTimeout(() => { configMenuEl.classList.remove('closing'); }, 200); }
   function buildConfigMenu() {
@@ -644,7 +672,7 @@
     refreshParentHighlights();
     updateTargetUI();
     updateTargetCount();
-    updateAutoFillVisibility();
+    
     if (c.targets.length > 0) stateSpan.textContent = c.isRunning ? '运行中' : '就绪';
     else stateSpan.textContent = '请选取目标元素';
   }
@@ -660,9 +688,9 @@
   function switchConfig(newIndex) {
     if (isPicking) exitPickMode();
     hideInfoPanel(false);
+    hideSettingsPanel(false);
     const old = cv();
     old.clickInterval = parseInt(clickIntervalInput.value) || 1000;
-    old.autoFillContent = autoFillInput.value;
     old.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
     old.maxDurationMin = parseFloat(maxDurationInput.value) || 0;
     old.clickStrategy = strategySelect.value;
@@ -695,7 +723,7 @@
     multiModeCheckbox.checked = c.isMultiMode;
     strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
     strategySelect.value = c.clickStrategy;
-    autoFillInput.value = c.autoFillContent;
+
     maxClicksInput.value = c.maxClicks === Infinity ? '' : c.maxClicks;
     clickIntervalInput.value = c.clickInterval;
     missingActionSelect.value = c.missingAction || 'wait';
@@ -706,14 +734,14 @@
       btnHeaderStart.innerHTML = '<svg viewBox="0 0 1172.4 1172.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M927.7 149.7 V1022.7 Q926.7 1051.7 916.7 1063.2 Q906.7 1074.7 880.7 1074.7 H852.7 Q826.7 1074.7 816.2 1062.7 Q805.7 1050.7 805.7 1022.7 V149.7 Q805.7 121.7 816.2 109.7 Q826.7 97.7 851.7 97.7 H879.7 Q907.7 97.7 917.7 109.7 Q927.7 121.7 927.7 149.7 Z M366.7 149.7 V1022.7 Q365.7 1052.7 355.7 1063.7 Q345.7 1074.7 319.7 1074.7 H291.7 Q264.7 1074.7 254.7 1062.7 Q244.7 1050.7 244.7 1022.7 V149.7 Q244.7 121.7 254.2 109.7 Q263.7 97.7 291.7 97.7 H319.7 Q347.7 97.7 357.2 109.7 Q366.7 121.7 366.7 149.7 Z" transform="matrix(1 0 0 -1 0 1172.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>'; btnHeaderStart.classList.add('is-stop');
       btnPick.disabled = true; multiModeCheckbox.disabled = true; strategySelect.disabled = true;
       maxClicksInput.disabled = true; clickIntervalInput.disabled = true; missingActionSelect.disabled = true;
-      autoFillInput.disabled = true; maxDurationInput.disabled = true; autoStartIntervalInput.disabled = true;
+      maxDurationInput.disabled = true; autoStartIntervalInput.disabled = true;
       statusDiv.classList.add('running');
     } else {
       btnStart.textContent = '开始'; btnStart.className = 'auto-op-btn auto-op-btn-start';
       btnHeaderStart.innerHTML = '<svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>'; btnHeaderStart.classList.remove('is-stop');
       btnPick.disabled = false; multiModeCheckbox.disabled = false; strategySelect.disabled = false;
       maxClicksInput.disabled = false; clickIntervalInput.disabled = false; missingActionSelect.disabled = false;
-      autoFillInput.disabled = false; maxDurationInput.disabled = false; autoStartIntervalInput.disabled = false;
+      maxDurationInput.disabled = false; autoStartIntervalInput.disabled = false;
       statusDiv.classList.remove('running');
     }
     if (c.autoStartEnabled && c.autoStartIntervalMin > 0 && !c.isRunning && c.autoStartNextTime) {
@@ -722,7 +750,7 @@
     } else {
       autoStartCountdownLabel.textContent = '';
     }
-    refreshParentHighlights(); updateTargetUI(); updateTargetCount(); updateAutoFillVisibility();
+    refreshParentHighlights(); updateTargetUI(); updateTargetCount(); 
     countSpan.textContent = c.clickedCount;
     if (c.isRunning && c.operationStartTimestamp) {
       elapsedSpan.textContent = formatElapsedTime(Date.now() - c.operationStartTimestamp);
@@ -742,7 +770,7 @@
       localStorage.setItem(PER_CONFIG_KEY + ci, JSON.stringify({
         isMultiMode: c.isMultiMode, clickStrategy: c.clickStrategy,
         clickInterval: c.clickInterval, maxClicks: c.maxClicks === Infinity ? '' : c.maxClicks,
-        missingAction: c.missingAction || 'wait', autoFillContent: c.autoFillContent,
+        missingAction: c.missingAction || 'wait',
         autoStartIntervalMin: c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '',
         maxDurationMin: c.maxDurationMin > 0 ? c.maxDurationMin : '',
         targets: c.targets.map(t => ({
@@ -754,7 +782,11 @@
           matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false,
           matchOnclick: t.matchOnclick !== false, autoDiscover: t.autoDiscover !== false,
           matchParent: t.matchParent !== false,
-          matchId: t.matchId !== false, matchClass: t.matchClass !== false
+          matchId: t.matchId !== false, matchClass: t.matchClass !== false,
+          customFill: t.customFill || '',
+          customInterval: t.customInterval != null ? t.customInterval : '',
+          scrollIntoView: !!t.scrollIntoView,
+          showParent: !!t.showParent
         }))
       }));
     } catch (e) { console.error('[AUTO_OP] savePerConfig 异常:', e); }
@@ -769,13 +801,12 @@
       c.clickInterval = cfg.clickInterval || 1000;
       c.maxClicks = (cfg.maxClicks === '' || cfg.maxClicks === undefined) ? Infinity : (parseInt(cfg.maxClicks) || Infinity);
       c.missingAction = cfg.missingAction || 'wait';
-      c.autoFillContent = cfg.autoFillContent || '';
       if (cfg.autoStartIntervalMin !== undefined && cfg.autoStartIntervalMin !== '' && parseFloat(cfg.autoStartIntervalMin) > 0) { c.autoStartEnabled = true; c.autoStartIntervalMin = parseFloat(cfg.autoStartIntervalMin); }
       if (cfg.maxDurationMin !== undefined && cfg.maxDurationMin !== '' && parseFloat(cfg.maxDurationMin) > 0) c.maxDurationMin = parseFloat(cfg.maxDurationMin);
       c.targets = [];
       (cfg.targets || []).forEach(t => {
         const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
-        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null, enabled: t.enabled !== false, matchTag: t.matchTag !== false, matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact', matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false, matchOnclick: t.matchOnclick !== false, autoDiscover,
+        const base = { strict: t.strict, loose: t.loose, fingerprint: t.fingerprint, desc: t.desc, isInput: !!t.isInput, customFill: t.customFill || '', customInterval: (t.customInterval === '' || t.customInterval === undefined || t.customInterval === null) ? undefined : Number(t.customInterval), scrollIntoView: !!t.scrollIntoView, showParent: !!t.showParent, parentSelector: t.parentSelector || '', parentChain: t.parentChain || [], isAuto: !!t.isAuto, missCount: 0, nearestParent: null, blueParent: null, _blueParent: null, _nearestEl: null, enabled: t.enabled !== false, matchTag: t.matchTag !== false, matchText: t.matchText !== false, matchTextMode: t.matchTextMode || 'exact', matchDataAttrs: t.matchDataAttrs !== false, matchAttrs: t.matchAttrs !== false, matchOnclick: t.matchOnclick !== false, autoDiscover,
           matchParent: t.matchParent !== false,
           matchId: t.matchId !== false, matchClass: t.matchClass !== false };
         const found = tryFindTarget({ ...base, element: null });
@@ -834,11 +865,11 @@
     clickIntervalInput.value = c.clickInterval;
     maxClicksInput.value = c.maxClicks === Infinity ? '' : c.maxClicks;
     missingActionSelect.value = c.missingAction || 'wait';
-    autoFillInput.value = c.autoFillContent;
+
     autoStartIntervalInput.value = c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '';
     maxDurationInput.value = c.maxDurationMin > 0 ? c.maxDurationMin : '';
     c.targets.forEach(t => { if (t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight'); });
-    updateTargetUI(); updateTargetCount(); updateAutoFillVisibility(); refreshParentHighlights();
+    updateTargetUI(); updateTargetCount(); refreshParentHighlights();
     if (c.targets.length > 0) stateSpan.textContent = '就绪';
     updateConfigBtnLabel();
   }
@@ -990,6 +1021,10 @@
       showInfoPanel(index);
       return;
     }
+    if (action === 'settings') {
+      showSettingsPanel(index);
+      return;
+    }
     if (action === 'delete') {
       const t = c.targets[index];
       if (IS_MOBILE && !await showConfirm('确定删除该目标元素？\n\n' + t.desc)) return;
@@ -1000,7 +1035,7 @@
       if (c.currentQueueIndex >= c.targets.length) c.currentQueueIndex = 0;
       updateTargetUI(); updateTargetCount();
       if (c.targets.length === 0) { stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); } else { stateSpan.textContent = `剩余 ${c.targets.length} 个`; }
-      refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility();
+      refreshParentHighlights(); savePerConfig(activeConfig); 
     }
     if (action === 'move-up' && index > 0) {
       const listEl = targetListContainer.querySelector('.auto-op-target-list');
@@ -1032,6 +1067,8 @@
     const t = c.targets[index];
     if (!t) return;
     infoCurrentIndex = index;
+    // 隐藏设置面板
+    if (settingsOverlayEl.classList.contains('open')) hideSettingsPanel(false);
     clearTestHighlights();
     // 清除父级容器高亮 + 目标元素高亮
     document.querySelectorAll('.auto-op-parent-highlight,.auto-op-parent-highlight-Overlap,.auto-op-nearest-parent-highlight,.auto-op-selected-highlight').forEach(el => {
@@ -1046,7 +1083,7 @@
     let html = '';
     const textMode = t.matchTextMode || 'exact';
     // 启用开关 + 测试按钮
-    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><button class="auto-op-test-btn" id="auto-op-test-btn">测试</button><span class="auto-op-test-css-result" id="auto-op-test-css-result"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>元素CSS匹配</label><span class="auto-op-test-css-result" id="auto-op-test-css-result"></span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="auto-op-test-btn" id="auto-op-test-btn">测试</button><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></span></div></div>`;
     // 文字匹配
     html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
     // 标准属性匹配
@@ -1090,9 +1127,11 @@
     // 自动发现
     html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><span class="auto-op-test-result" data-test-criterion="autoDiscover"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
     infoContentEl.innerHTML = html;
+    infoOverlayEl.classList.remove('open');
     infoOverlayEl.style.display = 'flex';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        fitBodyToOverlay(infoOverlayEl);
         infoOverlayEl.classList.add('open');
       });
     });
@@ -1101,20 +1140,22 @@
     infoCurrentIndex = -1;
     clearTestHighlights();
     refreshParentHighlights();
-    // 恢复目标元素高亮
     const c = cv();
     c.targets.forEach(t => {
       if (t.element && t.element.classList && document.contains(t.element))
         t.element.classList.add('auto-op-selected-highlight');
     });
     if (infoAnimTimer) { clearTimeout(infoAnimTimer); infoAnimTimer = null; }
+    infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
     if (animate) {
-      infoOverlayEl.classList.remove('open');
+      infoOverlayEl.style.display = 'flex';
       infoOverlayEl.addEventListener('transitionend', onInfoCloseTransition);
-    } else {
-      infoOverlayEl.classList.remove('open');
+      restoreBodyHeight();
+    }
+    infoOverlayEl.classList.remove('open');
+    if (!animate) {
       infoOverlayEl.style.display = 'none';
-      infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
+      restoreBodyHeight();
     }
   }
   function onInfoCloseTransition(e) {
@@ -1122,12 +1163,146 @@
     infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
     infoOverlayEl.style.display = 'none';
   }
+  // ===================== 面板高度适配 =====================
+  const panelBody = panel.querySelector('.auto-op-body');
+  let _bodyOrigMaxH = '';
+  let _heightProbe = null;
+  function fitBodyToOverlay(overlayEl) {
+    if (!_bodyOrigMaxH) _bodyOrigMaxH = panelBody.style.maxHeight || getComputedStyle(panelBody).maxHeight;
+    if (!_heightProbe) {
+      _heightProbe = document.createElement('div');
+      _heightProbe.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + panelBody.offsetWidth + 'px;visibility:hidden;display:flex;flex-direction:column;font-size:12px;font-family:inherit';
+      document.body.appendChild(_heightProbe);
+    }
+    _heightProbe.innerHTML = overlayEl.innerHTML;
+    const mainHeader = panel.querySelector('.auto-op-header');
+    let h = _heightProbe.scrollHeight;
+    if (mainHeader) h -= mainHeader.offsetHeight;
+    if (h > 0) {
+      h = Math.min(h, window.innerHeight * 0.85);
+      panelBody.style.minHeight = panelBody.offsetHeight + 'px';
+      getComputedStyle(panelBody).minHeight;
+      panelBody.style.minHeight = h + 'px';
+      panelBody.style.maxHeight = h + 'px';
+    }
+  }
+  function restoreBodyHeight() {
+    const pageH = pageContainer.scrollHeight;
+    if (pageH > 0 && pageH < panelBody.offsetHeight) {
+      panelBody.style.minHeight = pageH + 'px';
+    } else {
+      panelBody.style.minHeight = '';
+    }
+    panelBody.style.maxHeight = _bodyOrigMaxH || '';
+    _bodyOrigMaxH = '';
+  }
+  // ===================== 元素设置面板 =====================
+  let settingsAnimTimer = null, settingsCurrentIndex = -1;
+  function showSettingsPanel(index) {
+    const c = cv();
+    const t = c.targets[index];
+    if (!t) return;
+    settingsCurrentIndex = index;
+    // 隐藏信息面板
+    if (infoOverlayEl.classList.contains('open')) hideInfoPanel(false);
+    // 清除测试高亮
+    clearTestHighlights();
+    if (settingsAnimTimer) { clearTimeout(settingsAnimTimer); settingsAnimTimer = null; }
+    settingsOverlayEl.removeEventListener('transitionend', onSettingsCloseTransition);
+    settingsTitleEl.textContent = t.desc || '元素设置';
+    const isInput = t.isInput || false;
+    const customFill = t.customFill || '';
+    let html = '';
+    // 启用开关
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    // 描述
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">元素描述</span><input type="text" data-settings-action="change-desc" value="${(t.desc || '').replace(/"/g, '&quot;')}" placeholder="元素描述"></div></div>`;
+    // 输入元素 + 填充文本
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${customFill.replace(/"/g, '&quot;')}" placeholder="留空为清空"></div></div></div>`;
+    // 独立间隔
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">独立间隔 (ms)</span><input type="number" data-settings-action="change-customInterval" value="${t.customInterval != null ? t.customInterval : ''}" min="0" placeholder="使用全局"></div></div>`;
+    // 可滚动
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>滚动到可视区</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-scrollIntoView" ${t.scrollIntoView ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    // 显示父级
+    html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>显示父级</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-showParent" ${t.showParent ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+    settingsContentEl.innerHTML = html;
+    settingsOverlayEl.classList.remove('open');
+    settingsOverlayEl.style.display = 'flex';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        settingsOverlayEl.classList.add('open');
+        fitBodyToOverlay(settingsOverlayEl);
+      });
+    });
+  }
+  function hideSettingsPanel(animate) {
+    settingsCurrentIndex = -1;
+    if (settingsAnimTimer) { clearTimeout(settingsAnimTimer); settingsAnimTimer = null; }
+    settingsOverlayEl.removeEventListener('transitionend', onSettingsCloseTransition);
+    if (animate) {
+      settingsOverlayEl.style.display = 'flex';
+      settingsOverlayEl.addEventListener('transitionend', onSettingsCloseTransition);
+      restoreBodyHeight();
+    }
+    settingsOverlayEl.classList.remove('open');
+    if (!animate) {
+      settingsOverlayEl.style.display = 'none';
+      restoreBodyHeight();
+    }
+  }
+  function onSettingsCloseTransition(e) {
+    if (e.propertyName !== 'transform') return;
+    settingsOverlayEl.removeEventListener('transitionend', onSettingsCloseTransition);
+    settingsOverlayEl.style.display = 'none';
+  }
+  // 设置面板表单事件
+  settingsContentEl.addEventListener('change', e => {
+    if (settingsCurrentIndex < 0) return;
+    const c = cv(), t = c.targets[settingsCurrentIndex];
+    if (!t) return;
+    const target = e.target, action = target.dataset.settingsAction;
+    if (!action) return;
+    switch (action) {
+      case 'toggle-enabled':
+        t.enabled = target.checked;
+        break;
+      case 'toggle-isInput':
+        t.isInput = target.checked;
+        const fillSection = document.getElementById('auto-op-settings-fill-section');
+        if (fillSection) fillSection.style.display = target.checked ? '' : 'none';
+        break;
+      case 'toggle-scrollIntoView':
+        t.scrollIntoView = target.checked;
+        break;
+      case 'toggle-showParent':
+        t.showParent = target.checked;
+        break;
+    }
+    t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+    updateTargetUI(); updateTargetCount(); savePerConfig(activeConfig);
+  });
+  settingsContentEl.addEventListener('input', e => {
+    if (settingsCurrentIndex < 0) return;
+    const c = cv(), t = c.targets[settingsCurrentIndex];
+    if (!t) return;
+    const target = e.target, action = target.dataset.settingsAction;
+    if (action === 'change-desc') {
+      t.desc = target.value;
+      settingsTitleEl.textContent = t.desc || '元素设置';
+    } else if (action === 'change-customFill') {
+      t.customFill = target.value;
+    } else if (action === 'change-customInterval') {
+      const val = target.value;
+      t.customInterval = val === '' ? undefined : Number(val);
+    }
+    updateTargetUI(); savePerConfig(activeConfig);
+  });
   // ===================== 元素测试 =====================
   function clearTestHighlights() {
     _testHighlightedElements.forEach(el => { if (el && el.classList) el.classList.remove('auto-op-test-highlight'); });
     _testHighlightedElements = [];
     const results = infoContentEl.querySelectorAll('.auto-op-test-result, .auto-op-test-css-result');
-    results.forEach(r => { r.textContent = ''; r.className = r.className.replace(/\s*(pass|fail)/g, ''); });
+    results.forEach(r => { r.textContent = ''; r.className = r.className.replace(/\s*(pass|fail|disabled)/g, ''); });
     const counts = infoContentEl.querySelectorAll('.auto-op-test-count');
     counts.forEach(c => { c.textContent = ''; c.className = c.className.replace(/\s*zero/g, ''); });
   }
@@ -1140,7 +1315,8 @@
     const cssResult = document.getElementById('auto-op-test-css-result');
     const isEnabled = t.enabled !== false;
     if (!isEnabled) {
-      if (cssResult) { cssResult.textContent = '⊘ 已禁用'; cssResult.className = 'auto-op-test-css-result fail'; }
+      if (cssResult) { cssResult.textContent = '⊘'; cssResult.className = 'auto-op-test-css-result disabled'; }
+      infoContentEl.querySelectorAll('.auto-op-test-result').forEach(el => { el.textContent = '⊘'; el.className = 'auto-op-test-result disabled'; });
       return;
     }
     function setResult(criterion, found, count) {
@@ -1151,6 +1327,8 @@
       const els = infoContentEl.querySelectorAll(`.auto-op-test-count[data-test-criterion="${criterion}"]`);
       els.forEach(el => { el.textContent = count > 0 ? count : ''; el.className = `auto-op-test-count${count === 0 ? ' zero' : ''}`; });
     }
+    // 未参与测试的项初始化为 ⊘
+    infoContentEl.querySelectorAll('.auto-op-test-result').forEach(el => { el.textContent = '⊘'; el.className = el.className.replace(/\s*(pass|fail|disabled)/g, '') + ' disabled'; });
     // CSS 选择器测试
     let cssFound = false, cssCount = 0, cssElements = [];
     try {
@@ -1306,6 +1484,10 @@
     e.stopPropagation();
     hideInfoPanel(true);
   });
+  settingsBackBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    hideSettingsPanel(true);
+  });
   // ===================== UI 更新 =====================
   function updateTargetUI() {
     if (isPowerSave) return;
@@ -1319,12 +1501,11 @@
       let stateClass = 'active';
       if (isDisabled) stateClass = 'disabled';
       else if (!isValid) stateClass = 'missing';
-      html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span>${t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up" data-action="move-up" data-index="${i}" title="上移"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block;transform:rotate(90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-move auto-op-btn-move-down" data-action="move-down" data-index="${i}" title="下移"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block;transform:rotate(-90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}"><svg viewBox="0 0 1306.8 1306.8" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block"><path d="M920.9 123.9 Q964.9 144.9 987.9 185.9 Q999.9 206.9 1004.4 236.4 Q1008.9 265.9 1012.9 330.9 L1054.9 913.9 H1114.9 Q1130.9 913.9 1141.9 925.4 Q1152.9 936.9 1152.9 953.9 V982.9 Q1152.9 999.9 1141.4 1011.4 Q1129.9 1022.9 1114.9 1022.9 H935.9 Q915.9 1022.9 908.9 1026.9 Q901.9 1030.9 893.9 1047.9 L871.9 1095.9 L861.9 1115.9 Q854.9 1130.9 847.9 1143.4 Q840.9 1155.9 832.9 1163.9 Q813.9 1182.9 788.9 1191.9 Q775.9 1195.9 755.9 1196.9 Q735.9 1197.9 709.9 1197.9 H596.9 Q570.9 1197.9 551.4 1196.9 Q531.9 1195.9 518.9 1191.9 Q492.9 1182.9 473.9 1163.9 Q464.9 1153.9 455.4 1136.4 Q445.9 1118.9 434.9 1095.9 L409.9 1042.9 Q402.9 1028.9 396.9 1025.9 Q390.9 1022.9 369.9 1022.9 H193.9 Q178.9 1022.9 166.4 1011.9 Q153.9 1000.9 153.9 979.9 V955.9 Q153.9 935.9 166.4 924.9 Q178.9 913.9 193.9 913.9 H242.9 L282.9 331.9 Q286.9 266.9 291.4 236.9 Q295.9 206.9 307.9 185.9 Q332.9 143.9 374.9 123.9 Q396.9 113.9 426.9 111.4 Q456.9 108.9 522.9 108.9 H773.9 Q839.9 108.9 869.4 111.4 Q898.9 113.9 920.9 123.9 Z M429.9 225.9 Q413.9 232.9 404.9 249.9 Q399.9 257.9 397.9 274.4 Q395.9 290.9 393.9 314.9 L351.9 913.9 H945.9 L903.9 323.9 Q901.9 294.9 899.9 276.4 Q897.9 257.9 892.9 249.9 Q883.9 232.9 867.9 225.9 Q858.9 221.9 842.4 220.9 Q825.9 219.9 801.9 219.9 H495.9 Q470.9 219.9 454.9 220.9 Q438.9 221.9 429.9 225.9 Z M609.9 374.9 L594.9 784.9 Q593.9 798.9 584.9 807.4 Q575.9 815.9 561.9 815.9 H518.9 Q503.9 815.9 494.4 806.9 Q484.9 797.9 485.9 782.9 L501.9 372.9 Q502.9 357.9 511.4 349.4 Q519.9 340.9 534.9 340.9 H576.9 Q591.9 340.9 601.4 349.9 Q610.9 358.9 609.9 374.9 Z M795.9 372.9 L811.9 782.9 Q812.9 797.9 803.4 806.9 Q793.9 815.9 778.9 815.9 H735.9 Q721.9 815.9 712.9 807.4 Q703.9 798.9 702.9 784.9 L687.9 374.9 Q686.9 358.9 696.4 349.9 Q705.9 340.9 720.9 340.9 H762.9 Q777.9 340.9 786.4 349.4 Q794.9 357.9 795.9 372.9 Z M526.9 1031.9 L540.9 1059.9 Q549.9 1077.9 559.4 1082.9 Q568.9 1087.9 590.9 1087.9 H715.9 Q738.9 1087.9 747.9 1082.9 Q756.9 1077.9 764.9 1060.9 L779.9 1030.9 Q781.9 1027.9 780.4 1025.4 Q778.9 1022.9 774.9 1022.9 H531.9 Q527.9 1022.9 526.4 1025.4 Q524.9 1027.9 526.9 1031.9 Z" transform="matrix(1 0 0 -1 0 1306.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="查看详情"><svg viewBox="0 0 1186.2 1186.2" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M363.2 1047.8 L246.5 929.5 Q240.9 924.5 237.0 924.3 Q233.1 924.1 227.1 930.1 L184.0 973.8 Q174.2 984.1 159.9 985.6 Q145.6 987.1 133.2 974.8 L112.2 953.8 Q98.8 940.4 99.8 927.2 Q100.8 913.9 111.2 903.0 L194.2 820.0 Q215.6 799.2 237.6 799.4 Q259.6 799.6 284.0 823.0 L437.0 976.0 Q449.3 988.9 449.8 1004.2 Q450.3 1019.4 438.0 1030.8 L418.0 1050.8 Q404.6 1063.1 390.1 1061.6 Q375.6 1060.1 363.2 1047.8 Z M1087.3 561.9 V591.9 Q1087.3 610.4 1076.2 619.3 Q1065.0 628.1 1048.1 628.1 H549.6 Q533.0 628.1 522.0 618.8 Q510.9 609.4 510.9 592.9 V562.9 Q510.9 544.3 521.8 535.0 Q532.6 525.6 549.6 525.6 H1048.1 Q1065.0 525.6 1076.2 534.5 Q1087.3 543.3 1087.3 561.9 Z M1087.3 898.9 V928.9 Q1087.3 947.4 1076.2 956.3 Q1065.0 965.1 1048.1 965.1 H549.6 Q533.0 965.1 522.0 955.8 Q510.9 946.4 510.9 929.9 V899.9 Q510.9 881.3 521.8 872.0 Q532.6 862.6 549.6 862.6 H1048.1 Q1065.0 862.6 1076.2 871.5 Q1087.3 880.3 1087.3 898.9 Z M1087.3 223.9 V253.9 Q1087.3 272.4 1076.2 281.3 Q1065.0 290.1 1048.1 290.1 H549.6 Q533.0 290.1 522.0 280.8 Q510.9 271.4 510.9 254.9 V224.9 Q510.9 206.3 521.8 197.0 Q532.6 187.6 549.6 187.6 H1048.1 Q1065.0 187.6 1076.2 196.5 Q1087.3 205.3 1087.3 223.9 Z M363.2 710.6 L246.5 592.9 Q241.5 587.9 237.3 587.4 Q233.1 586.9 227.1 592.9 L184.0 636.6 Q174.2 646.9 159.9 648.4 Q145.6 649.9 133.2 637.6 L112.2 616.6 Q98.8 603.2 99.8 590.0 Q100.8 576.8 111.2 566.4 L194.2 483.4 Q215.0 462.1 237.3 462.3 Q259.6 462.5 284.0 486.4 L437.0 639.4 Q449.3 651.8 449.8 667.0 Q450.3 682.2 438.0 693.6 L418.0 713.6 Q404.6 725.9 390.1 724.4 Q375.6 722.9 363.2 710.6 Z M363.2 372.2 L246.5 253.9 Q240.9 248.9 237.0 248.7 Q233.1 248.5 227.1 254.5 L184.0 298.2 Q174.2 308.5 159.9 310.0 Q145.6 311.5 133.2 299.2 L112.2 278.2 Q98.8 264.8 99.8 251.6 Q100.8 238.3 111.2 227.4 L194.2 144.4 Q215.6 123.1 237.6 123.3 Q259.6 123.5 284.0 147.4 L437.0 300.4 Q449.3 313.3 449.8 328.6 Q450.3 343.8 438.0 355.2 L418.0 375.2 Q404.6 387.5 390.1 386.0 Q375.6 384.5 363.2 372.2 Z" transform="matrix(1 0 0 -1 0 1186.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button></div>`;
+      html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span>${t.showParent && t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up" data-action="move-up" data-index="${i}" title="上移"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block;transform:rotate(90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-move auto-op-btn-move-down" data-action="move-down" data-index="${i}" title="下移"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block;transform:rotate(-90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}"><svg viewBox="0 0 1306.8 1306.8" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block"><path d="M920.9 123.9 Q964.9 144.9 987.9 185.9 Q999.9 206.9 1004.4 236.4 Q1008.9 265.9 1012.9 330.9 L1054.9 913.9 H1114.9 Q1130.9 913.9 1141.9 925.4 Q1152.9 936.9 1152.9 953.9 V982.9 Q1152.9 999.9 1141.4 1011.4 Q1129.9 1022.9 1114.9 1022.9 H935.9 Q915.9 1022.9 908.9 1026.9 Q901.9 1030.9 893.9 1047.9 L871.9 1095.9 L861.9 1115.9 Q854.9 1130.9 847.9 1143.4 Q840.9 1155.9 832.9 1163.9 Q813.9 1182.9 788.9 1191.9 Q775.9 1195.9 755.9 1196.9 Q735.9 1197.9 709.9 1197.9 H596.9 Q570.9 1197.9 551.4 1196.9 Q531.9 1195.9 518.9 1191.9 Q492.9 1182.9 473.9 1163.9 Q464.9 1153.9 455.4 1136.4 Q445.9 1118.9 434.9 1095.9 L409.9 1042.9 Q402.9 1028.9 396.9 1025.9 Q390.9 1022.9 369.9 1022.9 H193.9 Q178.9 1022.9 166.4 1011.9 Q153.9 1000.9 153.9 979.9 V955.9 Q153.9 935.9 166.4 924.9 Q178.9 913.9 193.9 913.9 H242.9 L282.9 331.9 Q286.9 266.9 291.4 236.9 Q295.9 206.9 307.9 185.9 Q332.9 143.9 374.9 123.9 Q396.9 113.9 426.9 111.4 Q456.9 108.9 522.9 108.9 H773.9 Q839.9 108.9 869.4 111.4 Q898.9 113.9 920.9 123.9 Z M429.9 225.9 Q413.9 232.9 404.9 249.9 Q399.9 257.9 397.9 274.4 Q395.9 290.9 393.9 314.9 L351.9 913.9 H945.9 L903.9 323.9 Q901.9 294.9 899.9 276.4 Q897.9 257.9 892.9 249.9 Q883.9 232.9 867.9 225.9 Q858.9 221.9 842.4 220.9 Q825.9 219.9 801.9 219.9 H495.9 Q470.9 219.9 454.9 220.9 Q438.9 221.9 429.9 225.9 Z M609.9 374.9 L594.9 784.9 Q593.9 798.9 584.9 807.4 Q575.9 815.9 561.9 815.9 H518.9 Q503.9 815.9 494.4 806.9 Q484.9 797.9 485.9 782.9 L501.9 372.9 Q502.9 357.9 511.4 349.4 Q519.9 340.9 534.9 340.9 H576.9 Q591.9 340.9 601.4 349.9 Q610.9 358.9 609.9 374.9 Z M795.9 372.9 L811.9 782.9 Q812.9 797.9 803.4 806.9 Q793.9 815.9 778.9 815.9 H735.9 Q721.9 815.9 712.9 807.4 Q703.9 798.9 702.9 784.9 L687.9 374.9 Q686.9 358.9 696.4 349.9 Q705.9 340.9 720.9 340.9 H762.9 Q777.9 340.9 786.4 349.4 Q794.9 357.9 795.9 372.9 Z M526.9 1031.9 L540.9 1059.9 Q549.9 1077.9 559.4 1082.9 Q568.9 1087.9 590.9 1087.9 H715.9 Q738.9 1087.9 747.9 1082.9 Q756.9 1077.9 764.9 1060.9 L779.9 1030.9 Q781.9 1027.9 780.4 1025.4 Q778.9 1022.9 774.9 1022.9 H531.9 Q527.9 1022.9 526.4 1025.4 Q524.9 1027.9 526.9 1031.9 Z" transform="matrix(1 0 0 -1 0 1306.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="匹配规则"><svg viewBox="0 0 1186.2 1186.2" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M363.2 1047.8 L246.5 929.5 Q240.9 924.5 237.0 924.3 Q233.1 924.1 227.1 930.1 L184.0 973.8 Q174.2 984.1 159.9 985.6 Q145.6 987.1 133.2 974.8 L112.2 953.8 Q98.8 940.4 99.8 927.2 Q100.8 913.9 111.2 903.0 L194.2 820.0 Q215.6 799.2 237.6 799.4 Q259.6 799.6 284.0 823.0 L437.0 976.0 Q449.3 988.9 449.8 1004.2 Q450.3 1019.4 438.0 1030.8 L418.0 1050.8 Q404.6 1063.1 390.1 1061.6 Q375.6 1060.1 363.2 1047.8 Z M1087.3 561.9 V591.9 Q1087.3 610.4 1076.2 619.3 Q1065.0 628.1 1048.1 628.1 H549.6 Q533.0 628.1 522.0 618.8 Q510.9 609.4 510.9 592.9 V562.9 Q510.9 544.3 521.8 535.0 Q532.6 525.6 549.6 525.6 H1048.1 Q1065.0 525.6 1076.2 534.5 Q1087.3 543.3 1087.3 561.9 Z M1087.3 898.9 V928.9 Q1087.3 947.4 1076.2 956.3 Q1065.0 965.1 1048.1 965.1 H549.6 Q533.0 965.1 522.0 955.8 Q510.9 946.4 510.9 929.9 V899.9 Q510.9 881.3 521.8 872.0 Q532.6 862.6 549.6 862.6 H1048.1 Q1065.0 862.6 1076.2 871.5 Q1087.3 880.3 1087.3 898.9 Z M1087.3 223.9 V253.9 Q1087.3 272.4 1076.2 281.3 Q1065.0 290.1 1048.1 290.1 H549.6 Q533.0 290.1 522.0 280.8 Q510.9 271.4 510.9 254.9 V224.9 Q510.9 206.3 521.8 197.0 Q532.6 187.6 549.6 187.6 H1048.1 Q1065.0 187.6 1076.2 196.5 Q1087.3 205.3 1087.3 223.9 Z M363.2 710.6 L246.5 592.9 Q241.5 587.9 237.3 587.4 Q233.1 586.9 227.1 592.9 L184.0 636.6 Q174.2 646.9 159.9 648.4 Q145.6 649.9 133.2 637.6 L112.2 616.6 Q98.8 603.2 99.8 590.0 Q100.8 576.8 111.2 566.4 L194.2 483.4 Q215.0 462.1 237.3 462.3 Q259.6 462.5 284.0 486.4 L437.0 639.4 Q449.3 651.8 449.8 667.0 Q450.3 682.2 438.0 693.6 L418.0 713.6 Q404.6 725.9 390.1 724.4 Q375.6 722.9 363.2 710.6 Z M363.2 372.2 L246.5 253.9 Q240.9 248.9 237.0 248.7 Q233.1 248.5 227.1 254.5 L184.0 298.2 Q174.2 308.5 159.9 310.0 Q145.6 311.5 133.2 299.2 L112.2 278.2 Q98.8 264.8 99.8 251.6 Q100.8 238.3 111.2 227.4 L194.2 144.4 Q215.6 123.1 237.6 123.3 Q259.6 123.5 284.0 147.4 L437.0 300.4 Q449.3 313.3 449.8 328.6 Q450.3 343.8 438.0 355.2 L418.0 375.2 Q404.6 387.5 390.1 386.0 Q375.6 384.5 363.2 372.2 Z" transform="matrix(1 0 0 -1 0 1186.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-settings" data-action="settings" data-index="${i}" title="元素设置"><svg viewBox="0 0 1224 1224" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M875.0 670.5 V697.5 Q875.0 722.5 864.0 734.0 Q853.0 745.5 830.0 745.5 H395.0 Q373.0 745.5 362.0 733.5 Q351.0 721.5 351.0 697.5 V670.5 Q351.0 646.5 362.0 635.0 Q373.0 623.5 395.0 623.5 H830.0 Q853.0 623.5 864.0 635.0 Q875.0 646.5 875.0 670.5 Z M668.0 452.5 V479.5 Q668.0 503.5 657.0 515.5 Q646.0 527.5 623.0 527.5 H395.0 Q373.0 527.5 362.0 515.5 Q351.0 503.5 351.0 479.5 V452.5 Q351.0 428.5 362.0 417.0 Q373.0 405.5 395.0 405.5 H623.0 Q646.0 405.5 657.0 417.0 Q668.0 428.5 668.0 452.5 Z M1024.0 154.5 Q1077.0 183.5 1102.0 233.5 Q1116.0 260.5 1119.0 297.0 Q1122.0 333.5 1122.0 414.5 V809.5 Q1122.0 890.5 1119.0 927.0 Q1116.0 963.5 1102.0 990.5 Q1089.0 1015.5 1069.0 1036.0 Q1049.0 1056.5 1024.0 1069.5 Q997.0 1082.5 960.5 1085.5 Q924.0 1088.5 843.0 1088.5 H381.0 Q300.0 1088.5 263.5 1085.5 Q227.0 1082.5 200.0 1069.5 Q175.0 1056.5 155.0 1036.0 Q135.0 1015.5 122.0 990.5 Q108.0 963.5 105.0 927.0 Q102.0 890.5 102.0 809.5 V414.5 Q102.0 333.5 105.0 297.0 Q108.0 260.5 122.0 233.5 Q147.0 183.5 200.0 154.5 Q227.0 141.5 263.5 138.5 Q300.0 135.5 381.0 135.5 H843.0 Q924.0 135.5 960.5 138.5 Q997.0 141.5 1024.0 154.5 Z M261.0 266.5 Q244.0 274.5 234.0 293.5 Q230.0 302.5 228.5 317.0 Q227.0 331.5 227.0 365.5 V728.5 Q227.0 762.5 228.5 777.0 Q230.0 791.5 234.0 800.5 Q243.0 817.5 261.0 826.5 Q269.0 831.5 282.5 832.5 Q296.0 833.5 333.0 833.5 H891.0 Q928.0 833.5 941.5 832.5 Q955.0 831.5 963.0 826.5 Q981.0 817.5 990.0 800.5 Q994.0 791.5 995.5 776.5 Q997.0 761.5 997.0 728.5 V364.5 Q997.0 330.5 995.5 316.5 Q994.0 302.5 990.0 293.5 Q980.0 274.5 963.0 266.5 Q955.0 262.5 937.0 261.5 Q919.0 260.5 891.0 260.5 H333.0 Q305.0 260.5 287.0 261.5 Q269.0 262.5 261.0 266.5 Z" transform="matrix(1 0 0 -1 0 1224)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button></div>`;
     });
     targetListContainer.innerHTML = '<div class="auto-op-target-list">' + html + '</div>';
     updateTargetCount();
   }
-  function updateAutoFillVisibility() { const row = document.getElementById('auto-op-auto-fill-row'); if (row) row.style.display = cv().targets.some(t => t.isInput) ? 'block' : 'none'; }
   function updateTargetCount(status) {
     if (isPowerSave) return;
     const c = cv();
@@ -1337,7 +1518,7 @@
   // ===================== 拖拽 =====================
   let isDragging = false, dragOffX = 0, dragOffY = 0;
   function getEventPos(e) { return e.touches && e.touches.length > 0 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY }; }
-  function onDragStart(e) { if (e.target === toggleBtn || toggleBtn.contains(e.target) || e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || e.target === configBtnEl || configBtnEl.contains(e.target) || e.target === infoBackBtn || infoBackBtn.contains(e.target)) return; isDragging = true; closeConfigMenu(); const pos = getEventPos(e), rect = panel.getBoundingClientRect(); dragOffX = pos.x - rect.left; dragOffY = pos.y - rect.top; e.preventDefault(); }
+  function onDragStart(e) { if (e.target === toggleBtn || toggleBtn.contains(e.target) || e.target === btnHeaderStart || btnHeaderStart.contains(e.target) || e.target === configBtnEl || configBtnEl.contains(e.target) || e.target === infoBackBtn || infoBackBtn.contains(e.target) || e.target === settingsBackBtn || settingsBackBtn.contains(e.target)) return; isDragging = true; closeConfigMenu(); const pos = getEventPos(e), rect = panel.getBoundingClientRect(); dragOffX = pos.x - rect.left; dragOffY = pos.y - rect.top; e.preventDefault(); }
   function onDragMove(e) { if (!isDragging) return; const pos = getEventPos(e); panel.style.left = (pos.x - dragOffX) + 'px'; panel.style.top = (pos.y - dragOffY) + 'px'; panel.style.right = 'auto'; e.preventDefault(); }
   function onDragEnd() { isDragging = false; }
   dragHandle.addEventListener('mousedown', onDragStart); document.addEventListener('mousemove', onDragMove); document.addEventListener('mouseup', onDragEnd);
@@ -1345,11 +1526,14 @@
   const infoDragHandle = infoOverlayEl.querySelector('.auto-op-info-panel-header');
   infoDragHandle.addEventListener('mousedown', onDragStart);
   infoDragHandle.addEventListener('touchstart', onDragStart, { passive: false });
+  const settingsDragHandle = settingsOverlayEl.querySelector('.auto-op-settings-panel-header');
+  settingsDragHandle.addEventListener('mousedown', onDragStart);
+  settingsDragHandle.addEventListener('touchstart', onDragStart, { passive: false });
   toggleBtn.addEventListener('click', e => { e.stopPropagation(); onPanelClickRestore(); if (collapseAnimPhase === 'collapsing' || collapseAnimPhase === 'expanding') return; if (collapseAnimPhase !== 'collapsed') performCollapse(); else performExpand(); });
   // ===================== UI 交互事件 =====================
   multiModeCheckbox.addEventListener('change', e => { const c = cv(); c.isMultiMode = e.target.checked; strategyRow.style.display = c.isMultiMode ? 'block' : 'none'; c.clickStrategy = strategySelect.value; clearSelection(); savePerConfig(activeConfig); });
   strategySelect.addEventListener('change', e => { cv().clickStrategy = e.target.value; savePerConfig(activeConfig); });
-  autoFillInput.addEventListener('input', e => { cv().autoFillContent = e.target.value; savePerConfig(activeConfig); });
+
   [clickIntervalInput, maxClicksInput, missingActionSelect].forEach(el => { el.addEventListener('change', () => savePerConfig(activeConfig)); });
   maxDurationInput.addEventListener('change', e => { let val = parseFloat(e.target.value); const c = cv(); if (isNaN(val) || val <= 0) { c.maxDurationMin = 0; e.target.value = ''; } else { c.maxDurationMin = val; } savePerConfig(activeConfig); });
   autoStartIntervalInput.addEventListener('change', e => { e.stopPropagation(); setupAutoStartFromInput(); });
@@ -1387,7 +1571,7 @@
     const targetObj = { element: el, strict: sels.strict, loose: sels.loose, fingerprint: fp, desc, isInput, parentSelector, parentChain, nearestParent, blueParent, isAuto: false, missCount: 0, _isValid: true, enabled: true, matchTag: true, matchText: true, matchTextMode: 'exact', matchDataAttrs: true, matchAttrs: true, autoDiscover: false, matchParent: !!parentSelector, matchOnclick: !!fp.onclickParam, matchId: !!fp.id, matchClass: !!fp.className };
     if (c.isMultiMode) { c.targets.push(targetObj); el.classList.add('auto-op-selected-highlight'); stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`; }
     else { c.targets.forEach(t => { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); }); c.targets = [targetObj]; el.classList.add('auto-op-selected-highlight'); exitPickMode(); if (c.targets.length > 0) stateSpan.textContent = '就绪'; }
-    updateTargetUI(); updateTargetCount(); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility();
+    updateTargetUI(); updateTargetCount(); refreshParentHighlights(); savePerConfig(activeConfig); 
   }
   function exitPickMode() {
     isPicking = false; btnPick.textContent = '选取元素'; btnPick.classList.remove('picking');
@@ -1400,10 +1584,10 @@
     else { stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : '就绪'; }
     if (c.targets.length === 0) { if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '未选取目标元素') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1500); }
   }
-  async function clearSelection(manual) { const c = cv(); if (manual && IS_MOBILE && c.targets.length > 0 && !await showConfirm('确定清空 ' + c.targets.length + ' 个目标元素？')) return; for (const t of c.targets) { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); } c.targets = []; c.currentQueueIndex = 0; updateTargetUI(); updateTargetCount(); stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); refreshParentHighlights(); savePerConfig(activeConfig); updateAutoFillVisibility(); }
+  async function clearSelection(manual) { const c = cv(); if (manual && IS_MOBILE && c.targets.length > 0 && !await showConfirm('确定清空 ' + c.targets.length + ' 个目标元素？')) return; for (const t of c.targets) { if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight'); if (t._blueParent && t._blueParent.classList) { t._blueParent.classList.remove('auto-op-parent-highlight'); t._blueParent.classList.remove('auto-op-parent-highlight-Overlap'); } if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight'); } c.targets = []; c.currentQueueIndex = 0; updateTargetUI(); updateTargetCount(); stateSpan.textContent = '目标元素已清空'; if (stateTimerID) { clearTimeout(stateTimerID); stateTimerID = null; } stateTimerID = setTimeout(() => { if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素'; stateTimerID = null; }, 1000); refreshParentHighlights(); savePerConfig(activeConfig); }
   btnClearAll.addEventListener('click', e => { e.stopPropagation(); clearSelection(true); });
   // ===================== 开始/停止 =====================
-  function handleToggleRunning(e) { e.stopPropagation(); onPanelClickRestore(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) { hideInfoPanel(false); startClickingFor(activeConfig); } else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
+  function handleToggleRunning(e) { e.stopPropagation(); onPanelClickRestore(); const c = cv(); if (c.targets.length === 0) return; if (!c.isRunning) { hideInfoPanel(false); hideSettingsPanel(false); startClickingFor(activeConfig); } else { stopClickingFor(activeConfig); stateSpan.textContent = '已停止'; } }
   btnStart.addEventListener('click', handleToggleRunning); btnHeaderStart.addEventListener('click', handleToggleRunning);
   function startClickingFor(ci, savedTimestamp) {
     const c = configs[ci];
@@ -1430,14 +1614,14 @@
       btnHeaderStart.innerHTML = '<svg viewBox="0 0 1172.4 1172.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M927.7 149.7 V1022.7 Q926.7 1051.7 916.7 1063.2 Q906.7 1074.7 880.7 1074.7 H852.7 Q826.7 1074.7 816.2 1062.7 Q805.7 1050.7 805.7 1022.7 V149.7 Q805.7 121.7 816.2 109.7 Q826.7 97.7 851.7 97.7 H879.7 Q907.7 97.7 917.7 109.7 Q927.7 121.7 927.7 149.7 Z M366.7 149.7 V1022.7 Q365.7 1052.7 355.7 1063.7 Q345.7 1074.7 319.7 1074.7 H291.7 Q264.7 1074.7 254.7 1062.7 Q244.7 1050.7 244.7 1022.7 V149.7 Q244.7 121.7 254.2 109.7 Q263.7 97.7 291.7 97.7 H319.7 Q347.7 97.7 357.2 109.7 Q366.7 121.7 366.7 149.7 Z" transform="matrix(1 0 0 -1 0 1172.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>'; btnHeaderStart.classList.add('is-stop');
       btnPick.disabled = true; multiModeCheckbox.disabled = true; strategySelect.disabled = true;
       maxClicksInput.disabled = true; clickIntervalInput.disabled = true; missingActionSelect.disabled = true;
-      autoFillInput.disabled = true; maxDurationInput.disabled = true; autoStartIntervalInput.disabled = true;
+      maxDurationInput.disabled = true; autoStartIntervalInput.disabled = true;
       statusDiv.classList.add('running'); stateSpan.textContent = '运行中'; stateSpan.classList.remove('auto-op-waiting');
     }
     startElapsedTimer(savedTimestamp || 0);
     if (ci === activeConfig) { const dVal = parseFloat(maxDurationInput.value); c.maxDurationMin = (!isNaN(dVal) && dVal > 0) ? dVal : 0; }
     if (c.maxDurationMin > 0) { const maxDurationMs = c.maxDurationMin * 60 * 1000; if (c.maxDurationTimerID) clearTimeout(c.maxDurationTimerID); const alreadyElapsed = savedTimestamp ? (Date.now() - savedTimestamp) : 0; const remaining = Math.max(0, maxDurationMs - alreadyElapsed); if (remaining <= 0) { stopClickingFor(ci); if (ci === activeConfig) stateSpan.textContent = '最长时间已到'; return; } c.maxDurationTimerID = setTimeout(() => { if (c.isRunning) { stopClickingFor(ci); if (ci === activeConfig) stateSpan.textContent = '最长时间已到'; } }, remaining); }
     if (c.autoStartCountdownTimerID) { clearInterval(c.autoStartCountdownTimerID); c.autoStartCountdownTimerID = null; }
-    doClickFor(ci); c.timerID = setInterval(() => doClickFor(ci), c.clickInterval);
+    doClickFor(ci); if (!c.isMultiMode || c.clickStrategy !== 'sequential') { c.timerID = setInterval(() => doClickFor(ci), c.clickInterval); }
     requestWakeLock(); suppressFocus();
     savePerConfig(ci); updateConfigBtnLabel();
   }
@@ -1448,7 +1632,7 @@
     if (!configs.some(cc => cc.isRunning)) restoreFocus();
     if (!isAutoRefresh && !configs.some(cc => cc.isRunning)) releaseWakeLock();
     if (c.waitTimerID) { clearTimeout(c.waitTimerID); c.waitTimerID = null; }
-    if (c.timerID) { clearInterval(c.timerID); c.timerID = null; }
+    if (c.timerID) { clearTimeout(c.timerID); c.timerID = null; }
     if (ci === activeConfig) stopElapsedTimer();
     if (c.maxDurationTimerID) { clearTimeout(c.maxDurationTimerID); c.maxDurationTimerID = null; }
     if (c.autoStartEnabled && c.autoStartIntervalMin > 0) { c.autoStartNextTime = Date.now() + c.autoStartIntervalMin * 60 * 1000; startAutoStartCountdownTimerFor(ci); }
@@ -1457,7 +1641,7 @@
       btnHeaderStart.innerHTML = '<svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>'; btnHeaderStart.classList.remove('is-stop');
       btnPick.disabled = false; multiModeCheckbox.disabled = false; strategySelect.disabled = false;
       maxClicksInput.disabled = false; clickIntervalInput.disabled = false; missingActionSelect.disabled = false;
-      autoFillInput.disabled = false; maxDurationInput.disabled = false; autoStartIntervalInput.disabled = false;
+      maxDurationInput.disabled = false; autoStartIntervalInput.disabled = false;
       statusDiv.classList.remove('running'); stateSpan.classList.remove('auto-op-waiting');
       if (c.targets.length > 0) stateSpan.textContent = '就绪'; else stateSpan.textContent = '请选取目标元素';
       if (!c.autoStartEnabled || c.autoStartIntervalMin <= 0) autoStartCountdownLabel.textContent = '';
@@ -1488,7 +1672,7 @@
       if (ci === activeConfig && !c.uiThrottled) updateTargetCount(status);
 
       if (c.isMultiMode && c.clickStrategy === 'sequential') {
-        const idx = c.currentQueueIndex; if (idx >= totalCount) { c.currentQueueIndex = 0; return; }
+        let idx = c.currentQueueIndex; if (idx >= totalCount) { idx = 0; c.currentQueueIndex = 0; }
         if (status[idx] === 'disabled') {
           if (c.isWaiting) { c.isWaiting = false; if (c.waitTimerID) { clearTimeout(c.waitTimerID); c.waitTimerID = null; } }
           updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}/${totalCount}] 已禁用跳过`);
@@ -1496,18 +1680,31 @@
         } else if (status[idx]) {
           if (c.isWaiting) { c.isWaiting = false; if (c.waitTimerID) { clearTimeout(c.waitTimerID); c.waitTimerID = null; } }
           const t = c.targets[idx], el = t.element;
-          if (t.isInput) { if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = c.autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = c.autoFillContent; } else { el.click(); }
+          if (t.scrollIntoView) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          if (t.isInput) { const fill = t.customFill || ''; if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = fill; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = fill; } else { el.click(); }
           c.clickedCount++;
           updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}/${totalCount}]`);
           c.currentQueueIndex = (idx + 1) % totalCount;
           if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig) stateSpan.textContent = '已完成'; }
+          if (c.isRunning) {
+            let nextDelay = c.clickInterval;
+            if (t.customInterval != null && t.customInterval !== '') { nextDelay = Number(t.customInterval); }
+            if (c.timerID) { clearTimeout(c.timerID); }
+            c.timerID = setTimeout(() => doClickFor(ci), nextDelay);
+          }
+          cleanupAutoTargetsFor(ci, status); return;
         } else {
           if (missingAction === 'stop') { stopClickingFor(ci); updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}] 元素已消失`); } else { if (!c.isWaiting) { c.isWaiting = true; c.waitStartTime = Date.now(); startWaitTimer(ci, idx); } }
+        }
+        if (c.isRunning) {
+          let nextDelay = c.clickInterval;
+          if (c.timerID) { clearTimeout(c.timerID); }
+          c.timerID = setTimeout(() => doClickFor(ci), nextDelay);
         }
         cleanupAutoTargetsFor(ci, status); return;
       }
       let shouldStop = false, anyClicked = 0;
-      for (let i = 0; i < totalCount; i++) { const t = c.targets[i]; if (status[i] === 'disabled') { continue; } if (status[i]) { if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; break; } anyClicked++; c.clickedCount++; const el = t.element; if (t.isInput) { if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = c.autoFillContent; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = c.autoFillContent; } else { el.click(); } } else { if (missingAction === 'stop') shouldStop = true; } }
+      for (let i = 0; i < totalCount; i++) { const t = c.targets[i]; if (status[i] === 'disabled') { continue; } if (status[i]) { if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; break; } anyClicked++; c.clickedCount++; const el = t.element; if (t.scrollIntoView) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } if (t.isInput) { const fill = t.customFill || ''; if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { el.value = fill; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } else if (el.isContentEditable) el.innerHTML = fill; } else { el.click(); } } else { if (missingAction === 'stop') shouldStop = true; } }
       if (shouldStop) { stopClickingFor(ci); updateRunningDisplay(ci, c.clickedCount, '元素已消失'); return; }
       if (anyClicked) { updateRunningDisplay(ci, c.clickedCount, c.isMultiMode && c.clickStrategy === 'simultaneous' ? '同时操作运行中' : '运行中'); if (c.clickedCount >= c.maxClicks) { stopClickingFor(ci); if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成'; } }
       cleanupAutoTargetsFor(ci, status);

@@ -2,65 +2,29 @@
 
 [油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充）元素。
 
-## 仓库概览
+## 安装
 
-| 项目 | 说明 |
-| --- | --- |
-| **仓库地址** | [github.com/sewolonX/Automatic-operation](https://github.com/sewolonX/Automatic-operation) |
-| **主分支** | `main` |
-| **许可证** | MIT |
-| **语言** | JavaScript（纯 JS，无构建工具） |
-| **运行时** | Tampermonkey / Greasemonkey / Violentmonkey |
-| **运行位置** | `document-idle`，匹配 `*://*/*`（所有 HTTP(S) 页面） |
-| **外部依赖** | 无（字体 CDN 可选，加载失败自动回退 `system-ui`） |
+1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展
+2. 选择版本安装脚本，打开任意网页，左上角出现 **自动操作** 面板（初始为折叠状态）
 
-### 文件结构
-
-```text
-Automatic-operation/
-├── Automatic-operation.js    # 主脚本（~1580 行），全部功能
-├── Automatic-clicker.js      # 早期简化版（~777 行），单目标点击器
-├── README.md                 # 本文档
-└── LICENSE                   # MIT 许可证
-```
-
-### 主脚本代码行数分布
-
-| 模块 | 大致行数 | 内容 |
+| 版本 | 链接 | 说明 |
 | --- | --- | --- |
-| 用户脚本元数据 | 1–12 | `@name` `@version` `@match` 等 |
-| 全局状态 & 配置初始化 | 13–60 | 变量声明、10 套 `configs[]` |
-| CSS 注入 | 67–293 | 暗/亮双主题 ~200 行 CSS |
-| 主题检测 & 监听管理 | 294–355 | `scanWebpageTheme` `startThemeWatchers` `stopThemeWatchers` |
-| DOM 构建（面板 + 覆盖层） | 356–460 | 3 页面板、信息覆盖层、省电覆盖层、配置菜单 |
-| DOM 引用缓存 | 461–520 | 所有 `getElementById` 引用 |
-| 配置菜单 & 省电模式 | 521–660 | 菜单开关、随机位置、全屏管理 |
-| `switchConfig` — 配置切换 | 661–730 | 保存当前→清高亮→加载新→同步 UI |
-| 持久化（save / load / migrate） | 731–840 | 3 级存储键、旧数据迁移 |
-| 元素工具函数 | 841–855 | `buildSelectors` `getElText` `getElementFingerprint` `matchesFingerprint` |
-| 查找 & 发现 & 查询缓存 | 856–870 | `tryFindTarget` `discoverNewTargetsFor` `cachedQuery` `beginQueryCycle` |
-| 分页 & 折叠 & 透明度 & 对话框 | 871–910 | `goToPage` `performCollapse` `performExpand` `showConfirm` |
-| 自动刷新 | 911–960 | 进度条、触发刷新、日志 |
-| 自动启动 & 运行计时 | 961–980 | 倒计时、`startElapsedTimer` |
-| 目标列表事件委托 | 981–1020 | `delete` `info` `move-up` `move-down` |
-| 信息面板（show / hide） | 1021–1115 | 详情 HTML 构建、滑入/滑出动画 |
-| 元素测试 `runElementTest` | 1116–1220 | 9 项逐一测试 + `setResult` / `setCount` |
-| 信息面板事件委托 | 1221–1295 | 14 种 `data-info-action` 分发 |
-| UI 更新 & 拖拽 & 全局事件 | 1296–1370 | `updateTargetUI` `updateTargetCount` 拖拽处理 |
-| 元素选取 & 开始/停止操作 | 1371–1565 | `selectTarget` `startClickingFor` `doClickFor` `stopClickingFor` |
-| 初始化 | 1566–1588 | 主题→加载→折叠→恢复状态→自动启动 |
+| **正式版** | [点击安装](https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js) | OSS CDN，稳定版本 |
+| **Dev 版** | [点击安装](https://github.com/sewolonX/Automatic-operation/raw/refs/heads/main/Automatic-operation.js) | GitHub 直连，随 `main` 分支更新 |
+
+---
 
 ## 目录
 
-- [仓库概览](#仓库概览)
-- [架构概览](#架构概览)
 - [安装](#安装)
+- [架构概览](#架构概览)
 - [界面概览](#界面概览)
 - [详细教程](#详细教程)
   - [一、元素选取与指纹提取](#一元素选取与指纹提取)
   - [二、匹配规则详解](#二匹配规则详解)
-  - [三、元素测试系统](#三元素测试系统)
-  - [四、操作执行（点击 / 填充）](#四操作执行点击--填充)
+  - [三、元素设置面板](#三元素设置面板)
+  - [四、元素测试系统](#四元素测试系统)
+  - [五、操作执行（点击 / 填充）](#四操作执行点击--填充)
   - [五、多选模式与操作策略](#五多选模式与操作策略)
   - [六、自动填充](#六自动填充)
   - [七、自动刷新](#七自动刷新)
@@ -77,7 +41,9 @@ Automatic-operation/
 - [十八、元素详情面板按钮透明度](#十八元素详情面板按钮透明度)
 - [参数参考](#参数参考)
 - [技术参考](#技术参考)
-- [文件](#文件)
+- [仓库概览](#仓库概览)
+- [文件结构](#文件结构)
+- [主脚本代码行数分布](#主脚本代码行数分布)
 - [许可与作者](#许可与作者)
 
 ---
@@ -86,7 +52,7 @@ Automatic-operation/
 
 脚本是一个 **IIFE（立即执行函数表达式）**，纯 JavaScript 无外部依赖（字体 CDN 除外），在 `document-idle` 时运行，匹配所有 `*://*/*` 页面。
 
-### 代码结构（~1560 行）
+### 代码结构（~1780 行）
 
 ```
 ┌─ 元数据 (UserScript header)
@@ -111,7 +77,9 @@ Automatic-operation/
 │  ├─ 自动启动 (countdown / timer)
 │  ├─ 运行计时
 │  ├─ 目标列表事件委托
-│  ├─ 信息面板 (show/hide)
+│  ├─ 信息面板 (show/hide/transition)
+│  ├─ 元素设置面板 (show/hide/transition)
+│  ├─ 面板高度适配 (fitBodyToOverlay / restoreBodyHeight)
 │  ├─ 元素测试 (runElementTest)
 │  ├─ 信息面板事件委托 (toggle / change / input)
 │  ├─ UI 更新函数 (target list / count / running display)
@@ -132,20 +100,6 @@ Automatic-operation/
                                               ↓
 页面刷新 → loadData() → 状态恢复 → UI 同步 → 继续运行
 ```
-
----
-
-## 安装
-
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展
-2. 选择版本安装脚本，打开任意网页，左上角出现 **自动操作** 面板（初始为折叠状态）
-
-| 版本 | 链接 | 说明 |
-| --- | --- | --- |
-| **正式版** | [点击安装](https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js) | OSS CDN，稳定版本 |
-| **Dev 版** | [点击安装](https://github.com/sewolonX/Automatic-operation/raw/refs/heads/main/Automatic-operation.js) | GitHub 直连，随 `main` 分支更新 |
-
----
 
 ## 界面概览
 
@@ -335,7 +289,78 @@ discoverNewTargetsFor(ci)
 
 ---
 
-### 三、元素测试系统
+### 三、元素设置面板
+
+点击目标元素右侧的 ⚙ 按钮打开，与匹配规则面板共用同一套 CSS 结构和滑入/滑出动画。
+
+#### 3.1 面板结构
+
+```
+┌──────────────────────────────────┐
+│  ← 元素描述              (可拖动) │ ← header
+├──────────────────────────────────┤
+│  启用此元素               [开关] │
+│  元素描述              [______]  │
+│  输入元素                 [开关] │
+│  填充文本              [______]  │ ← isInput 开时才显示
+│  独立间隔 (ms)          [______]  │
+│  滚动到可视区             [开关] │
+│  显示父级                 [开关] │
+└──────────────────────────────────┘
+```
+
+#### 3.2 设置项说明
+
+| 设置 | 存储键 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| 启用此元素 | `enabled` | boolean | 关闭后该元素不参与操作，列表中灰显 |
+| 元素描述 | `desc` | string | 可编辑，修改后列表和面板标题同步更新 |
+| 输入元素 | `isInput` | boolean | 标记为输入框，开启后显示填充文本输入框 |
+| 填充文本 | `customFill` | string | 每元素独立填充内容，留空则无填充（不依赖全局设置） |
+| 独立间隔 | `customInterval` | number/null | 见 §3.3 |
+| 滚动到可视区 | `scrollIntoView` | boolean | 操作前调用 `el.scrollIntoView({ behavior: 'smooth', block: 'center' })` |
+| 显示父级 | `showParent` | boolean | 控制目标列表中是否显示父级容器链 `└>` |
+
+#### 3.3 独立间隔（customInterval）
+
+仅对**队列（顺序）模式**生效。元素完成操作后，用该值替代全局操作间隔：
+
+| 输入 | 行为 |
+| --- | --- |
+| 留空 | 使用全局 `操作间隔` |
+| `0` | 不等待，立刻处理下一个 |
+| 数字（如 `500`） | 等待指定毫秒数 |
+
+**实现**：顺序模式使用 `setTimeout` 链式调度。每个 tick 处理一个元素后，根据刚处理元素的 `customInterval` 决定下次延迟：
+
+```
+元素① customInterval=500  → 等 500ms → 元素②
+元素② customInterval=空   → 等 1000ms(全局) → 元素③
+元素③ customInterval=0    → 立刻 → 元素①(下一轮)
+```
+
+同时模式不受影响，统一用全局间隔。
+
+#### 3.4 滚动到可视区
+
+开启后，在点击/填充之前将元素滚到屏幕中央。`scrollIntoView` 使用浏览器原生 `behavior: 'smooth'`，兼容所有内部滚动容器（不仅限于 `window` 滚动）。
+
+#### 3.5 显示父级
+
+纯 UI 开关。开启后在目标列表的元素描述下方显示父级容器链：
+
+```text
+元素描述
+└> div#app
+└> ul.list
+└> li.item
+```
+
+关闭则只显示元素描述，父级链隐藏。每元素独立控制。
+
+---
+
+### 四、元素测试系统
 
 #### 3.1 触发方式
 
@@ -350,7 +375,8 @@ runElementTest()
   │   ├─ 清空 _testHighlightedElements 数组
   │   └─ 重置所有 .auto-op-test-result / .auto-op-test-count 的文本和状态
   ├─ 获取当前目标 t = cv().targets[infoCurrentIndex]
-  ├─ 若元素已禁用 → 显示 "⊘ 已禁用" 并返回
+  ├─ 若元素已禁用 → 全部显示 ⊘（灰色）并返回
+  ├─ 若已启用 → 所有测试项初始化为 ⊘（灰色）
   ├─ CSS 选择器测试 (strict → loose → tagName)
   │   └─ 结果写入 #auto-op-test-css-result（单独的 CSS 结果显示区）
   ├─ 逐项测试（每项独立查询、独立高亮）：
@@ -388,7 +414,9 @@ runElementTest()
 - **属性行**：计数紧贴属性键名（如 `href3`），表示组合条件匹配到的元素总数
 - **CSS 选择器**：独立显示在「启用此元素」行
 - **页面高亮**：所有匹配元素显示粉色虚线框（`#F8BBD0`）
-- **已禁用元素**：显示 `⊘ 已禁用`，不执行测试
+- **已禁用元素**：所有测试项显示灰色 `⊘`，不执行测试
+- **未参与的匹配项**：开关关闭的匹配规则显示灰色 `⊘`（如关闭了 id 匹配则 id 项显示 `⊘`）
+- **测试按钮**：位于启用开关左侧，靠右排列
 
 #### 3.4 辅助函数
 
@@ -401,6 +429,9 @@ function setResult(criterion, found, count) {
   if (el) {
     el.textContent = found ? `✓ ${count}` : '✕';
     el.className = `auto-op-test-result ${found ? 'pass' : 'fail'}`;
+  }
+}
+// 未参与测试的项保持 ⊘（disabled 类，灰色）
   }
 }
 
@@ -725,7 +756,32 @@ scanWebpageTheme(el)
 - **折叠后**：1s 后自动半透明
 - **点击面板**：恢复不透明，2s 后再次半透明
 - **退出选取 / 展开**：恢复完全不透明
-- 渐变过渡：0.4s（CSS transition）
+
+#### 13.4 详情面板（overlay）动画
+
+匹配规则和元素设置面板从右侧滑入/滑出：
+
+```css
+transform: translateX(105%);
+transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+will-change: transform;
+```
+
+- **打开**：`display:flex` -> 双 `requestAnimationFrame` -> `classList.add('open')` -> `translateX(0)` 过渡
+- **关闭(动画)**：inline `display:flex` 保活 -> `classList.remove('open')` -> `translateX(105%)` -> `transitionend` -> `display:none`
+- **关闭(无动画)**：直接 `display:none`
+- 两个面板互斥
+- header 可拖动，与主面板一致
+
+#### 13.5 面板高度自适应
+
+打开 overlay 时 body 自动适配内容高度：
+
+- **测量**：离屏探针（`position:fixed; left:-9999px`）克隆 overlay HTML，读 `scrollHeight` 获取真实高度，减去 `.auto-op-header` 高度
+- **伸缩**：设 `min-height` + `max-height` 到目标值，CSS `0.4s cubic-bezier(0.4,0,0.2,1)` 过渡
+- **并行**：`fitBodyToOverlay()` 和 `classList.add('open')` 在同一帧执行，overlay 滑入和 body 伸缩同步
+- **恢复**：`restoreBodyHeight()` 清除 inline 高度，`max-height` 回到保存原值
+- **折叠兼容**：`collapsed/body-hidden` CSS 规则包含 `min-height:0 !important` 覆盖 inline 值
 
 ---
 
@@ -914,13 +970,55 @@ infoContentEl.addEventListener('click', ...)  → 测试按钮
 
 ---
 
-## 文件
+## 仓库概览
 
-| 文件 | 说明 |
+| 项目 | 说明 |
 | --- | --- |
-| `Automatic-operation.js` | 主脚本（~1560 行） |
-| `Automatic-clicker.js` | 早期简化版 |
-| `README.md` | 本文档 |
+| **仓库地址** | [github.com/sewolonX/Automatic-operation](https://github.com/sewolonX/Automatic-operation) |
+| **主分支** | `main` |
+| **许可证** | MIT |
+| **语言** | JavaScript（纯 JS，无构建工具） |
+| **运行时** | Tampermonkey / Greasemonkey / Violentmonkey |
+| **运行位置** | `document-idle`，匹配 `*://*/*`（所有 HTTP(S) 页面） |
+| **外部依赖** | 无（字体 CDN 可选，加载失败自动回退 `system-ui`） |
+
+### 文件结构
+
+```text
+Automatic-operation/
+├── Automatic-operation.js    # 主脚本（~1780 行），全部功能
+├── Automatic-clicker.js      # 早期简化版（~777 行），单目标点击器
+├── README.md                 # 本文档
+└── LICENSE                   # MIT 许可证
+```
+
+### 主脚本代码行数分布
+
+| 模块 | 大致行数 | 内容 |
+| --- | --- | --- |
+| 用户脚本元数据 | 1–12 | `@name` `@version` `@match` 等 |
+| 全局状态 & 配置初始化 | 13–60 | 变量声明、10 套 `configs[]` |
+| CSS 注入 | 67–293 | 暗/亮双主题 ~200 行 CSS |
+| 主题检测 & 监听管理 | 294–355 | `scanWebpageTheme` `startThemeWatchers` `stopThemeWatchers` |
+| DOM 构建（面板 + 覆盖层） | 356–460 | 3 页面板、信息覆盖层、省电覆盖层、配置菜单 |
+| DOM 引用缓存 | 461–520 | 所有 `getElementById` 引用 |
+| 配置菜单 & 省电模式 | 521–660 | 菜单开关、随机位置、全屏管理 |
+| `switchConfig` — 配置切换 | 661–730 | 保存当前→清高亮→加载新→同步 UI |
+| 持久化（save / load / migrate） | 731–840 | 3 级存储键、旧数据迁移 |
+| 元素工具函数 | 841–855 | `buildSelectors` `getElText` `getElementFingerprint` `matchesFingerprint` |
+| 查找 & 发现 & 查询缓存 | 856–870 | `tryFindTarget` `discoverNewTargetsFor` `cachedQuery` `beginQueryCycle` |
+| 分页 & 折叠 & 透明度 & 对话框 | 871–910 | `goToPage` `performCollapse` `performExpand` `showConfirm` |
+| 自动刷新 | 911–960 | 进度条、触发刷新、日志 |
+| 自动启动 & 运行计时 | 961–980 | 倒计时、`startElapsedTimer` |
+| 目标列表事件委托 | 981–1035 | `delete` `info` `settings` `move-up` `move-down` |
+| 信息面板（show / hide） | 1063–1163 | 详情 HTML 构建、滑入/滑出动画 |
+| 元素测试 `runElementTest` | 1270–1370 | 9 项逐一测试 + `setResult` / `setCount` |
+| 信息面板事件委托 | 1371–1430 | 14 种 `data-info-action` 分发 |
+| 元素设置面板（show / hide） | 1199–1268 | 设置面板 HTML 构建、表单事件、滑入/滑出 |
+| 面板高度适配 | 1168–1197 | 离屏探针测高、`fitBodyToOverlay` / `restoreBodyHeight` |
+| UI 更新 & 拖拽 & 全局事件 | 1487–1553 | `updateTargetUI` `updateTargetCount` 拖拽处理 |
+| 元素选取 & 开始/停止操作 | 1554–1720 | `selectTarget` `startClickingFor` `doClickFor` `stopClickingFor` |
+| 初始化 | 1720–1779 | 主题→加载→折叠→恢复状态→自动启动 |
 
 ---
 
