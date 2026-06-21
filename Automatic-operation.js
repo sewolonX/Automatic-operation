@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.1.4
+// @version      5.1.5
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -45,7 +45,7 @@
 		refreshProgressTimerID = null,
 		refreshLogs = [];
 	let currentPage = 0;
-	const PAGE_COUNT = 3;
+	const PAGE_COUNT = 4;
 	let collapseAnimPhase = 'collapsed',
 		collapsedWidth = 300;
 	let wakeLock = null,
@@ -1300,17 +1300,20 @@
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			padding: 0;
+			padding: 3px;
 			margin: 0 0 10px;
-			gap: 8px;
-			flex-shrink: 0
+			gap: 3px;
+			flex-shrink: 0;
+			background: var(--panel-button-bg);
+			border-radius: 8px;
+			border: 1px solid var(--panel-button-border)
 		}
 
 		.auto-op-page-btn {
-			width: 30px;
+			flex: 1;
 			height: 30px;
-			border: 1px solid var(--panel-button-border);
-			background: var(--panel-button-bg);
+			border: none;
+			background: transparent;
 			color: var(--panel-button-text);
 			border-radius: 6px;
 			cursor: pointer;
@@ -1336,9 +1339,9 @@
 			transform: scale(0.85) !important
 		}
 
-		.auto-op-page-btn-space {
-			flex: 1;
-			min-width: 0
+		.auto-op-page-btn.active {
+			background: var(--panel-button-hover-bg);
+			color: var(--panel-button-hover-text)
 		}
 
 		.auto-op-page-container {
@@ -2063,9 +2066,10 @@
     </div>
     <div class="auto-op-body">
       <div class="auto-op-page-selector">
-        <button class="auto-op-page-btn" id="auto-op-page-prev" title="上一页"><svg viewBox="0 0 1239.6 1239.6" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M339.8 590.3 L813.8 117.3 Q828.8 103.3 844.3 103.8 Q859.8 104.3 878.8 122.3 L896.8 140.3 Q909.8 153.3 910.3 169.3 Q910.8 185.3 899.8 197.3 L477.8 619.3 L899.8 1040.3 Q911.8 1052.3 911.3 1069.3 Q910.8 1086.3 899.8 1098.3 L870.8 1126.3 Q858.8 1136.3 842.8 1135.8 Q826.8 1135.3 815.8 1124.3 L338.8 647.3 Q327.8 636.3 328.3 618.8 Q328.8 601.3 339.8 590.3 Z" transform="matrix(1 0 0 -1 0 1239.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
-        <div class="auto-op-page-btn-space"></div>
-        <button class="auto-op-page-btn" id="auto-op-page-next" title="下一页"><svg viewBox="0 0 1207.2 1207.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block;transform:scaleX(-1)"><path d="M333.6 583.6 L807.6 110.6 Q817.6 100.6 828.1 101.1 Q838.6 101.6 852.6 115.6 L870.6 133.6 Q879.6 142.6 880.6 152.6 Q881.6 162.6 873.6 170.6 L442.6 602.6 L873.6 1033.6 Q881.6 1041.6 881.1 1052.6 Q880.6 1063.6 873.6 1071.6 L844.6 1099.6 Q837.6 1106.6 827.6 1106.1 Q817.6 1105.6 809.6 1097.6 L332.6 620.6 Q325.6 613.6 325.6 602.6 Q325.6 591.6 333.6 583.6 Z" transform="matrix(1 0 0 -1 0 1207.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn active" data-page="0" title="操作"><svg viewBox="0 0 1197.6 1197.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M988.8 161.3 Q1046.8 191.3 1073.8 246.3 Q1089.8 277.3 1093.8 319.8 Q1097.8 362.3 1097.8 459.3 V739.3 Q1097.8 836.3 1093.8 878.8 Q1089.8 921.3 1073.8 952.3 Q1045.8 1009.3 988.8 1037.3 Q957.8 1053.3 915.3 1057.3 Q872.8 1061.3 775.8 1061.3 H420.8 Q324.8 1061.3 282.3 1057.3 Q239.8 1053.3 207.8 1037.3 Q151.8 1009.3 123.8 952.3 Q107.8 921.3 103.8 878.8 Q99.8 836.3 99.8 739.3 V459.3 Q99.8 362.3 103.8 319.8 Q107.8 277.3 123.8 246.3 Q150.8 191.3 207.8 161.3 Q239.8 144.3 282.3 140.3 Q324.8 136.3 420.8 136.3 H775.8 Q872.8 136.3 915.3 140.3 Q957.8 144.3 988.8 161.3 Z M263.8 261.3 Q238.8 275.3 222.8 300.3 Q215.8 315.3 214.3 337.8 Q212.8 360.3 212.8 413.3 V785.3 Q212.8 839.3 214.3 860.8 Q215.8 882.3 222.8 897.3 Q237.8 924.3 263.8 937.3 Q277.8 944.3 299.8 945.8 Q321.8 947.3 376.8 947.3 H682.8 V251.3 H376.8 Q321.8 251.3 299.8 252.8 Q277.8 254.3 263.8 261.3 Z M796.8 947.3 H820.8 Q875.8 947.3 897.3 945.8 Q918.8 944.3 933.8 937.3 Q960.8 922.3 973.8 897.3 Q980.8 882.3 982.3 860.8 Q983.8 839.3 983.8 785.3 V413.3 Q983.8 359.3 982.3 337.3 Q980.8 315.3 973.8 300.3 Q960.8 277.3 933.8 261.3 Q918.8 254.3 897.3 252.8 Q875.8 251.3 820.8 251.3 H796.8 Z M420.8 769.3 V790.3 Q420.8 810.3 412.3 819.8 Q403.8 829.3 385.8 829.3 H310.8 Q291.8 829.3 283.3 819.8 Q274.8 810.3 274.8 790.3 V769.3 Q274.8 748.3 283.3 739.3 Q291.8 730.3 310.8 730.3 H385.8 Q403.8 730.3 412.3 739.3 Q420.8 748.3 420.8 769.3 Z M420.8 588.3 V609.3 Q420.8 629.3 412.3 638.8 Q403.8 648.3 385.8 648.3 H310.8 Q291.8 648.3 283.3 638.8 Q274.8 629.3 274.8 609.3 V588.3 Q274.8 567.3 283.3 558.3 Q291.8 549.3 310.8 549.3 H385.8 Q403.8 549.3 412.3 558.3 Q420.8 567.3 420.8 588.3 Z M626.8 769.3 V790.3 Q626.8 810.3 618.8 819.8 Q610.8 829.3 591.8 829.3 H515.8 Q497.8 829.3 489.3 819.8 Q480.8 810.3 480.8 790.3 V769.3 Q480.8 748.3 489.3 739.3 Q497.8 730.3 515.8 730.3 H591.8 Q610.8 730.3 618.8 739.3 Q626.8 748.3 626.8 769.3 Z M626.8 588.3 V609.3 Q626.8 629.3 618.8 638.8 Q610.8 648.3 591.8 648.3 H515.8 Q497.8 648.3 489.3 638.8 Q480.8 629.3 480.8 609.3 V588.3 Q480.8 567.3 489.3 558.3 Q497.8 549.3 515.8 549.3 H591.8 Q610.8 549.3 618.8 558.3 Q626.8 567.3 626.8 588.3 Z M420.8 407.3 V429.3 Q420.8 449.3 412.3 458.8 Q403.8 468.3 385.8 468.3 H310.8 Q291.8 468.3 283.3 458.8 Q274.8 449.3 274.8 429.3 V407.3 Q274.8 386.3 283.3 377.8 Q291.8 369.3 310.8 369.3 H385.8 Q403.8 369.3 412.3 377.8 Q420.8 386.3 420.8 407.3 Z" transform="matrix(1 0 0 -1 0 1197.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn" data-page="1" title="参数"><svg viewBox="0 0 1173.6 1173.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M1075.8 939.3 V968.3 Q1075.8 989.3 1062.8 999.8 Q1049.8 1010.3 1030.8 1010.3 H398.8 Q379.8 1010.3 367.3 999.3 Q354.8 988.3 354.8 969.3 V940.3 Q354.8 919.3 367.3 908.3 Q379.8 897.3 398.8 897.3 H1030.8 Q1049.8 897.3 1062.8 907.8 Q1075.8 918.3 1075.8 939.3 Z M230.8 138.3 Q253.8 149.3 264.8 172.3 Q267.8 180.3 268.3 191.8 Q268.8 203.3 268.8 219.3 Q268.8 256.3 264.8 266.3 Q254.8 290.3 230.8 299.3 Q222.8 302.3 211.3 303.3 Q199.8 304.3 183.8 304.3 Q167.8 304.3 155.8 303.3 Q143.8 302.3 135.8 299.3 Q112.8 289.3 103.8 267.3 Q99.8 259.3 98.8 247.3 Q97.8 235.3 97.8 219.3 Q97.8 203.3 98.8 191.3 Q99.8 179.3 103.8 171.3 Q112.8 149.3 135.8 138.3 Q143.8 135.3 155.8 134.8 Q167.8 134.3 183.8 134.3 Q199.8 134.3 211.3 134.8 Q222.8 135.3 230.8 138.3 Z M230.8 506.3 Q253.8 518.3 264.8 541.3 Q267.8 548.3 268.3 560.3 Q268.8 572.3 268.8 587.3 Q268.8 618.3 264.8 633.3 Q252.8 657.3 231.8 666.3 Q223.8 670.3 211.8 671.3 Q199.8 672.3 183.8 672.3 Q167.8 672.3 155.3 671.3 Q142.8 670.3 134.8 666.3 Q112.8 656.3 103.8 634.3 Q99.8 626.3 98.8 614.8 Q97.8 603.3 97.8 587.3 Q97.8 571.3 98.8 559.8 Q99.8 548.3 103.8 540.3 Q112.8 517.3 135.8 506.3 Q143.8 503.3 155.8 502.8 Q167.8 502.3 183.8 502.3 Q199.8 502.3 211.3 502.8 Q222.8 503.3 230.8 506.3 Z M1075.8 205.3 V234.3 Q1075.8 255.3 1062.8 265.8 Q1049.8 276.3 1030.8 276.3 H398.8 Q379.8 276.3 367.3 265.3 Q354.8 254.3 354.8 235.3 V206.3 Q354.8 185.3 367.3 174.3 Q379.8 163.3 398.8 163.3 H1030.8 Q1049.8 163.3 1062.8 173.8 Q1075.8 184.3 1075.8 205.3 Z M230.8 873.3 Q254.8 883.3 264.8 907.3 Q268.8 917.3 268.8 954.3 Q268.8 970.3 268.3 981.8 Q267.8 993.3 264.8 1001.3 Q253.8 1024.3 230.8 1035.3 Q222.8 1038.3 211.3 1038.8 Q199.8 1039.3 183.8 1039.3 Q167.8 1039.3 155.8 1038.8 Q143.8 1038.3 135.8 1035.3 Q112.8 1024.3 103.8 1002.3 Q99.8 994.3 98.8 982.3 Q97.8 970.3 97.8 954.3 Q97.8 938.3 98.8 926.3 Q99.8 914.3 103.8 906.3 Q112.8 885.3 135.8 873.3 Q143.8 870.3 155.8 869.8 Q167.8 869.3 183.8 869.3 Q199.8 869.3 211.3 869.8 Q222.8 870.3 230.8 873.3 Z M1075.8 572.3 V601.3 Q1075.8 622.3 1062.8 632.8 Q1049.8 643.3 1030.8 643.3 H398.8 Q379.8 643.3 367.3 632.3 Q354.8 621.3 354.8 602.3 V573.3 Q354.8 552.3 367.3 541.3 Q379.8 530.3 398.8 530.3 H1030.8 Q1049.8 530.3 1062.8 540.8 Q1075.8 551.3 1075.8 572.3 Z" transform="matrix(1 0 0 -1 0 1173.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn" data-page="2" title="自动刷新"><svg viewBox="0 0 1300.8 1300.8" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M1036.9 289.4 Q1110.9 367.4 1147.9 467.4 Q1184.9 567.4 1181.9 668.4 Q1178.9 769.4 1137.9 851.4 Q1129.9 869.4 1114.9 872.9 Q1099.9 876.4 1087.9 864.4 L1055.9 836.4 Q1041.9 824.4 1040.4 814.4 Q1038.9 804.4 1042.9 790.4 Q1069.9 726.4 1069.9 651.4 Q1069.9 576.4 1041.4 501.9 Q1012.9 427.4 954.9 367.4 Q877.9 286.4 772.4 256.4 Q666.9 226.4 560.9 251.4 Q454.9 276.4 373.9 353.4 Q292.9 430.4 262.4 535.9 Q231.9 641.4 257.4 747.9 Q282.9 854.4 359.9 935.4 Q430.9 1008.4 525.4 1039.9 Q619.9 1071.4 717.9 1056.9 Q815.9 1042.4 896.9 983.4 L678.9 754.4 Q675.9 751.4 672.9 752.4 Q667.9 753.4 655.9 753.4 Q612.9 751.4 583.4 720.9 Q553.9 690.4 554.9 647.4 Q556.9 605.4 587.4 576.9 Q617.9 548.4 660.9 549.4 Q702.9 550.4 731.9 580.9 Q760.9 611.4 759.9 653.4 Q759.9 664.4 757.9 670.4 Q756.9 674.4 758.9 676.4 L1031.9 962.4 Q1043.9 974.4 1043.4 989.4 Q1042.9 1004.4 1032.9 1016.4 L1018.9 1030.4 Q915.9 1128.4 779.9 1160.4 Q643.9 1192.4 509.9 1153.4 Q375.9 1114.4 277.9 1011.4 Q179.9 908.4 147.9 772.9 Q115.9 637.4 154.4 503.4 Q192.9 369.4 296.9 271.4 Q399.9 173.4 535.9 140.9 Q671.9 108.4 805.9 146.9 Q939.9 185.4 1036.9 289.4 Z" transform="matrix(1 0 0 -1 0 1300.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn" data-page="3" title="系统设置"><svg viewBox="0 0 1274.4 1274.4" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M664.2 112.2 Q675.2 114.2 689.2 120.7 Q703.2 127.2 719.2 136.2 L737.2 146.2 L1018.2 304.2 Q1049.2 321.2 1063.2 330.7 Q1077.2 340.2 1087.2 351.2 Q1106.2 371.2 1115.2 399.2 Q1120.2 413.2 1121.2 429.7 Q1122.2 446.2 1122.2 482.2 V791.2 Q1122.2 827.2 1121.2 843.2 Q1120.2 859.2 1115.2 873.2 Q1106.2 900.2 1087.2 922.2 Q1079.2 932.2 1066.2 940.2 Q1053.2 948.2 1030.2 961.2 L1018.2 968.2 L737.2 1127.2 Q706.2 1145.2 692.2 1151.7 Q678.2 1158.2 664.2 1160.2 Q637.2 1168.2 610.2 1160.2 Q596.2 1158.2 582.2 1151.7 Q568.2 1145.2 537.2 1127.2 L256.2 968.2 Q247.2 963.2 237.2 957.2 Q221.2 948.2 207.7 939.7 Q194.2 931.2 187.2 922.2 Q168.2 900.2 159.2 873.2 Q154.2 859.2 153.2 843.2 Q152.2 827.2 152.2 791.2 V482.2 Q152.2 446.2 153.2 429.7 Q154.2 413.2 159.2 399.2 Q168.2 371.2 187.2 351.2 Q196.2 341.2 209.2 332.2 Q222.2 323.2 245.2 310.2 L256.2 304.2 L537.2 146.2 L555.2 136.2 Q571.2 127.2 585.2 120.7 Q599.2 114.2 610.2 112.2 Q637.2 106.2 664.2 112.2 Z M266.2 457.2 V821.2 Q266.2 834.2 270.7 842.2 Q275.2 850.2 287.2 856.2 L612.2 1039.2 Q628.2 1048.2 636.7 1048.7 Q645.2 1049.2 659.2 1041.2 L977.2 862.2 Q999.2 850.2 1004.2 841.2 Q1009.2 832.2 1009.2 807.2 V458.2 Q1009.2 443.2 1005.7 434.7 Q1002.2 426.2 992.2 420.2 L663.2 233.2 Q646.2 224.2 636.7 224.2 Q627.2 224.2 611.2 234.2 L290.2 415.2 Q275.2 423.2 270.7 431.2 Q266.2 439.2 266.2 457.2 Z M851.2 636.2 Q851.2 694.2 822.2 743.2 Q793.2 792.2 744.2 821.2 Q695.2 850.2 637.2 850.2 Q579.2 850.2 530.2 821.7 Q481.2 793.2 452.2 743.7 Q423.2 694.2 423.2 636.2 Q423.2 578.2 452.2 529.2 Q481.2 480.2 530.2 451.2 Q579.2 422.2 637.2 422.2 Q695.2 422.2 744.7 451.2 Q794.2 480.2 822.7 529.2 Q851.2 578.2 851.2 636.2 Z M539.2 636.2 Q539.2 677.2 567.7 705.7 Q596.2 734.2 637.2 734.2 Q678.2 734.2 706.7 705.7 Q735.2 677.2 735.2 636.2 Q735.2 595.2 706.7 566.7 Q678.2 538.2 637.2 538.2 Q596.2 538.2 567.7 566.7 Q539.2 595.2 539.2 636.2 Z" transform="matrix(1 0 0 -1 0 1274.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
       </div>
       <div class="auto-op-page-container" id="auto-op-page-container">
         <div class="auto-op-page active" data-page="0">
@@ -2103,7 +2107,9 @@
           <div class="auto-op-row-switch"><label>自动刷新网页</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-auto-refresh"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row" id="auto-op-refresh-interval-row"><label>刷新间隔 (s) 范围：10 ~ 86400</label><input type="number" id="auto-op-refresh-interval" min="10" max="86400" placeholder="60" value="60"></div>
           <div class="auto-op-row"><div class="auto-op-log-header"><label>刷新日志</label><button class="auto-op-btn-clear" id="auto-op-btn-clear-log">清空</button></div><div class="auto-op-log-container" id="auto-op-log-container"><div class="auto-op-log-empty">暂无日志</div></div></div>
-<div class="auto-op-row-switch"><label>选取元素放行点击</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-pick-pass-through"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+        </div>
+        <div class="auto-op-page" data-page="3">
+          <div class="auto-op-row-switch"><label>选取元素放行点击</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-pick-pass-through"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
@@ -2192,8 +2198,7 @@
 		strategySelect = document.getElementById('auto-op-click-strategy'),
 		btnHeaderStart = document.getElementById('auto-op-btn-header-start'),
 		pageContainer = document.getElementById('auto-op-page-container'),
-		btnPagePrev = document.getElementById('auto-op-page-prev'),
-		btnPageNext = document.getElementById('auto-op-page-next'),
+		pageButtons = panel.querySelectorAll('.auto-op-page-selector .auto-op-page-btn'),
 		autoRefreshCheckbox = document.getElementById('auto-op-auto-refresh'),
 		refreshIntervalInput = document.getElementById('auto-op-refresh-interval'),
 		refreshProgressDiv = document.getElementById('auto-op-refresh-progress'),
@@ -3166,6 +3171,9 @@
 			oldPage = pages[currentPage],
 			newPage = pages[clamped];
 		currentPage = clamped;
+		pageButtons.forEach(btn => {
+			btn.classList.toggle('active', parseInt(btn.dataset.page) === clamped);
+		});
 		if (animated === false) {
 			pages.forEach(p => {
 				p.classList.remove('active');
@@ -3184,13 +3192,11 @@
 		updatePageHeight();
 		saveShared();
 	}
-	btnPagePrev.addEventListener('click', e => {
-		e.stopPropagation();
-		goToPage(currentPage - 1);
-	});
-	btnPageNext.addEventListener('click', e => {
-		e.stopPropagation();
-		goToPage(currentPage + 1);
+	pageButtons.forEach(btn => {
+		btn.addEventListener('click', e => {
+			e.stopPropagation();
+			goToPage(parseInt(btn.dataset.page));
+		});
 	});
 
 	function measureCollapsedWidth() {
