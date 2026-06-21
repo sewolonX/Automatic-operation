@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.1.1
+// @version      5.1.2
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -246,10 +246,10 @@
     .auto-op-info-empty{text-align:center;color:var(--panel-label-text);font-size:13px;font-style:italic;padding:14px}
     .auto-op-info-section{margin-bottom:12px}
     .auto-op-info-section:last-child{margin-bottom:0}
-    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:flex-start;padding:0;margin-bottom:5px;gap:4px;flex-wrap:wrap}
+    .auto-op-info-row-switch{display:flex;align-items:center;justify-content:flex-start;padding:0;margin-bottom:5px;gap:2px;flex-wrap:wrap}
     .auto-op-info-row-switch .auto-op-switch{margin-left:auto}
     .auto-op-info-row-switch label:first-child{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);letter-spacing:0.5px}
-    .auto-op-info-field{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
+    .auto-op-info-field{display:flex;align-items:center;justify-content:flex-start;padding:2px 0;gap:2px}
     .auto-op-info-field-label{font-size:11px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all}
     .auto-op-info-field-value{font-size:11px;font-family:var(--auto-op-font);color:var(--panel-text);word-break:break-all;text-align:right;flex:1;min-width:0}
     .auto-op-info-field input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:4px 8px;font-size:11px;font-family:var(--auto-op-font);outline:none}
@@ -258,7 +258,7 @@
     .auto-op-info-field select:focus{border-color:var(--panel-highlight-border) !important}
     .auto-op-info-field select option{background:var(--panel-input-bg) !important;color:var(--panel-input-text) !important}
     .auto-op-info-attrs-list{display:flex;flex-direction:column;gap:0;margin-top:0}
-    .auto-op-info-attr-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:12px}
+    .auto-op-info-attr-row{display:flex;align-items:center;justify-content:flex-start;padding:2px 0;gap:2px}
     .auto-op-info-attr-row .auto-op-info-attr-key{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-label-text);flex-shrink:0;max-width:40%;word-break:break-all;overflow:hidden;text-overflow:ellipsis}
     .auto-op-info-attr-row input[type="text"]{flex:0 1 65%;min-width:0;max-width:65%;margin-left:auto;background:var(--panel-input-bg) !important;border:1px solid var(--panel-input-border) !important;border-radius:4px;color:var(--panel-input-text) !important;padding:3px 6px;font-size:10px;font-family:var(--auto-op-font);outline:none}
     .auto-op-info-attr-row input[type="text"]:focus{border-color:var(--panel-highlight-border) !important}
@@ -268,13 +268,13 @@
     .auto-op-test-btn{font-size:10px;font-weight:600;font-family:var(--auto-op-font);padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--panel-button-border);background:var(--panel-button-bg);color:var(--panel-button-text);margin-left:8px;transition:all 0.3s;white-space:nowrap;flex-shrink:0}
     .auto-op-test-btn:hover{background:var(--panel-highlight-border);color:#fff;border-color:var(--panel-highlight-border)}
     .auto-op-test-btn:active{transform:scale(0.92)}
-    .auto-op-test-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:6px;white-space:nowrap;flex-shrink:0}
+    .auto-op-test-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:0;white-space:nowrap;flex-shrink:0}
     .auto-op-test-result.pass{color:var(--panel-active-text)}
     .auto-op-test-result.fail{color:var(--panel-missing-text)}
-    .auto-op-test-css-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:6px;white-space:nowrap}
+    .auto-op-test-css-result{font-size:10px;font-weight:700;font-family:var(--auto-op-font);margin-left:0;white-space:nowrap}
     .auto-op-test-css-result.pass{color:var(--panel-active-text)}
     .auto-op-test-css-result.fail{color:var(--panel-missing-text)}
-    .auto-op-test-count{font-size:10px;font-weight:700;font-family:var(--auto-op-font);color:var(--panel-active-text);margin-right:4px;white-space:nowrap;flex-shrink:0;min-width:18px;text-align:right}
+    .auto-op-test-count{font-size:10px;font-weight:700;font-family:var(--auto-op-font);color:var(--panel-active-text);margin:0;white-space:nowrap;flex-shrink:0;min-width:0;text-align:left}
     .auto-op-test-count.zero{color:var(--panel-missing-text)}
     .auto-op-test-highlight{outline:2px dashed #F8BBD0 !important;outline-offset:-2px !important}
     .auto-op-font-failed{font-size:10px;font-weight:600;font-family:var(--auto-op-font);color:var(--panel-missing-text);margin-left:6px;white-space:nowrap}
@@ -1027,11 +1027,11 @@
     if (attrKeys.length > 0) {
       html += '<div class="auto-op-info-attrs-list">';
       attrKeys.forEach(k => {
-        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
       });
       html += '</div>';
     } else {
-      html += '<div class="auto-op-info-field"><span class="auto-op-info-field-value">无特殊属性</span></div>';
+      html += '<div class="auto-op-info-field"><span class="auto-op-test-count" data-test-criterion="attrs"></span><span class="auto-op-info-field-value">无特殊属性</span></div>';
     }
     html += '</div>';
     // 标签匹配
@@ -1045,11 +1045,11 @@
     if (dataAttrKeys.length > 0) {
       html += '<div class="auto-op-info-attrs-list">';
       dataAttrKeys.forEach(k => {
-        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+        html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="dataAttrs"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
       });
       html += '</div>';
     } else {
-      html += '<div class="auto-op-info-field"><span class="auto-op-info-field-value">无 data-* 属性</span></div>';
+      html += '<div class="auto-op-info-field"><span class="auto-op-test-count" data-test-criterion="dataAttrs"></span><span class="auto-op-info-field-value">无 data-* 属性</span></div>';
     }
     html += '</div>';
     // onclick 匹配
@@ -1121,8 +1121,8 @@
       if (el) { el.textContent = found ? `✓ ${count}` : '✕'; el.className = `auto-op-test-result ${found ? 'pass' : 'fail'}`; }
     }
     function setCount(criterion, count) {
-      const el = infoContentEl.querySelector(`.auto-op-test-count[data-test-criterion="${criterion}"]`);
-      if (el) { el.textContent = count > 0 ? count : ''; el.className = `auto-op-test-count${count === 0 ? ' zero' : ''}`; }
+      const els = infoContentEl.querySelectorAll(`.auto-op-test-count[data-test-criterion="${criterion}"]`);
+      els.forEach(el => { el.textContent = count > 0 ? count : ''; el.className = `auto-op-test-count${count === 0 ? ' zero' : ''}`; });
     }
     // CSS 选择器测试
     let cssFound = false, cssCount = 0, cssElements = [];
@@ -1160,13 +1160,13 @@
     if (t.matchAttrs !== false && Object.keys(fp.attrs || {}).some(k => fp.attrs[k])) {
       let sel = fp.tagName || '*';
       for (const [k, v] of Object.entries(fp.attrs)) { if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`; }
-      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('attrs', els.length > 0, els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('attrs', false, 0); }
+      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('attrs', els.length > 0, els.length); setCount('attrs', els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('attrs', false, 0); setCount('attrs', 0); }
     }
     // data-* 属性匹配测试
     if (t.matchDataAttrs !== false && Object.keys(fp.dataAttrs || {}).some(k => fp.dataAttrs[k])) {
       let sel = fp.tagName || '*';
       for (const [k, v] of Object.entries(fp.dataAttrs)) { if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`; }
-      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('dataAttrs', els.length > 0, els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('dataAttrs', false, 0); }
+      try { const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e)); setResult('dataAttrs', els.length > 0, els.length); setCount('dataAttrs', els.length); els.forEach(el => { el.classList.add('auto-op-test-highlight'); _testHighlightedElements.push(el); }); } catch (e) { setResult('dataAttrs', false, 0); setCount('dataAttrs', 0); }
     }
     // onclick 匹配测试
     if (t.matchOnclick !== false && fp.onclickParam) {
