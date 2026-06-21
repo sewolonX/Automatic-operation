@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.1.5
+// @version      5.1.6
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -1673,6 +1673,39 @@
 			padding: 14px
 		}
 
+		.auto-op-reset-btn {
+			width: 100%;
+			padding: 7px 10px;
+			border: 1px solid var(--panel-missing-border);
+			border-radius: 6px;
+			font-size: 13px;
+			font-weight: 600;
+			font-family: var(--auto-op-font);
+			cursor: pointer;
+			transition: all 0.3s;
+			background: transparent;
+			color: var(--panel-missing-text);
+			margin-top: 12px;
+			-webkit-tap-highlight-color: transparent;
+			user-select: none;
+			box-sizing: border-box
+		}
+
+		.auto-op-reset-btn:hover {
+			background: var(--panel-missing-border);
+			color: #fff
+		}
+
+		.auto-op-reset-btn:active {
+			transform: scale(0.96) !important
+		}
+
+		.auto-op-reset-btn.confirm {
+			background: var(--panel-missing-border);
+			color: #fff;
+			animation: auto-op-pulse 0.8s infinite !important
+		}
+
 		.auto-op-info-section {
 			margin-bottom: 12px
 		}
@@ -2114,6 +2147,7 @@
           <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="auto">跟随网页</option><option value="system">跟随系统</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
           <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
+          <button class="auto-op-reset-btn" id="auto-op-reset-btn" style="display:none;">恢复默认设置</button>
         </div>
       </div>
       <div id="auto-op-refresh-progress" style="display: none;">
@@ -2230,6 +2264,10 @@
 	const settingsTitleEl = document.getElementById('auto-op-settings-title');
 	const settingsContentEl = document.getElementById('auto-op-settings-content');
 	const settingsBackBtn = document.getElementById('auto-op-settings-back-btn');
+	const resetBtn = document.getElementById('auto-op-reset-btn');
+	let page3ClickCount = 0,
+		page3ClickTimer = null,
+		resetConfirm = false;
 
 	function closeConfigMenu() {
 		if (!configMenuEl.classList.contains('open')) return;
@@ -3169,6 +3207,16 @@
 		closeConfigMenu();
 		const clamped = ((page % PAGE_COUNT) + PAGE_COUNT) % PAGE_COUNT;
 		if (clamped === currentPage && animated !== false) return;
+		if (clamped !== 3 && resetBtn.style.display !== 'none') {
+			resetBtn.style.display = 'none';
+			resetConfirm = false;
+			resetBtn.textContent = '恢复默认设置';
+			resetBtn.classList.remove('confirm');
+			if (resetConfirmTimer) { clearTimeout(resetConfirmTimer); resetConfirmTimer = null; }
+			page3ClickCount = 0;
+			if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+			updatePageHeight();
+		}
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
 			oldPage = pages[currentPage],
 			newPage = pages[clamped];
@@ -3197,7 +3245,25 @@
 	pageButtons.forEach(btn => {
 		btn.addEventListener('click', e => {
 			e.stopPropagation();
-			goToPage(parseInt(btn.dataset.page));
+			const page = parseInt(btn.dataset.page);
+			if (page === 3 && currentPage === 3) {
+				page3ClickCount++;
+				if (page3ClickTimer) clearTimeout(page3ClickTimer);
+				page3ClickTimer = setTimeout(() => { page3ClickCount = 0; }, 2000);
+				if (page3ClickCount >= 4) {
+					page3ClickCount = 0;
+					if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+					resetBtn.style.display = 'block';
+					resetConfirm = false;
+					resetBtn.textContent = '恢复默认设置';
+					resetBtn.classList.remove('confirm');
+					updatePageHeight();
+				}
+			} else {
+				page3ClickCount = 0;
+				if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+			}
+			goToPage(page);
 		});
 	});
 
@@ -4437,6 +4503,35 @@
 		refreshLogs = [];
 		updateLogUI();
 		saveShared();
+	});
+	let resetConfirmTimer = null;
+	resetBtn.addEventListener('click', e => {
+		e.stopPropagation();
+		if (!resetConfirm) {
+			resetConfirm = true;
+			resetBtn.textContent = '再次点击确认恢复默认设置';
+			resetBtn.classList.add('confirm');
+			if (resetConfirmTimer) clearTimeout(resetConfirmTimer);
+			resetConfirmTimer = setTimeout(() => {
+				resetConfirm = false;
+				resetBtn.textContent = '恢复默认设置';
+				resetBtn.classList.remove('confirm');
+				resetConfirmTimer = null;
+			}, 5000);
+		} else {
+			if (resetConfirmTimer) { clearTimeout(resetConfirmTimer); resetConfirmTimer = null; }
+			try {
+				const keys = [];
+				for (let i = 0; i < localStorage.length; i++) {
+					const k = localStorage.key(i);
+					if (k && (k.startsWith('AUTO_OP_') || k.startsWith('AUTO_OP'))) keys.push(k);
+				}
+				keys.forEach(k => localStorage.removeItem(k));
+			} catch (err) {
+				console.error('[AUTO_OP] 重置失败:', err);
+			}
+			location.reload();
+		}
 	});
 	wakeLockCheckbox.addEventListener('change', e => {
 		e.stopPropagation();
