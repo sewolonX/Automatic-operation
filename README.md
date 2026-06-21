@@ -306,6 +306,7 @@ discoverNewTargetsFor(ci)
 │  输入元素                 [开关] │
 │  填充文本              [______]  │ ← isInput 开时才显示
 │  独立间隔 (ms)          [______]  │
+│  启用高亮                 [开关] │ ← 默认开启
 │  滚动到可视区             [开关] │
 │  显示父级                 [开关] │
 └──────────────────────────────────┘
@@ -320,6 +321,7 @@ discoverNewTargetsFor(ci)
 | 输入元素 | `isInput` | boolean | 标记为输入框，开启后显示填充文本输入框 |
 | 填充文本 | `customFill` | string | 每元素独立填充内容，留空则无填充（不依赖全局设置） |
 | 独立间隔 | `customInterval` | number/null | 见 §3.3 |
+| 启用高亮 | `enableHighlight` | boolean | 默认开启；关闭后该元素不显示绿色选中高亮及父级高亮（测试高亮除外） |
 | 滚动到可视区 | `scrollIntoView` | boolean | 操作前调用 `el.scrollIntoView({ behavior: 'smooth', block: 'center' })` |
 | 显示父级 | `showParent` | boolean | 控制目标列表中是否显示父级容器链 `└>` |
 
@@ -343,11 +345,19 @@ discoverNewTargetsFor(ci)
 
 同时模式不受影响，统一用全局间隔。
 
-#### 3.4 滚动到可视区
+#### 3.4 启用高亮
+
+默认开启。关闭后，该元素的**绿色选中高亮**（`.auto-op-selected-highlight`，`#22c55e` 实线边框）和**父级高亮**（蓝色阴影 / 红色虚线）在任何情况下都不会显示。
+
+> **例外**：元素测试高亮（`.auto-op-test-highlight`，粉色虚线）不受此开关影响，始终显示。
+
+关闭时立即移除已有的高亮，开启时恢复。每个元素独立控制。
+
+#### 3.5 滚动到可视区
 
 开启后，在点击/填充之前将元素滚到屏幕中央。`scrollIntoView` 使用浏览器原生 `behavior: 'smooth'`，兼容所有内部滚动容器（不仅限于 `window` 滚动）。
 
-#### 3.5 显示父级
+#### 3.6 显示父级
 
 纯 UI 开关。开启后在目标列表的元素描述下方显示父级容器链：
 

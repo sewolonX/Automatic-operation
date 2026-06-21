@@ -1330,9 +1330,8 @@
 			flex-shrink: 0
 		}
 
-		.auto-op-page-btn:hover {
-			background: var(--panel-button-hover-bg);
-			color: var(--panel-button-hover-text)
+		.auto-op-page-btn:hover:not(.active) {
+			opacity: 0.65
 		}
 
 		.auto-op-page-btn:active {
@@ -2472,7 +2471,7 @@
 			t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
 		});
 		c.targets.forEach(t => {
-			if (t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight');
+			if (t.enableHighlight !== false && t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight');
 		});
 		multiModeCheckbox.checked = c.isMultiMode;
 		strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
@@ -2580,7 +2579,8 @@
 					customFill: t.customFill || '',
 					customInterval: t.customInterval != null ? t.customInterval : '',
 					scrollIntoView: !!t.scrollIntoView,
-					showParent: !!t.showParent
+					showParent: !!t.showParent,
+					enableHighlight: t.enableHighlight !== false
 				}))
 			}));
 		} catch (e) {
@@ -2617,6 +2617,7 @@
 					customInterval: (t.customInterval === '' || t.customInterval === undefined || t.customInterval === null) ? undefined : Number(t.customInterval),
 					scrollIntoView: !!t.scrollIntoView,
 					showParent: !!t.showParent,
+					enableHighlight: t.enableHighlight !== false,
 					parentSelector: t.parentSelector || '',
 					parentChain: t.parentChain || [],
 					isAuto: !!t.isAuto,
@@ -2763,7 +2764,7 @@
 		autoStartIntervalInput.value = c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '';
 		maxDurationInput.value = c.maxDurationMin > 0 ? c.maxDurationMin : '';
 		c.targets.forEach(t => {
-			if (t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight');
+			if (t.enableHighlight !== false && t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight');
 		});
 		updateTargetUI();
 		updateTargetCount();
@@ -3040,6 +3041,7 @@
 			newNearestMap = new Map();
 		for (const t of c.targets) {
 			if (t.enabled === false) continue;
+			if (t.enableHighlight === false) continue;
 			if (!t.element || !document.contains(t.element)) continue;
 			if (t.blueParent && document.contains(t.blueParent) && !panel.contains(t.blueParent)) {
 				if (!newBlueMap.has(t.blueParent)) newBlueMap.set(t.blueParent, []);
@@ -3122,7 +3124,7 @@
 			for (const el of candidates) {
 				if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t)) continue;
 				c.discoveredElements.add(el);
-				if (ci === activeConfig && t.enabled !== false) el.classList.add('auto-op-selected-highlight');
+				if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) el.classList.add('auto-op-selected-highlight');
 				const pi = resolveParentInfo(el);
 				newTargets.push({
 					element: el,
@@ -3747,7 +3749,7 @@
 		refreshParentHighlights();
 		const c = cv();
 		c.targets.forEach(t => {
-			if (t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) {
+			if (t.enableHighlight !== false && t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) {
 				t.element.classList.add('auto-op-selected-highlight');
 			}
 		});
@@ -3830,6 +3832,7 @@
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">元素描述</span><input type="text" data-settings-action="change-desc" value="${(t.desc || '').replace(/"/g, '&quot;')}" placeholder="元素描述"></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${customFill.replace(/"/g, '&quot;')}" placeholder="留空为清空"></div></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">独立间隔 (ms)</span><input type="number" data-settings-action="change-customInterval" value="${t.customInterval != null ? t.customInterval : ''}" min="0" placeholder="使用全局"></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用高亮</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enableHighlight" ${t.enableHighlight !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>滚动到可视区</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-scrollIntoView" ${t.scrollIntoView ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>显示父级</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-showParent" ${t.showParent ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
 		settingsContentEl.innerHTML = html;
@@ -3885,6 +3888,24 @@
 				if (fillSection) fillSection.style.display = target.checked ? '' : 'none';
 				break;
 			}
+			case 'toggle-enableHighlight':
+				t.enableHighlight = target.checked;
+				if (t.element && t.element.classList) {
+					if (t.enableHighlight !== false) {
+						t.element.classList.add('auto-op-selected-highlight');
+					} else {
+						t.element.classList.remove('auto-op-selected-highlight');
+					}
+				}
+				if (t.enableHighlight === false) {
+					if (t._blueParent && t._blueParent.classList) {
+						t._blueParent.classList.remove('auto-op-parent-highlight');
+						t._blueParent.classList.remove('auto-op-parent-highlight-Overlap');
+					}
+					if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
+				}
+				refreshParentHighlights();
+				break;
 			case 'toggle-scrollIntoView':
 				t.scrollIntoView = target.checked;
 				break;
@@ -4558,6 +4579,7 @@
 			missCount: 0,
 			_isValid: true,
 			enabled: true,
+		enableHighlight: true,
 			matchTag: true,
 			matchText: true,
 			matchTextMode: 'exact',
@@ -4571,7 +4593,7 @@
 		};
 		if (c.isMultiMode) {
 			c.targets.push(targetObj);
-			el.classList.add('auto-op-selected-highlight');
+			if (targetObj.enableHighlight !== false) el.classList.add('auto-op-selected-highlight');
 			stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`;
 		} else {
 			c.targets.forEach(t => {
@@ -4583,7 +4605,7 @@
 				if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
 			});
 			c.targets = [targetObj];
-			el.classList.add('auto-op-selected-highlight');
+			if (targetObj.enableHighlight !== false) el.classList.add('auto-op-selected-highlight');
 			exitPickMode();
 			if (c.targets.length > 0) stateSpan.textContent = '就绪';
 		}
@@ -4691,7 +4713,7 @@
 					const parentInfo = resolveParentInfo(found[0]);
 					t.nearestParent = parentInfo.nearestParent;
 					t.blueParent = parentInfo.blueParent;
-					if (ci === activeConfig && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
+					if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
 				}
 			} else {
 				if (!t.blueParent) {
@@ -4877,7 +4899,7 @@
 						const parentInfo = resolveParentInfo(found[0]);
 						t.nearestParent = parentInfo.nearestParent;
 						t.blueParent = parentInfo.blueParent;
-						if (ci === activeConfig && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
+						if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
 						isValid = true;
 					}
 				}
