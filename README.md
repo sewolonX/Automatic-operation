@@ -24,21 +24,21 @@
   - [二、匹配规则详解](#二匹配规则详解)
   - [三、元素设置面板](#三元素设置面板)
   - [四、元素测试系统](#四元素测试系统)
-  - [五、操作执行（点击 / 填充）](#四操作执行点击--填充)
-  - [五、多选模式与操作策略](#五多选模式与操作策略)
-  - [六、自动填充](#六自动填充)
-  - [七、自动刷新](#七自动刷新)
-  - [八、自动启动](#八自动启动)
-  - [九、省电模式](#九省电模式)
-  - [十、屏幕常亮与禁止聚焦](#十屏幕常亮与禁止聚焦)
-  - [十一、配置管理（10 套独立配置）](#十一配置管理10-套独立配置)
-  - [十二、主题系统](#十二主题系统)
-  - [十三、面板交互](#十三面板交互)
-  - [十四、存储与持久化](#十四存储与持久化)
-  - [十五、跨刷新状态恢复](#十五跨刷新状态恢复)
-- [十六、SVG 图标一览](#十六svg-图标一览)
-- [十七、主题监听优化](#十七主题监听优化)
-- [十八、元素详情面板按钮透明度](#十八元素详情面板按钮透明度)
+  - [五、操作执行（点击 / 填充）](#五操作执行点击--填充)
+  - [六、多选模式与操作策略](#六多选模式与操作策略)
+  - [七、自动填充](#七自动填充)
+  - [八、自动刷新](#八自动刷新)
+  - [九、自动启动](#九自动启动)
+  - [十、省电模式](#十省电模式)
+  - [十一、屏幕常亮与禁止聚焦](#十一屏幕常亮与禁止聚焦)
+  - [十二、配置管理（10 套独立配置）](#十二配置管理10-套独立配置)
+  - [十三、主题系统](#十三主题系统)
+  - [十四、面板交互](#十四面板交互)
+  - [十五、存储与持久化](#十五存储与持久化)
+  - [十六、跨刷新状态恢复](#十六跨刷新状态恢复)
+- [十七、SVG 图标一览](#十七svg-图标一览)
+- [十八、主题监听优化](#十八主题监听优化)
+- [十九、元素详情面板按钮透明度](#十九元素详情面板按钮透明度)
 - [参数参考](#参数参考)
 - [技术参考](#技术参考)
 - [仓库概览](#仓库概览)
@@ -52,7 +52,7 @@
 
 脚本是一个 **IIFE（立即执行函数表达式）**，纯 JavaScript 无外部依赖（字体 CDN 除外），在 `document-idle` 时运行，匹配所有 `*://*/*` 页面。
 
-### 代码结构（~1780 行）
+### 代码结构（~5135 行）
 
 ```
 ┌─ 元数据 (UserScript header)
@@ -62,7 +62,7 @@
 │  ├─ 全局状态变量 (~20 个)
 │  ├─ 配置系统 (10 套 configs[])
 │  ├─ WakeLock / Focus 工具函数
-│  ├─ CSS 注入 (~200 行)
+│  ├─ CSS 注入 (~1900 行)
 │  ├─ 主题检测 (MutationObserver + matchMedia)
 │  ├─ DOM 构建 (panel / info overlay / power save overlay / config menu)
 │  ├─ DOM 引用缓存
@@ -71,6 +71,7 @@
 │  ├─ switchConfig() — 配置切换核心
 │  ├─ 持久化 (save/load/migrate)
 │  ├─ 元素工具函数 (fingerprint / selectors / text / match / find / discover)
+│  ├─ 父级解析与高亮 (resolveParentInfo / refreshParentHighlights)
 │  ├─ 分页导航 + 折叠/展开 + 面板透明度
 │  ├─ 确认对话框
 │  ├─ 自动刷新 (progress / trigger / countdown)
@@ -107,7 +108,7 @@
 
 | 页面 | 内容 |
 | --- | --- |
-| **第 1 页（操作）** | 多选模式开关、操作策略、目标元素列表、自动填充 |
+| **第 1 页（操作）** | 多选模式开关、操作策略、目标元素列表 |
 | **第 2 页（参数）** | 操作次数、操作时间、操作间隔、自动启动、元素消失处理 |
 | **第 3 页（系统）** | 自动刷新、省电模式、屏幕常亮、禁止聚焦、选取放行、主题模式、面板字体 |
 
@@ -362,11 +363,11 @@ discoverNewTargetsFor(ci)
 
 ### 四、元素测试系统
 
-#### 3.1 触发方式
+#### 4.1 触发方式
 
 点击详情面板顶部的「测试」按钮 → 事件委托捕获 → `runElementTest()`
 
-#### 3.2 执行流程
+#### 4.2 执行流程
 
 ```
 runElementTest()
@@ -405,7 +406,7 @@ runElementTest()
           └─ 所有同名 count span：纯数字（0 时清空 + zero class）
 ```
 
-#### 3.3 测试结果显示
+#### 4.3 测试结果显示
 
 测试后，详情面板各规则旁会显示：
 
@@ -418,7 +419,7 @@ runElementTest()
 - **未参与的匹配项**：开关关闭的匹配规则显示灰色 `⊘`（如关闭了 id 匹配则 id 项显示 `⊘`）
 - **测试按钮**：位于启用开关左侧，靠右排列
 
-#### 3.4 辅助函数
+#### 4.4 辅助函数
 
 ```js
 // 写入 header 行结果
@@ -449,9 +450,9 @@ function setCount(criterion, count) {
 
 ---
 
-### 四、操作执行（点击 / 填充）
+### 五、操作执行（点击 / 填充）
 
-#### 4.1 启动流程
+#### 5.1 启动流程
 
 ```
 点击 ▶ 按钮 → handleToggleRunning()
@@ -470,7 +471,7 @@ function setCount(criterion, count) {
   └─ 若已运行 → stopClickingFor(ci)
 ```
 
-#### 4.2 `doClickFor(ci)` — 每次操作周期
+#### 5.2 `doClickFor(ci)` — 每次操作周期
 
 ```
 doClickFor(ci)
@@ -495,14 +496,14 @@ doClickFor(ci)
   └─ cleanupAutoTargetsFor(ci) → 清理失效的自动发现元素
 ```
 
-#### 4.3 元素消失处理
+#### 5.3 元素消失处理
 
 | 设置 | 行为 |
 | --- | --- |
 | **等待重试**（默认） | `startWaitTimer()`：等待 `clickInterval × 2` 时间，期间每 1ms 轮询检查元素是否重新出现。超时后跳过并前进队列 |
 | **立即停止** | 调用 `stopClickingFor(ci)`，立即终止运行 |
 
-#### 4.4 停止流程
+#### 5.4 停止流程
 
 ```
 stopClickingFor(ci)
@@ -516,20 +517,20 @@ stopClickingFor(ci)
 
 ---
 
-### 五、多选模式与操作策略
+### 六、多选模式与操作策略
 
-#### 5.1 多选模式
+#### 6.1 多选模式
 
 开启后，每次点击「选取元素」不会退出选取模式，可以连续点选多个目标。
 
-#### 5.2 操作策略
+#### 6.2 操作策略
 
 | 策略 | 行为 | 适用场景 |
 | --- | --- | --- |
 | **同时操作** | 每个间隔同时点击所有可用目标 | 批量操作（如批量点赞） |
 | **队列操作** | 按列表顺序依次点击，每次一个目标 | 有顺序要求的操作（如多步骤流程） |
 
-#### 5.3 队列模式细节
+#### 6.3 队列模式细节
 
 - `currentQueueIndex` 跟踪当前队列位置
 - 遇到禁用的元素自动跳过
@@ -539,25 +540,26 @@ stopClickingFor(ci)
 
 ---
 
-### 六、自动填充
+### 七、自动填充
 
-当选中的目标是输入元素时自动启用：
+当目标元素的「输入元素」开关打开时，操作执行时自动填充文本。
 
+- **填充文本**：通过元素设置面板（⚙ 按钮）为每个元素独立配置 `customFill`，留空则无填充
 - 支持的输入类型：`<input>`（排除 checkbox/radio/hidden/file/color/submit/button/reset/image）、`<textarea>`、`contentEditable`
 - 填写时触发 `input` 和 `change` 事件，兼容 React/Vue 等前端框架
 - 对于 `contentEditable`，直接设置 `innerHTML`
 
 ---
 
-### 七、自动刷新
+### 八、自动刷新
 
-#### 7.1 配置
+#### 8.1 配置
 
 - 开启开关，设置间隔（10s ~ 86400s）
 - 实时进度条显示百分比和剩余时间
 - 剩余 < 30s 时进度条变红
 
-#### 7.2 刷新流程
+#### 8.2 刷新流程
 
 ```
 startAutoRefreshCountdown()
@@ -573,7 +575,7 @@ triggerRefresh()
   └─ location.reload()
 ```
 
-#### 7.3 日志
+#### 8.3 日志
 
 刷新日志记录在 `refreshLogs[]` 中：
 - 每条日志包含时间戳和消息
@@ -582,9 +584,9 @@ triggerRefresh()
 
 ---
 
-### 八、自动启动
+### 九、自动启动
 
-#### 8.1 工作原理
+#### 9.1 工作原理
 
 ```
 autoStartIntervalInput 输入分钟数（支持小数）
@@ -596,7 +598,7 @@ autoStartIntervalInput 输入分钟数（支持小数）
                   └─ 有目标 → startClickingFor(ci)
 ```
 
-#### 8.2 循环逻辑
+#### 9.2 循环逻辑
 
 1. 自动启动 → 运行操作 → 操作完成/停止 → 重新倒计时 → 再次自动启动
 2. 手动停止后，倒计时重新开始
@@ -604,14 +606,14 @@ autoStartIntervalInput 输入分钟数（支持小数）
 
 ---
 
-### 九、省电模式
+### 十、省电模式
 
-#### 9.1 启用
+#### 10.1 启用
 
 - 手动：第 3 页开关
 - 自动：运行时自动启用
 
-#### 9.2 行为
+#### 10.2 行为
 
 - 全屏黑色遮罩覆盖页面
 - 四个随机分布的元素，定时移动位置：
@@ -623,7 +625,7 @@ autoStartIntervalInput 输入分钟数（支持小数）
 - 退出全屏时自动关闭省电模式
 - 点击遮罩可重试全屏（当全屏被浏览器拒绝时）
 
-#### 9.3 位置随机化
+#### 10.3 位置随机化
 
 ```
 randomizePSPositions()
@@ -635,16 +637,16 @@ randomizePSPositions()
 
 ---
 
-### 十、屏幕常亮与禁止聚焦
+### 十一、屏幕常亮与禁止聚焦
 
-#### 10.1 Wake Lock
+#### 11.1 Wake Lock
 
 - 使用 `navigator.wakeLock.request('screen')` API
 - 运行操作或自动刷新时自动请求
 - 全部停止后自动释放
 - 页面变为可见时（`visibilitychange`）自动重新请求
 
-#### 10.2 禁止聚焦
+#### 11.2 禁止聚焦
 
 - 覆盖 `HTMLElement.prototype.focus`：仅面板内元素可获取焦点
 - 全局 `focusin` 事件监听器：自动 blur 面板外元素
@@ -652,9 +654,9 @@ randomizePSPositions()
 
 ---
 
-### 十一、配置管理（10 套独立配置）
+### 十二、配置管理（10 套独立配置）
 
-#### 11.1 配置结构
+#### 12.1 配置结构
 
 ```
 configs[i] = {
@@ -664,7 +666,6 @@ configs[i] = {
   clickedCount: 0,       // 已操作次数
   maxClicks: Infinity,   // 最大操作次数
   clickInterval: 1000,   // 操作间隔 (ms)
-  autoFillContent: '',   // 自动填充内容
   isMultiMode: false,    // 多选模式
   clickStrategy: 'simultaneous', // 操作策略
   currentQueueIndex: 0,  // 队列当前位置
@@ -676,7 +677,7 @@ configs[i] = {
 };
 ```
 
-#### 11.2 `switchConfig(newIndex)`
+#### 12.2 `switchConfig(newIndex)`
 
 ```
 switchConfig(newIndex)
@@ -696,9 +697,9 @@ switchConfig(newIndex)
 
 ---
 
-### 十二、主题系统
+### 十三、主题系统
 
-#### 12.1 主题模式
+#### 13.1 主题模式
 
 | 模式 | 行为 |
 | --- | --- |
@@ -707,7 +708,7 @@ switchConfig(newIndex)
 | `light` | 强制亮色 |
 | `dark` | 强制暗色 |
 
-#### 12.2 实现机制
+#### 13.2 实现机制
 
 - CSS 变量定义在 `:root` 和 `[data-theme="light"]` 中
 - `applyTheme()` 在 `<html>` 上设置 `data-theme` 属性
@@ -715,7 +716,7 @@ switchConfig(newIndex)
 - `matchMedia('prefers-color-scheme: dark')` 监听系统主题切换
 - 200ms 防抖避免频繁切换
 
-#### 12.3 网页主题扫描
+#### 13.3 网页主题扫描
 
 ```
 scanWebpageTheme(el)
@@ -726,16 +727,16 @@ scanWebpageTheme(el)
 
 ---
 
-### 十三、面板交互
+### 十四、面板交互
 
-#### 13.1 拖拽
+#### 14.1 拖拽
 
 - 鼠标/触屏按住标题栏空白区域拖动
 - `onDragStart` 记录偏移量，`onDragMove` 更新 `left/top`，`onDragEnd` 释放
 - 详情面板头部也支持拖拽
 - 配置按钮、折叠按钮、开始按钮区域不触发拖拽
 
-#### 13.2 折叠/展开
+#### 14.2 折叠/展开
 
 ```
 折叠 (performCollapse):
@@ -750,14 +751,14 @@ scanWebpageTheme(el)
   └─ 恢复完全不透明
 ```
 
-#### 13.3 面板透明度
+#### 14.3 面板透明度
 
 - **选取元素时**：立即半透明（opacity 0.65）
 - **折叠后**：1s 后自动半透明
 - **点击面板**：恢复不透明，2s 后再次半透明
 - **退出选取 / 展开**：恢复完全不透明
 
-#### 13.4 详情面板（overlay）动画
+#### 14.4 详情面板（overlay）动画
 
 匹配规则和元素设置面板从右侧滑入/滑出：
 
@@ -773,7 +774,7 @@ will-change: transform;
 - 两个面板互斥
 - header 可拖动，与主面板一致
 
-#### 13.5 面板高度自适应
+#### 14.5 面板高度自适应
 
 打开 overlay 时 body 自动适配内容高度：
 
@@ -785,9 +786,9 @@ will-change: transform;
 
 ---
 
-### 十四、存储与持久化
+### 十五、存储与持久化
 
-#### 14.1 存储键
+#### 15.1 存储键
 
 | 键 | 内容 |
 | --- | --- |
@@ -795,7 +796,7 @@ will-change: transform;
 | `AUTO_OP_CFG_<host>_<0~9>` | 每套配置 |
 | `AUTO_OP_REFRESH_STATE_<host>` | 跨刷新临时状态 |
 
-#### 14.2 保存时机
+#### 15.2 保存时机
 
 - 切换配置 → `savePerConfig()` + `saveShared()`
 - 修改参数（change/input 事件）→ `savePerConfig()` 或 `saveShared()`
@@ -803,7 +804,7 @@ will-change: transform;
 - 选取/删除目标 → `savePerConfig()`
 - 刷新前 → `saveRefreshState()` + `saveData()`
 
-#### 14.3 数据结构
+#### 15.3 数据结构
 
 配置序列化时，`discoveredElements`（Set）和 DOM 元素引用被过滤：
 - `element` 不持久化（刷新后通过 `tryFindTarget` 重新查找）
@@ -811,9 +812,9 @@ will-change: transform;
 
 ---
 
-### 十五、跨刷新状态恢复
+### 十六、跨刷新状态恢复
 
-#### 15.1 保存刷新状态
+#### 16.1 保存刷新状态
 
 ```
 saveRefreshState()
@@ -823,7 +824,7 @@ saveRefreshState()
   └─ 每个运行中的配置：operationStartTimestamp, clickedCount
 ```
 
-#### 15.2 恢复刷新状态
+#### 16.2 恢复刷新状态
 
 ```
 初始化时：
@@ -835,7 +836,7 @@ saveRefreshState()
     └─ 无刷新状态但有 isAutoRefresh → 正常启动倒计时
 ```
 
-### 十六、SVG 图标一览
+### 十七、SVG 图标一览
 
 面板内所有图标均为内联 SVG，通过 `fill="currentColor"` 继承按钮文字色。
 
@@ -854,7 +855,7 @@ saveRefreshState()
 
 > **兼容修复**：按钮内嵌 SVG 后，`e.target` 可能指向 `<path>` 元素。目标列表事件委托已改用 `e.target.closest('[data-action]')` 向上查找，确保点击 SVG 内部仍能触发。
 
-### 十七、主题监听优化
+### 十八、主题监听优化
 
 为减少不必要的 DOM 监听，系统主题检测器在非 `auto` 模式下自动关闭：
 
@@ -874,7 +875,7 @@ startThemeWatchers()
 
 切换模式时自动调用 `startThemeWatchers()` 重建，确保零浪费。
 
-### 十八、元素详情面板按钮透明度
+### 十九、元素详情面板按钮透明度
 
 目标列表中的小按钮（上移、下移、删除、查看详情）默认 `opacity: 0.9`，hover 恢复 `opacity: 1`。避免按钮过于醒目干扰目标文字阅读，悬停时完整显示。
 
@@ -986,7 +987,7 @@ infoContentEl.addEventListener('click', ...)  → 测试按钮
 
 ```text
 Automatic-operation/
-├── Automatic-operation.js    # 主脚本（~1780 行），全部功能
+├── Automatic-operation.js    # 主脚本（~5135 行），全部功能
 ├── Automatic-clicker.js      # 早期简化版（~777 行），单目标点击器
 ├── README.md                 # 本文档
 └── LICENSE                   # MIT 许可证
@@ -997,28 +998,28 @@ Automatic-operation/
 | 模块 | 大致行数 | 内容 |
 | --- | --- | --- |
 | 用户脚本元数据 | 1–12 | `@name` `@version` `@match` 等 |
-| 全局状态 & 配置初始化 | 13–60 | 变量声明、10 套 `configs[]` |
-| CSS 注入 | 67–293 | 暗/亮双主题 ~200 行 CSS |
-| 主题检测 & 监听管理 | 294–355 | `scanWebpageTheme` `startThemeWatchers` `stopThemeWatchers` |
-| DOM 构建（面板 + 覆盖层） | 356–460 | 3 页面板、信息覆盖层、省电覆盖层、配置菜单 |
-| DOM 引用缓存 | 461–520 | 所有 `getElementById` 引用 |
-| 配置菜单 & 省电模式 | 521–660 | 菜单开关、随机位置、全屏管理 |
-| `switchConfig` — 配置切换 | 661–730 | 保存当前→清高亮→加载新→同步 UI |
-| 持久化（save / load / migrate） | 731–840 | 3 级存储键、旧数据迁移 |
-| 元素工具函数 | 841–855 | `buildSelectors` `getElText` `getElementFingerprint` `matchesFingerprint` |
-| 查找 & 发现 & 查询缓存 | 856–870 | `tryFindTarget` `discoverNewTargetsFor` `cachedQuery` `beginQueryCycle` |
-| 分页 & 折叠 & 透明度 & 对话框 | 871–910 | `goToPage` `performCollapse` `performExpand` `showConfirm` |
-| 自动刷新 | 911–960 | 进度条、触发刷新、日志 |
-| 自动启动 & 运行计时 | 961–980 | 倒计时、`startElapsedTimer` |
-| 目标列表事件委托 | 981–1035 | `delete` `info` `settings` `move-up` `move-down` |
-| 信息面板（show / hide） | 1063–1163 | 详情 HTML 构建、滑入/滑出动画 |
-| 元素测试 `runElementTest` | 1270–1370 | 9 项逐一测试 + `setResult` / `setCount` |
-| 信息面板事件委托 | 1371–1430 | 14 种 `data-info-action` 分发 |
-| 元素设置面板（show / hide） | 1199–1268 | 设置面板 HTML 构建、表单事件、滑入/滑出 |
-| 面板高度适配 | 1168–1197 | 离屏探针测高、`fitBodyToOverlay` / `restoreBodyHeight` |
-| UI 更新 & 拖拽 & 全局事件 | 1487–1553 | `updateTargetUI` `updateTargetCount` 拖拽处理 |
-| 元素选取 & 开始/停止操作 | 1554–1720 | `selectTarget` `startClickingFor` `doClickFor` `stopClickingFor` |
-| 初始化 | 1720–1779 | 主题→加载→折叠→恢复状态→自动启动 |
+| 全局状态 & 配置初始化 | 13–100 | 变量声明、10 套 `configs[]`、CONFIG_SVGS |
+| CSS 注入 | 138–1470 | 暗/亮双主题 ~1900 行 CSS（展开格式） |
+| 主题检测 & 监听管理 | 3050–3220 | `scanWebpageTheme` `startThemeWatchers` `stopThemeWatchers` |
+| DOM 构建（面板 + 覆盖层） | 1800–2250 | 3 页面板、信息覆盖层、省电覆盖层、配置菜单 |
+| DOM 引用缓存 | 2250–2320 | 所有 `getElementById` 引用 |
+| 配置菜单 & 省电模式 | 2320–2550 | 菜单开关、随机位置、全屏管理 |
+| `switchConfig` — 配置切换 | 2550–2700 | 保存当前→清高亮→加载新→同步 UI |
+| 持久化（save / load / migrate） | 2700–2950 | 3 级存储键、旧数据迁移 |
+| 元素工具函数 | 2950–3040 | `buildSelectors` `getElText` `getElementFingerprint` `matchesFingerprint` |
+| 查找 & 发现 & 查询缓存 | 2860–3000 | `tryFindTarget` `discoverNewTargetsFor` `cachedQuery` `beginQueryCycle` |
+| 分页 & 折叠 & 透明度 & 对话框 | 3400–3550 | `goToPage` `performCollapse` `performExpand` `showConfirm` |
+| 自动刷新 | 3550–3700 | 进度条、触发刷新、日志 |
+| 自动启动 & 运行计时 | 3700–3800 | 倒计时、`startElapsedTimer` |
+| 目标列表事件委托 | 3800–3950 | `delete` `info` `settings` `move-up` `move-down` |
+| 信息面板（show / hide） | 3950–4150 | 详情 HTML 构建、滑入/滑出动画 |
+| 元素测试 `runElementTest` | 4150–4350 | 9 项逐一测试 + `setResult` / `setCount` |
+| 信息面板事件委托 | 4350–4500 | 14 种 `data-info-action` 分发 |
+| 元素设置面板（show / hide） | 4500–4700 | 设置面板 HTML 构建、表单事件、滑入/滑出 |
+| 面板高度适配 | 3720–3790 | 离屏探针测高、`fitBodyToOverlay` / `restoreBodyHeight` |
+| UI 更新 & 拖拽 & 全局事件 | 4700–4900 | `updateTargetUI` `updateTargetCount` 拖拽处理 |
+| 元素选取 & 开始/停止操作 | 4900–5100 | `selectTarget` `startClickingFor` `doClickFor` `stopClickingFor` |
+| 初始化 | 5100–5135 | 主题→加载→折叠→恢复状态→自动启动 |
 
 ---
 

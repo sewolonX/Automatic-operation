@@ -1941,10 +1941,12 @@
 
 	function scanWebpageTheme(el) {
 		if (!el) return null;
-		for (const c of DARK_CLS)
+		for (const c of DARK_CLS) {
 			if (el.classList.contains(c)) return 'dark';
-		for (const c of LIGHT_CLS)
+		}
+		for (const c of LIGHT_CLS) {
 			if (el.classList.contains(c)) return 'light';
+		}
 		const st = el.getAttribute('style') || '';
 		if (st.includes('color-scheme: dark')) return 'dark';
 		if (st.includes('color-scheme: light')) return 'light';
@@ -2017,13 +2019,15 @@
 					attributeFilter: ['class', 'style']
 				});
 			} catch (e) {}
-			if (document.body) try {
-				_bodyObserver = new MutationObserver(() => debouncedApplyTheme());
-				_bodyObserver.observe(document.body, {
-					attributes: true,
-					attributeFilter: ['class', 'style']
-				});
-			} catch (e) {}
+			if (document.body) {
+				try {
+					_bodyObserver = new MutationObserver(() => debouncedApplyTheme());
+					_bodyObserver.observe(document.body, {
+						attributes: true,
+						attributeFilter: ['class', 'style']
+					});
+				} catch (e) {}
+			}
 		}
 	}
 
@@ -2346,9 +2350,11 @@
 		powerSaveTimerID = setInterval(updatePowerSaveOverlay, 10000);
 		try {
 			const p = document.documentElement.requestFullscreen();
-			if (p && p.catch) p.catch(() => {
-				powerSaveOverlay.dataset.needFs = '1';
-			});
+			if (p && p.catch) {
+				p.catch(() => {
+					powerSaveOverlay.dataset.needFs = '1';
+				});
+			}
 		} catch (e) {
 			powerSaveOverlay.dataset.needFs = '1';
 		}
@@ -2773,10 +2779,12 @@
 
 	function buildSelectors(el) {
 		const base = buildBaseSelector(el);
-		if (el.id) return {
-			strict: base,
-			loose: base
-		};
+		if (el.id) {
+			return {
+				strict: base,
+				loose: base
+			};
+		}
 		let strict = base;
 		const parent = el.parentElement;
 		if (parent) {
@@ -3733,8 +3741,9 @@
 		refreshParentHighlights();
 		const c = cv();
 		c.targets.forEach(t => {
-			if (t.enabled !== false && t.element && t.element.classList && document.contains(t.element))
+			if (t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) {
 				t.element.classList.add('auto-op-selected-highlight');
+			}
 		});
 		if (infoAnimTimer) {
 			clearTimeout(infoAnimTimer);
@@ -3864,11 +3873,12 @@
 			case 'toggle-enabled':
 				t.enabled = target.checked;
 				break;
-			case 'toggle-isInput':
+			case 'toggle-isInput': {
 				t.isInput = target.checked;
 				const fillSection = document.getElementById('auto-op-settings-fill-section');
 				if (fillSection) fillSection.style.display = target.checked ? '' : 'none';
 				break;
+			}
 			case 'toggle-scrollIntoView':
 				t.scrollIntoView = target.checked;
 				break;
@@ -4096,14 +4106,17 @@
 			const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
 			let matched;
 			const textMode = t.matchTextMode || 'exact';
-			if (textMode === 'fuzzy') matched = els.filter(e => {
-				const txt = getElText(e);
-				return txt && txt.includes(fp.text);
-			});
-			else matched = els.filter(e => {
-				const txt = getElText(e);
-				return txt === fp.text;
-			});
+			if (textMode === 'fuzzy') {
+				matched = els.filter(e => {
+					const txt = getElText(e);
+					return txt && txt.includes(fp.text);
+				});
+			} else {
+				matched = els.filter(e => {
+					const txt = getElText(e);
+					return txt === fp.text;
+				});
+			}
 			setResult('text', matched.length > 0, matched.length);
 			setCount('text', matched.length);
 			matched.forEach(el => {
