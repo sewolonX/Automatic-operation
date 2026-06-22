@@ -76,7 +76,7 @@
 		_origXHROpen = null,
 		_origXHRSend = null,
 		_networkReqId = 0;
-	
+
 	(function restoreNetworkMonitorData() {
 		try {
 			const ns = loadNetworkMonitorState();
