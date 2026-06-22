@@ -1,3 +1,5 @@
+
+
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
@@ -37,6 +39,8 @@
 	})();
 	const SHARED_KEY = 'AUTO_OP_SHARED_' + window.location.hostname;
 	const REFRESH_STATE_KEY = 'AUTO_OP_REFRESH_STATE_' + window.location.hostname;
+	const NETWORK_MONITOR_KEY = 'AUTO_OP_NETMON_' + window.location.hostname;
+	const NETWORK_REQUESTS_KEY = 'AUTO_OP_NETREQ_' + window.location.hostname;
 	const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 	let isAutoRefresh = false,
 		refreshIntervalSec = 60,
@@ -74,6 +78,32 @@
 		_origXHROpen = null,
 		_origXHRSend = null,
 		_networkReqId = 0;
+	
+	(function restoreNetworkMonitorData() {
+		try {
+			const ns = loadNetworkMonitorState();
+			if (ns && ns.requests && Array.isArray(ns.requests) && ns.requests.length > 0) {
+				for (const r of ns.requests) {
+					networkRequests.push(r);
+				}
+			}
+			if (ns && ns.active) {
+				networkRequests.push({
+					id: -Date.now(),
+					method: '刷新',
+					url: '网页刷新',
+					reqHeaders: {},
+					reqBody: '',
+					status: 'refresh',
+					startTime: Date.now(),
+					duration: 0
+				});
+				isNetworkMonitoring = true;
+			}
+		} catch (e) {
+			console.error('[AUTO_OP] restoreNetworkMonitorData 异常:', e);
+		}
+	})();
 	const CONFIG_COUNT = 10;
 	const CONFIG_NAMES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 	const CONFIG_SVGS = ['<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M597.3 370.9 H638.6 Q647.9 370.9 652.8 376.1 Q657.7 381.3 657.7 390.0 V697.1 Q657.7 706.4 652.8 711.3 Q647.9 716.2 638.6 716.2 H604.3 Q592.2 716.2 580.6 711.0 L515.6 677.2 Q501.1 670.0 501.1 654.5 V612.3 Q501.1 600.9 507.8 596.7 Q514.6 592.6 524.3 598.3 L578.2 626.6 V390.0 Q578.2 381.3 583.4 376.1 Q588.6 370.9 597.3 370.9 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M723.5 615.3 Q723.5 663.0 692.6 692.1 Q661.8 721.2 607.6 721.2 Q567.0 721.2 538.9 704.2 Q510.8 687.2 495.2 660.2 Q491.1 652.4 492.6 646.3 Q494.2 640.1 502.0 634.3 L532.8 613.5 Q540.6 608.3 546.8 609.9 Q552.9 611.5 558.1 620.3 Q576.3 648.3 605.6 648.3 Q622.8 648.3 632.9 638.2 Q643.1 628.1 643.1 611.3 Q643.1 596.8 635.3 582.9 Q627.6 569.0 608.8 549.2 L497.4 433.8 Q488.1 424.0 488.1 410.1 V389.0 Q488.1 380.3 493.2 375.1 Q498.4 369.9 507.2 369.9 H711.4 Q720.8 369.9 725.6 375.1 Q730.5 380.3 730.5 389.0 V425.3 Q730.5 434.6 725.6 439.5 Q720.8 444.4 711.4 444.4 H610.2 L671.5 509.1 Q696.9 535.5 710.2 561.1 Q723.5 586.7 723.5 615.3 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M633.9 585.6 L699.4 642.1 Q710.3 650.9 710.3 665.4 V697.1 Q710.3 705.8 705.2 710.7 Q700.0 715.6 691.2 715.6 H513.6 Q504.8 715.6 499.6 710.7 Q494.5 705.8 494.5 697.1 V660.3 Q494.5 651.5 499.6 646.3 Q504.8 641.1 513.6 641.1 H602.2 L539.2 581.2 Q526.3 568.8 537.1 554.3 L558.5 527.1 Q568.8 513.7 583.0 521.3 Q592.0 525.3 602.8 524.7 Q623.6 523.7 635.5 512.1 Q647.3 500.5 647.3 480.3 Q647.3 460.0 635.0 448.4 Q622.6 436.8 601.8 436.8 Q572.2 436.8 552.9 465.3 Q547.8 474.0 541.6 475.6 Q535.4 477.2 527.6 472.0 L496.8 451.2 Q490.1 446.0 487.8 439.6 Q485.5 433.1 489.1 425.9 Q506.1 397.9 534.6 381.1 Q563.2 364.3 602.8 364.3 Q657.0 364.3 691.4 396.7 Q725.8 429.1 725.8 480.3 Q725.8 510.3 713.1 534.1 Q700.3 557.8 678.9 570.6 Q657.5 583.4 633.3 583.6 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M710.2 506.2 H689.1 V694.7 Q689.1 704.1 683.3 709.8 Q677.6 715.6 668.2 715.6 H598.3 Q581.6 715.6 573.9 701.1 L466.8 493.2 Q460.6 480.0 460.6 468.9 V453.6 Q460.6 444.3 466.4 438.5 Q472.2 432.7 482.1 432.7 H609.6 V391.8 Q609.6 381.8 615.7 376.1 Q621.8 370.3 631.1 370.3 H668.2 Q677.6 370.3 683.3 376.1 Q689.1 381.8 689.1 391.8 V432.7 H710.2 Q719.6 432.7 725.3 438.5 Q731.1 444.3 731.1 453.6 V485.3 Q731.1 494.7 725.3 500.4 Q719.6 506.2 710.2 506.2 Z M610.8 620.3 V506.2 H552.9 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M571.1 588.0 L576.5 643.7 H691.1 Q701.0 643.7 706.8 649.5 Q712.5 655.3 712.5 664.6 V694.7 Q712.5 704.1 706.8 709.8 Q701.0 715.6 691.1 715.6 H522.5 Q502.6 715.6 501.1 695.7 L489.1 543.2 Q487.6 526.1 504.2 518.1 L537.1 503.5 Q552.0 496.3 564.7 510.7 Q579.5 526.7 602.6 526.7 Q625.4 526.7 638.2 514.9 Q651.1 503.1 651.1 481.3 Q651.1 461.0 637.9 448.9 Q624.8 436.8 602.6 436.8 Q574.1 436.8 556.7 461.7 Q543.6 478.6 527.5 467.8 L498.8 448.8 Q490.8 443.6 488.5 436.0 Q486.2 428.3 491.0 419.6 Q507.0 393.1 535.8 378.7 Q564.6 364.3 601.0 364.3 Q660.2 364.3 694.8 396.2 Q729.5 428.1 729.5 483.3 Q729.5 535.4 699.4 566.8 Q669.3 598.2 617.6 598.2 Q592.9 598.2 571.1 588.0 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M610.5 598.8 L609.5 599.8 L662.6 690.0 Q668.9 700.9 665.0 708.3 Q661.0 715.6 648.5 715.6 H601.3 Q584.2 715.6 576.9 702.1 L517.6 595.0 Q495.1 556.0 487.1 534.9 Q479.1 513.8 479.1 484.3 Q479.1 432.1 515.7 398.2 Q552.4 364.3 608.6 364.3 Q665.3 364.3 701.7 398.2 Q738.1 432.1 738.1 487.3 Q738.1 538.4 706.4 569.8 Q674.8 601.2 630.2 601.2 Q621.3 601.2 610.5 598.8 Z M560.1 484.3 Q560.1 504.5 574.4 517.1 Q588.8 529.7 611.6 529.7 Q631.4 529.7 644.2 517.1 Q657.1 504.5 657.1 484.3 Q657.1 463.4 643.7 450.1 Q630.4 436.8 609.6 436.8 Q587.8 436.8 573.9 450.1 Q560.1 463.4 560.1 484.3 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M546.3 370.9 H588.8 Q605.5 370.9 612.9 386.0 L734.5 653.7 Q739.7 663.9 739.7 678.6 V694.7 Q739.7 704.7 733.9 710.4 Q728.2 716.2 718.8 716.2 H522.7 Q512.8 716.2 507.0 710.4 Q501.2 704.7 501.2 694.7 L502.2 660.6 Q502.2 651.3 508.0 645.2 Q513.8 639.1 523.1 639.1 H643.5 L530.6 396.6 Q524.8 385.6 529.8 378.3 Q534.8 370.9 546.3 370.9 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M740.1 464.3 Q740.1 496.4 721.6 519.7 Q703.1 543.0 677.9 552.8 V553.8 Q698.7 563.4 713.4 582.6 Q728.1 601.8 728.1 629.8 Q728.1 670.0 694.7 695.6 Q661.3 721.2 608.6 721.2 Q555.8 721.2 522.4 695.6 Q489.1 670.0 489.1 629.8 Q489.1 602.8 504.1 582.6 Q519.1 562.3 537.7 553.8 V552.8 Q512.9 541.8 495.0 518.8 Q477.1 495.8 477.1 464.3 Q477.1 420.1 513.4 392.0 Q549.8 363.9 608.6 363.9 Q667.3 363.9 703.7 392.0 Q740.1 420.1 740.1 464.3 Z M570.1 619.3 Q570.1 633.1 580.7 641.7 Q591.3 650.3 608.6 650.3 Q625.8 650.3 636.4 641.7 Q647.1 633.1 647.1 619.3 Q647.1 605.0 636.7 596.4 Q626.4 587.8 608.6 587.8 Q590.8 587.8 580.4 596.4 Q570.1 605.0 570.1 619.3 Z M559.1 475.8 Q559.1 494.7 572.4 505.8 Q585.8 516.9 608.6 516.9 Q631.4 516.9 644.7 505.8 Q658.1 494.7 658.1 475.8 Q658.1 458.0 644.7 447.2 Q631.4 436.4 608.6 436.4 Q585.8 436.4 572.4 447.2 Q559.1 458.0 559.1 475.8 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M477.1 598.3 Q477.1 548.1 508.9 516.5 Q540.8 484.9 585.0 484.9 Q597.2 484.9 604.7 487.7 L605.1 486.1 L551.6 396.1 Q545.2 385.2 549.2 377.6 Q553.2 369.9 565.7 369.9 H613.2 Q631.5 369.9 638.3 384.0 L697.5 491.1 Q720.1 530.7 728.1 551.2 Q736.1 571.7 736.1 601.8 Q736.1 654.0 699.4 687.6 Q662.8 721.2 606.6 721.2 Q549.8 721.2 513.4 687.3 Q477.1 653.4 477.1 598.3 Z M558.1 601.8 Q558.1 623.1 571.4 636.2 Q584.8 649.3 605.6 649.3 Q627.4 649.3 641.2 636.0 Q655.1 622.7 655.1 601.8 Q655.1 581.0 640.7 568.4 Q626.4 555.8 603.6 555.8 Q583.3 555.8 570.7 568.4 Q558.1 581.0 558.1 601.8 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>', '<svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M864.5 543.3 Q864.5 630.4 831.1 675.8 Q797.8 721.2 734.6 721.2 Q671.8 721.2 637.9 675.8 Q604.1 630.4 604.1 543.3 Q604.1 456.1 637.9 410.5 Q671.8 364.9 734.6 364.9 Q797.8 364.9 831.1 410.3 Q864.5 455.7 864.5 543.3 Z M685.5 543.3 Q685.5 595.1 698.4 620.9 Q711.3 646.7 734.6 646.7 Q758.2 646.7 771.1 620.9 Q784.1 595.1 784.1 543.3 Q784.1 491.4 771.1 465.4 Q758.2 439.4 734.6 439.4 Q711.3 439.4 698.4 465.4 Q685.5 491.4 685.5 543.3 Z M453.6 370.9 H494.8 Q503.6 370.9 508.8 376.1 Q513.9 381.3 513.9 390.0 V697.1 Q513.9 705.8 508.8 711.0 Q503.6 716.2 494.8 716.2 H461.6 Q448.8 716.2 437.3 711.0 L372.2 677.2 Q358.3 670.6 358.3 654.5 V612.3 Q358.3 600.9 364.8 596.7 Q371.2 592.6 381.0 598.3 L434.5 626.6 V390.0 Q434.5 381.3 439.6 376.1 Q444.8 370.9 453.6 370.9 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>'];
@@ -510,7 +540,7 @@
 			padding: 14px;
 			overflow: hidden auto;
 			max-height: 65vh;
-			transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, opacity 0.3s ease;
+			transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, opacity 0.3s ease;
 			opacity: 1
 		}
 
@@ -1482,8 +1512,6 @@
 			opacity: 0.85
 		}
 
-
-
 		.auto-op-cmd-output {
 			background: var(--panel-input-bg);
 			border: 1px solid var(--panel-input-border);
@@ -1494,13 +1522,8 @@
 			font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", "Consolas", monospace;
 			font-size: 11px;
 			color: var(--panel-text);
-			scrollbar-width: none;
 			line-height: 1.5;
 			word-break: break-all
-		}
-
-		.auto-op-cmd-output::-webkit-scrollbar {
-			display: none
 		}
 
 		.auto-op-cmd-output-entry {
@@ -1539,6 +1562,29 @@
 
 		.auto-op-cmd-output-error {
 			color: var(--panel-missing-border)
+		}
+
+		.auto-op-cmd-output-log.auto-op-cmd-truncated {
+			cursor: pointer
+		}
+
+		.auto-op-cmd-output-log.auto-op-cmd-truncated:hover {
+			opacity: 0.8
+		}
+
+		.auto-op-cmd-output-log.auto-op-cmd-expanded {
+			cursor: pointer
+		}
+
+		.auto-op-cmd-output-log.auto-op-cmd-expanded:hover {
+			opacity: 0.8
+		}
+
+		.auto-op-cmd-expand-hint {
+			color: var(--panel-highlight-border);
+			font-size: 10px;
+			font-weight: 600;
+			user-select: none
 		}
 
 		.auto-op-cmd-output-empty {
@@ -1681,12 +1727,7 @@
 		.auto-op-network-content {
 			flex: 1;
 			overflow-y: auto;
-			scrollbar-width: none;
 			padding: 6px 0
-		}
-
-		.auto-op-network-content::-webkit-scrollbar {
-			display: none
 		}
 
 		.auto-op-network-empty {
@@ -1704,7 +1745,8 @@
 			padding: 8px 12px;
 			cursor: pointer;
 			transition: background 0.15s;
-			font-family: var(--auto-op-font)
+			font-family: var(--auto-op-font);
+			-webkit-tap-highlight-color: transparent
 		}
 
 		.auto-op-network-item:hover {
@@ -1736,6 +1778,7 @@
 		.auto-op-network-method.delete { background: var(--panel-missing-border); color: #fff }
 		.auto-op-network-method.patch { background: #9c27b0; color: #fff }
 		.auto-op-network-method.xhr { background: #607d8b; color: #fff }
+		.auto-op-network-method.refresh { background: #2196F3; color: #fff }
 
 		.auto-op-network-url {
 			font-size: 10px;
@@ -2611,8 +2654,8 @@
               <option value="$el.style.display = 'none'">隐藏元素</option>
               <option value="$el.style.display = ''">显示元素</option>
               <option value="$el.remove()">删除元素</option>
-              <option value="fetch(location.href).then(r=>r.text()).then(console.log)">GET 当前页面</option>
-              <option value="fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'value'})}).then(r=>r.json()).then(console.log)">POST JSON</option>
+              <option value="return fetch(location.href).then(r=>r.text()).then(t=>{console.log(t);return t.length})">GET 当前页面</option>
+              <option value="return fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'value'})}).then(r=>r.json()).then(d=>{console.log(JSON.stringify(d,null,2));return d})">POST JSON</option>
               <option value="(()=>{var el=$el,tag=el.tagName,id=el.id?'#'+el.id:'',cls=el.className?'.'+el.className.trim().split(/\\s+/).slice(0,3).join('.'):'',desc=tag+id+cls,inline=el.onclick,report=[];console.log('元素:',desc,el);if(inline){console.log('内联onclick:',inline.toString().slice(0,200));report.push('内联onclick')}var orig=EventTarget.prototype.addEventListener;EventTarget.prototype.addEventListener=function(type,fn,opt){if(type==='click'){console.log('click监听:',fn.toString().slice(0,200));report.push(fn.toString().slice(0,100))}return orig.call(this,type,fn,opt)};try{el.dispatchEvent(new Event('click',{bubbles:true}))}finally{EventTarget.prototype.addEventListener=orig}console.log('触发完成，共 '+report.length+' 个处理器:',report)})()">触发点击事件</option>
             </select>
           </div>
@@ -3750,6 +3793,8 @@
 		if (!el) return;
 		const h = el.offsetHeight;
 		if (h > 0) pageContainer.style.height = (h + 2) + 'px';
+		
+		if (!panelBody.style.maxHeight) panelBody.style.minHeight = '';
 	}
 
 	function goToPage(page, animated) {
@@ -4364,8 +4409,8 @@
 		infoOverlayEl.style.display = 'flex';
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				fitBodyToOverlay(infoOverlayEl);
 				infoOverlayEl.classList.add('open');
+				fitBodyToOverlay(infoOverlayEl);
 			});
 		});
 	}
@@ -4388,8 +4433,8 @@
 		if (animate) {
 			infoOverlayEl.style.display = 'flex';
 			infoOverlayEl.addEventListener('transitionend', onInfoCloseTransition);
-			restoreBodyHeight();
 			updatePageHeight();
+			restoreBodyHeight();
 		}
 		infoOverlayEl.classList.remove('open');
 		if (!animate) {
@@ -4420,7 +4465,7 @@
 		let h = _heightProbe.scrollHeight;
 		if (mainHeader) h -= mainHeader.offsetHeight;
 		if (h > 0) {
-			h = Math.min(h, window.innerHeight * 0.85);
+			h = Math.min(h, window.innerHeight * 0.65);
 			panelBody.style.minHeight = panelBody.offsetHeight + 'px';
 			getComputedStyle(panelBody).minHeight;
 			panelBody.style.minHeight = h + 'px';
@@ -4430,7 +4475,12 @@
 
 	function restoreBodyHeight() {
 		const pageH = pageContainer.scrollHeight;
-		if (pageH > 0 && pageH < panelBody.offsetHeight) {
+		// Animate height transition when restoring from overlay-fit height
+		if (panelBody.style.maxHeight && panelBody.style.maxHeight !== '') {
+			panelBody.style.minHeight = panelBody.offsetHeight + 'px';
+			void panelBody.offsetHeight; // force reflow to lock current height for transition
+		}
+		if (pageH > 0) {
 			panelBody.style.minHeight = pageH + 'px';
 		} else {
 			panelBody.style.minHeight = '';
@@ -4507,8 +4557,8 @@
 		if (animate) {
 			settingsOverlayEl.style.display = 'flex';
 			settingsOverlayEl.addEventListener('transitionend', onSettingsCloseTransition);
-			restoreBodyHeight();
 			updatePageHeight();
+			restoreBodyHeight();
 		}
 		settingsOverlayEl.classList.remove('open');
 		if (!animate) {
@@ -5421,7 +5471,9 @@
 			else if (entry.type === 'debug') cls = 'auto-op-cmd-output-debug';
 			else if (entry.type === 'error') cls = 'auto-op-cmd-output-error';
 			else if (entry.type === 'result') cls = 'auto-op-cmd-output-result';
-			html += '<div class="auto-op-cmd-output-entry"><span class="auto-op-cmd-output-time">[' + entry.time + ']</span><span class="' + cls + '">[' + entry.type + ']</span> <span class="auto-op-cmd-output-log">' + escapeHtml(entry.message) + '</span></div>';
+			var fullMsg = entry.message, shouldTruncate = fullMsg.length > 150;
+			var displayMsg = shouldTruncate ? fullMsg.slice(0, 150) : fullMsg;
+			html += '<div class="auto-op-cmd-output-entry" data-idx="' + i + '"><span class="auto-op-cmd-output-time">[' + entry.time + ']</span><span class="' + cls + '">[' + entry.type + ']</span> <span class="auto-op-cmd-output-log' + (shouldTruncate ? ' auto-op-cmd-truncated' : '') + '">' + escapeHtml(displayMsg) + (shouldTruncate ? '<span class="auto-op-cmd-expand-hint"> …点击展开</span>' : '') + '</span></div>';
 		}
 		cmdOutput.innerHTML = html;
 		cmdOutput.scrollTop = cmdOutput.scrollHeight;
@@ -5458,7 +5510,7 @@
 			flushLogs();
 			restoreConsole();
 			if (!success) appendCmdOutput('error', errorMsg);
-			else if (result !== undefined) appendCmdOutput('result', '↳ ' + (typeof result === 'object' ? JSON.stringify(result, null, 0) : String(result)));
+			else appendCmdOutput('result', '↳ ' + (result === undefined ? 'undefined' : (typeof result === 'object' ? JSON.stringify(result, null, 0) : String(result))));
 		}
 
 		let result, success = true,
@@ -5476,7 +5528,7 @@
 		if (result && typeof result.then === 'function') {
 			result.then(val => {
 				flushLogs();
-				finalize(true, '', val);
+				finalize(true, "", val);
 			}).catch(e => {
 				flushLogs();
 				finalize(false, e.message || String(e), undefined);
@@ -5542,6 +5594,26 @@
 		updateCmdOutputUI();
 	});
 
+	cmdOutput.addEventListener('click', e => {
+		const logSpan = e.target.closest('.auto-op-cmd-output-log');
+		if (!logSpan) return;
+		const entryDiv = logSpan.closest('.auto-op-cmd-output-entry');
+		if (!entryDiv) return;
+		const idx = parseInt(entryDiv.dataset.idx);
+		if (isNaN(idx) || idx < 0 || idx >= cmdOutputLogs.length) return;
+		const entry = cmdOutputLogs[idx];
+		const fullText = entry.message;
+		if (logSpan.classList.contains('auto-op-cmd-expanded')) {
+			logSpan.classList.remove('auto-op-cmd-expanded');
+			logSpan.classList.add('auto-op-cmd-truncated');
+			logSpan.innerHTML = escapeHtml(fullText.slice(0, 150)) + '<span class="auto-op-cmd-expand-hint"> …点击展开</span>';
+		} else if (fullText.length > 150) {
+			logSpan.classList.remove('auto-op-cmd-truncated');
+			logSpan.classList.add('auto-op-cmd-expanded');
+			logSpan.innerHTML = escapeHtml(fullText);
+		}
+	});
+
 	cmdPresetSelect.addEventListener('change', () => {
 		const val = cmdPresetSelect.value;
 		if (val) {
@@ -5573,7 +5645,11 @@
 	function startNetworkMonitor() {
 		if (isNetworkMonitoring) return;
 		isNetworkMonitoring = true;
-		_networkReqId = 0;
+		let maxId = 0;
+		for (const r of networkRequests) {
+			if (r.id > maxId) maxId = r.id;
+		}
+		_networkReqId = maxId;
 		_origFetch = window.fetch;
 		_origXHROpen = XMLHttpRequest.prototype.open;
 		_origXHRSend = XMLHttpRequest.prototype.send;
@@ -5596,6 +5672,7 @@
 					req.resHeaders = {};
 					response.headers.forEach((v, k) => { req.resHeaders[k] = v; });
 					req.duration = endTime - startTime;
+					updateNetworkItemUI(req);
 					clone.text().then(body => {
 						req.resBody = body.slice(0, 4000);
 						updateNetworkItemUI(req);
@@ -5661,8 +5738,9 @@
 			}
 			return _origXHRSend.apply(this, arguments);
 		};
-		networkToggle.checked = true;
-		btnNetworkMonitor.classList.add('active');
+		if (networkToggle) networkToggle.checked = true;
+		if (btnNetworkMonitor) btnNetworkMonitor.classList.add('active');
+		saveNetworkMonitorState();
 	}
 
 	function stopNetworkMonitor() {
@@ -5672,6 +5750,7 @@
 		if (_origXHROpen) XMLHttpRequest.prototype.open = _origXHROpen;
 		if (_origXHRSend) XMLHttpRequest.prototype.send = _origXHRSend;
 		_origFetch = null;
+		saveNetworkMonitorState();
 		_origXHROpen = null;
 		_origXHRSend = null;
 		networkToggle.checked = false;
@@ -5679,16 +5758,58 @@
 	}
 
 	function toggleNetworkMonitor() {
-		if (isNetworkMonitoring) stopNetworkMonitor();
-		else startNetworkMonitor();
+		const wantOn = networkToggle && networkToggle.checked;
+		if (wantOn && !isNetworkMonitoring) startNetworkMonitor();
+		else if (!wantOn && isNetworkMonitoring) stopNetworkMonitor();
+	}
+
+	function saveNetworkMonitorState() {
+		try {
+			const clean = networkRequests.slice(0, 500).map(r => {
+				const o = {};
+				for (const k of Object.keys(r)) {
+					if (k.startsWith('_')) continue;
+					o[k] = r[k];
+				}
+				return o;
+			});
+			localStorage.setItem(NETWORK_MONITOR_KEY, JSON.stringify({
+				active: isNetworkMonitoring,
+				requests: clean
+			}));
+		} catch (e) {
+			console.error('[AUTO_OP] saveNetworkMonitorState 异常:', e);
+		}
+	}
+
+	function loadNetworkMonitorState() {
+		try {
+			const s = localStorage.getItem(NETWORK_MONITOR_KEY);
+			return s ? JSON.parse(s) : null;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function clearNetworkMonitorState() {
+		try {
+			localStorage.removeItem(NETWORK_MONITOR_KEY);
+		} catch (e) {}
 	}
 
 	function addNetworkRequest(req) {
 		networkRequests.push(req);
-		if (networkRequests.length > 500) networkRequests.shift();
-		appendRequestItemUI(req);
-		updateNetworkCount();
-		if (networkRequests.length === 1) renderNetworkList();
+		if (networkRequests.length > 500) {
+			const removed = networkRequests.shift();
+			const el = document.getElementById('auto-op-net-item-' + removed.id);
+			if (el) el.remove();
+		}
+		if (networkContentEl) {
+			appendRequestItemUI(req);
+			updateNetworkCount();
+			if (networkRequests.length === 1) renderNetworkList();
+		}
+		saveNetworkMonitorState();
 	}
 
 	function updateNetworkCount() {
@@ -5716,11 +5837,22 @@
 			detailDiv.dataset.built = '1';
 			detailDiv.innerHTML = buildRequestDetail(req);
 		}
+		saveNetworkMonitorState();
+	}
+
+	function formatReqTime(ts) {
+		const d = new Date(ts);
+		const h = String(d.getHours()).padStart(2, '0');
+		const m = String(d.getMinutes()).padStart(2, '0');
+		const s = String(d.getSeconds()).padStart(2, '0');
+		const ms = String(d.getMilliseconds()).padStart(3, '0');
+		return h + ':' + m + ':' + s + '.' + ms;
 	}
 
 	function buildRequestDetail(req) {
 		let html = '';
 		html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">' + req.method + '</span> <span class="auto-op-network-detail-url">' + escapeHtml(req.url) + '</span></div>';
+		if (req.startTime) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">时间:</span>' + formatReqTime(req.startTime) + '</div>';
 		if (req.duration !== undefined) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">耗时:</span>' + req.duration + 'ms</div>';
 		if (req.error) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">错误:</span><span style="color:var(--panel-missing-border)">' + escapeHtml(req.error) + '</span></div>';
 		if (req.reqHeaders && Object.keys(req.reqHeaders).length > 0) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">请求头:</span><div class="auto-op-network-detail-value">' + escapeHtml(JSON.stringify(req.reqHeaders, null, 2)) + '</div></div>';
@@ -5747,11 +5879,13 @@
 	function buildRequestItemHTML(req) {
 		const methodLower = req.method.toLowerCase();
 		let methodClass = 'xhr';
-		if (['get', 'post', 'put', 'delete', 'patch'].includes(methodLower)) methodClass = methodLower;
+		if (req.method === '刷新') methodClass = 'refresh';
+		else if (['get', 'post', 'put', 'delete', 'patch'].includes(methodLower)) methodClass = methodLower;
 		let statusClass = 'pending',
 			statusText = '...';
 		if (req.status === 'pending') { statusClass = 'pending';
-			statusText = '...'; } else if (req.status >= 200 && req.status < 400) { statusClass = 'ok';
+			statusText = '...'; } else if (req.status === 'refresh') { statusClass = 'ok';
+			statusText = '刷新'; } else if (req.status >= 200 && req.status < 400) { statusClass = 'ok';
 			statusText = String(req.status); } else { statusClass = 'err';
 			statusText = req.status ? String(req.status) : 'ERR'; }
 		return '<div class="auto-op-network-item" id="auto-op-net-item-' + req.id + '"><div class="auto-op-network-item-top"><span class="auto-op-network-method ' + methodClass + '">' + req.method + '</span><span class="auto-op-network-url" title="' + escapeHtml(req.url) + '">' + escapeHtml(req.url) + '</span><span class="auto-op-network-status ' + statusClass + '">' + statusText + '</span><button class="auto-op-network-del-btn" data-del-id="' + req.id + '" title="删除"><svg viewBox="0 0 1208.4 1208.4" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block"><path d="M690.7 311.7 L1035.7 656.7 Q1072.7 692.7 1072.7 743.7 Q1072.7 794.7 1035.7 830.7 L800.7 1067.7 Q776.7 1091.7 744.7 1099.7 Q712.7 1107.7 680.7 1099.7 Q648.7 1091.7 625.7 1067.7 L174.7 616.7 Q151.7 593.7 143.7 561.7 Q135.7 529.7 143.7 498.2 Q151.7 466.7 174.7 443.7 L306.7 311.7 Q323.7 294.7 346.2 285.2 Q368.7 275.7 393.7 275.7 H603.7 Q628.7 275.7 651.2 285.2 Q673.7 294.7 690.7 311.7 Z M1058.7 140.7 V173.7 Q1058.7 189.7 1046.2 201.7 Q1033.7 213.7 1017.7 213.7 H177.7 Q160.7 213.7 148.7 201.7 Q136.7 189.7 136.7 173.7 V140.7 Q136.7 123.7 148.7 112.2 Q160.7 100.7 177.7 100.7 H1017.7 Q1034.7 100.7 1046.7 112.7 Q1058.7 124.7 1058.7 140.7 Z M376.7 401.7 L272.7 505.7 Q262.7 515.7 262.7 530.2 Q262.7 544.7 272.7 554.7 L366.7 647.7 Q375.7 656.7 383.7 647.7 L617.7 413.7 Q623.7 407.7 617.7 401.7 L611.7 396.7 Q600.7 388.7 588.7 388.7 H408.7 Q389.7 388.7 376.7 401.7 Z M691.7 498.7 L462.7 727.7 Q454.7 735.7 462.7 744.7 L688.7 970.7 Q698.7 980.7 712.7 980.7 Q726.7 980.7 736.7 970.7 L939.7 767.7 Q949.7 757.7 949.7 743.7 Q949.7 729.7 939.7 719.7 L715.7 497.7 Q709.7 491.7 703.7 492.2 Q697.7 492.7 691.7 498.7 Z" transform="matrix(1 0 0 -1 0 1208.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button></div><div class="auto-op-network-item-detail"></div></div>';
@@ -5764,9 +5898,10 @@
 			refreshNetworkHeight();
 			return;
 		}
+		const sorted = networkRequests.slice().sort((a, b) => b.startTime - a.startTime);
 		let html = '';
-		for (let i = networkRequests.length - 1; i >= 0; i--) {
-			html += buildRequestItemHTML(networkRequests[i]);
+		for (let i = 0; i < sorted.length; i++) {
+			html += buildRequestItemHTML(sorted[i]);
 		}
 		networkContentEl.innerHTML = html;
 		for (let i = 0; i < networkRequests.length; i++) {
@@ -5802,6 +5937,7 @@
 	}
 
 	function buildFetchCode(req) {
+		if (req.status === 'refresh') return 'location.reload()';
 		const headersObj = req.reqHeaders && Object.keys(req.reqHeaders).length > 0 ? req.reqHeaders : null;
 		const bodyStr = req.reqBody || null;
 		if (bodyStr) {
@@ -5849,12 +5985,11 @@
 		networkOverlayEl.removeEventListener('transitionend', onNetworkCloseTransition);
 		networkOverlayEl.classList.remove('open');
 		networkOverlayEl.style.display = 'flex';
-		renderNetworkList();
 		updateNetworkCount();
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				fitBodyToOverlay(networkOverlayEl);
 				networkOverlayEl.classList.add('open');
+				fitBodyToOverlay(networkOverlayEl);
 			});
 		});
 	}
@@ -5866,8 +6001,8 @@
 		if (animate) {
 			networkOverlayEl.style.display = 'flex';
 			networkOverlayEl.addEventListener('transitionend', onNetworkCloseTransition);
-			restoreBodyHeight();
 			updatePageHeight();
+			restoreBodyHeight();
 		}
 		networkOverlayEl.classList.remove('open');
 		if (!animate) {
@@ -5888,12 +6023,16 @@
 		if (networkOverlayEl.classList.contains('open')) hideNetworkOverlay(true);
 		else showNetworkOverlay();
 	});
-	networkBackBtn.addEventListener('click', () => hideNetworkOverlay(true));
+	networkBackBtn.addEventListener('click', () => {
+		networkContentEl.querySelectorAll('.auto-op-network-item.expanded').forEach(item => item.classList.remove('expanded'));
+		hideNetworkOverlay(true);
+	});
 	networkToggle.addEventListener('change', toggleNetworkMonitor);
 	btnClearNetwork.addEventListener('click', () => {
 		networkRequests = [];
 		renderNetworkList();
 		updateNetworkCount();
+		clearNetworkMonitorState();
 	});
 	btnCopyAllNetwork.addEventListener('click', copyAllRequestsAsJS);
 	networkContentEl.addEventListener('click', e => {
@@ -6337,6 +6476,7 @@
 	});
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'visible' && (configs.some(c => c.isRunning) || isAutoRefresh)) requestWakeLock();
+		if (document.visibilityState === 'hidden' && isNetworkMonitoring) saveNetworkMonitorState();
 	});
 	detectBrowserTheme();
 	loadData();
@@ -6415,5 +6555,15 @@
 			}
 		}
 	}, 500);
+	if (isNetworkMonitoring && networkContentEl) {
+		isNetworkMonitoring = false;
+		startNetworkMonitor();
+	}
+	if (networkRequests.length > 0 && networkContentEl) {
+		renderNetworkList();
+		updateNetworkCount();
+	}
+	if (networkToggle) networkToggle.checked = isNetworkMonitoring;
+	if (btnNetworkMonitor) btnNetworkMonitor.classList.toggle('active', isNetworkMonitoring);
 	panel.style.visibility = '';
 })();
