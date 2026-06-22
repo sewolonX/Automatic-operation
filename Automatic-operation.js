@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.0
+// @version      5.2.1
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -48,6 +48,7 @@
 		refreshLogs = [];
 	let currentPage = 0;
 	const PAGE_COUNT = 5;
+	let isConfigLoadMode = false;
 	let collapseAnimPhase = 'collapsed',
 		collapsedWidth = 300;
 	let wakeLock = null,
@@ -260,6 +261,18 @@
 		[data-theme="light"] .auto-op-config-btn:hover {
 			background: rgba(0, 0, 0, 0.1);
 			color: #1f2937
+		}
+
+		[data-theme="light"] .auto-op-config-load-btn {
+			background: rgba(0, 0, 0, 0.03);
+			border-color: rgba(0, 0, 0, 0.1);
+			color: #6b7280
+		}
+
+		[data-theme="light"] .auto-op-config-load-btn:hover {
+			background: rgba(0, 0, 0, 0.06);
+			color: #1f2937;
+			border-color: #3482FF
 		}
 
 		[data-theme="light"] .auto-op-config-menu {
@@ -950,6 +963,58 @@
 		.auto-op-btn-move-down {
 			top: 4px;
 			right: 24px
+		}
+
+		.auto-op-config-load-wrap {
+			display: none;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 4px;
+			padding: 0;
+			flex: 1;
+			width: 100%
+		}
+
+		.auto-op-config-load-wrap.active {
+			display: flex
+		}
+
+		.auto-op-config-load-btn {
+			width: 100%;
+			padding: 12px 32px;
+			margin: 0;
+			background: var(--panel-button-bg);
+			border: 2px solid var(--panel-button-border);
+			border-radius: 12px;
+			color: var(--panel-button-text);
+			cursor: pointer;
+			font-family: var(--auto-op-font);
+			font-size: 13px;
+			font-weight: 700;
+			transition: all 0.3s;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 4px;
+			-webkit-tap-highlight-color: transparent;
+			user-select: none
+		}
+
+		.auto-op-config-load-btn:hover {
+			background: var(--panel-button-hover-bg);
+			color: var(--panel-button-hover-text);
+			border-color: var(--panel-highlight-border)
+		}
+
+		.auto-op-config-load-btn:active {
+			transform: scale(0.96) !important
+		}
+
+		.auto-op-config-load-btn svg {
+			width: 24px;
+			height: 24px
 		}
 
 		.auto-op-btn-group {
@@ -2636,6 +2701,10 @@
               <div class="auto-op-target-info">未选取，请点击下方按钮选取</div>
             </div>
           </div>
+          <div class="auto-op-config-load-wrap" id="auto-op-config-load-wrap">
+            <button class="auto-op-config-load-btn" id="auto-op-btn-import-config"><svg viewBox="0 0 1261.2 1261.2" fill="none" aria-hidden="true"><path d="M1045.1 192.6 Q1103.1 221.6 1134.1 281.6 Q1149.1 311.6 1152.6 353.1 Q1156.1 394.6 1156.1 487.6 V672.6 Q1156.1 766.6 1152.6 808.1 Q1149.1 849.6 1134.1 879.6 Q1103.1 937.6 1045.1 968.6 Q1015.1 983.6 974.1 987.1 Q933.1 990.6 839.1 990.6 H644.1 Q626.1 990.6 618.6 993.6 Q611.1 996.6 599.1 1009.6 L575.1 1033.6 Q550.1 1063.6 534.1 1071.6 Q520.1 1082.6 500.1 1087.6 Q490.1 1090.6 476.1 1091.1 Q462.1 1091.6 444.1 1091.6 H423.1 Q329.1 1091.6 287.6 1088.1 Q246.1 1084.6 216.1 1068.6 Q158.1 1039.6 127.1 979.6 Q112.1 950.6 108.6 909.1 Q105.1 867.6 105.1 773.6 V487.6 Q105.1 394.6 108.6 353.1 Q112.1 311.6 127.1 281.6 Q158.1 221.6 216.1 192.6 Q246.1 176.6 287.6 173.1 Q329.1 169.6 423.1 169.6 H839.1 Q933.1 169.6 974.1 173.1 Q1015.1 176.6 1045.1 192.6 Z M270.1 293.6 Q243.1 306.6 228.1 334.6 Q221.1 349.6 219.6 370.6 Q218.1 391.6 218.1 443.6 V817.6 Q218.1 870.6 219.6 891.1 Q221.1 911.6 228.1 926.6 Q243.1 954.6 270.1 967.6 Q284.1 974.6 305.1 976.1 Q326.1 977.6 379.1 977.6 H439.1 Q455.1 977.6 462.6 974.6 Q470.1 971.6 479.1 961.6 L504.1 933.6 L515.1 922.6 Q534.1 902.6 545.1 896.6 Q558.1 887.6 579.1 881.6 Q593.1 877.6 635.1 877.6 H882.1 Q935.1 877.6 956.1 876.1 Q977.1 874.6 991.1 867.6 Q1020.1 852.6 1033.1 825.6 Q1040.1 811.6 1041.6 790.6 Q1043.1 769.6 1043.1 716.6 V443.6 Q1043.1 391.6 1041.6 370.6 Q1040.1 349.6 1033.1 334.6 Q1026.1 321.6 1015.1 311.1 Q1004.1 300.6 991.1 293.6 Q977.1 286.6 956.1 285.1 Q935.1 283.6 882.1 283.6 H379.1 Q326.1 283.6 305.1 285.1 Q284.1 286.6 270.1 293.6 Z M688.1 417.6 V760.6 Q688.1 778.6 677.1 790.1 Q666.1 801.6 645.1 801.6 H617.1 Q598.1 801.6 586.6 789.6 Q575.1 777.6 575.1 760.6 V417.6 Q575.1 399.6 587.6 388.1 Q600.1 376.6 618.1 376.6 H646.1 Q664.1 376.6 676.1 388.1 Q688.1 399.6 688.1 417.6 Z M803.1 645.6 H458.1 Q440.1 645.6 428.6 634.6 Q417.1 623.6 417.1 602.6 V574.6 Q417.1 555.6 429.1 544.1 Q441.1 532.6 458.1 532.6 H803.1 Q821.1 532.6 832.6 545.1 Q844.1 557.6 844.1 575.6 V603.6 Q844.1 621.6 832.6 633.6 Q821.1 645.6 803.1 645.6 Z" transform="matrix(1 0 0 -1 0 1261.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg><span>导入配置</span></button>
+            <button class="auto-op-config-load-btn" id="auto-op-btn-export-config"><svg viewBox="0 0 1328.4 1328.4" fill="none" aria-hidden="true"><path d="M985.7 220.2 L1201.7 436.2 Q1217.7 451.2 1217.7 472.7 Q1217.7 494.2 1201.7 509.2 L985.7 725.2 Q974.7 736.2 958.7 736.2 Q942.7 736.2 931.7 725.2 L905.7 698.2 Q894.7 688.2 894.7 672.7 Q894.7 657.2 905.7 646.2 L1022.7 529.2 H646.7 Q631.7 529.2 621.2 518.2 Q610.7 507.2 610.7 491.2 V453.2 Q610.7 438.2 621.2 426.7 Q631.7 415.2 646.7 415.2 H1022.7 L906.7 299.2 Q895.7 288.2 895.7 272.7 Q895.7 257.2 906.7 247.2 L933.7 220.2 Q944.7 209.2 960.2 209.2 Q975.7 209.2 985.7 220.2 Z M814.7 230.2 V264.2 Q814.7 283.2 803.7 293.7 Q792.7 304.2 773.7 304.2 H384.7 Q331.7 304.2 310.2 305.7 Q288.7 307.2 275.7 314.2 Q247.7 327.2 233.7 356.2 Q225.7 370.2 224.2 391.2 Q222.7 412.2 222.7 465.2 V864.2 Q222.7 917.2 224.2 937.7 Q225.7 958.2 233.7 973.2 Q248.7 1001.2 275.7 1014.2 Q288.7 1021.2 310.2 1022.7 Q331.7 1024.2 384.7 1024.2 H428.7 Q453.7 1024.2 459.7 1023.2 Q471.7 1020.2 478.7 1015.2 Q478.7 1015.2 500.7 993.2 Q535.7 953.2 553.7 942.2 Q578.7 926.2 603.7 920.2 Q615.7 917.2 634.2 916.2 Q652.7 915.2 676.7 915.2 H918.7 Q947.7 915.2 965.7 902.2 Q983.7 889.2 987.7 862.2 Q987.7 859.2 988.7 858.2 Q990.7 844.2 994.2 835.2 Q997.7 826.2 1005.7 818.2 L1076.7 755.2 Q1090.7 742.2 1102.2 747.7 Q1113.7 753.2 1114.7 768.2 Q1114.7 807.2 1111.7 856.2 Q1106.7 931.2 1065.2 974.7 Q1023.7 1018.2 934.7 1026.2 Q902.7 1028.2 839.7 1028.2 H659.7 Q633.7 1028.2 627.7 1029.2 Q616.7 1032.2 608.7 1037.2 Q604.7 1040.2 581.7 1066.2 Q558.7 1094.2 536.7 1109.2 Q511.7 1126.2 480.7 1133.2 Q468.7 1136.2 452.2 1137.2 Q435.7 1138.2 413.7 1138.2 Q331.7 1138.2 295.2 1135.2 Q258.7 1132.2 231.7 1120.2 Q196.7 1105.2 169.7 1078.2 Q142.7 1051.2 126.7 1016.2 Q115.7 989.2 113.2 952.7 Q110.7 916.2 110.7 834.2 V508.2 Q110.7 415.2 114.2 373.7 Q117.7 332.2 131.7 302.2 Q161.7 243.2 220.7 213.2 Q250.7 197.2 292.2 193.7 Q333.7 190.2 427.7 190.2 H773.7 Q792.7 190.2 803.7 201.2 Q814.7 212.2 814.7 230.2 Z" transform="matrix(1 0 0 -1 0 1328.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg><span>导出配置</span></button>
+          </div>
         </div>
         <div class="auto-op-page" data-page="1">
           <div class="auto-op-row">
@@ -2810,7 +2879,10 @@
 		autoStartIntervalInput = document.getElementById('auto-op-autostart-interval'),
 		autoStartCountdownLabel = document.getElementById('auto-op-autostart-countdown'),
 		elapsedSpan = document.getElementById('auto-op-elapsed'),
-		configBtnEl = document.getElementById('auto-op-config-btn');
+		configBtnEl = document.getElementById('auto-op-config-btn'),
+			configLoadWrap = document.getElementById('auto-op-config-load-wrap'),
+			btnImportConfig = document.getElementById('auto-op-btn-import-config'),
+			btnExportConfig = document.getElementById('auto-op-btn-export-config');
 	const powerSaveCheckbox = document.getElementById('auto-op-power-save');
 	const psTimeEl = document.getElementById('ps-time');
 	const psElapsedEl = document.getElementById('ps-elapsed');
@@ -3061,6 +3133,7 @@
 		if (isPicking) exitPickMode();
 		hideInfoPanel(false);
 		hideSettingsPanel(false);
+		if (isConfigLoadMode) exitConfigLoadMode();
 		const old = cv();
 		old.clickInterval = parseInt(clickIntervalInput.value) || 1000;
 		old.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
@@ -3808,6 +3881,7 @@
 		if (networkOverlayEl.classList.contains('open')) hideNetworkOverlay(false);
 		const clamped = ((page % PAGE_COUNT) + PAGE_COUNT) % PAGE_COUNT;
 		if (clamped === currentPage && animated !== false) return;
+		if (clamped !== 0 && isConfigLoadMode) exitConfigLoadMode();
 		if (clamped !== 4 && resetBtn.style.display !== 'none') {
 			resetBtn.style.display = 'none';
 			resetConfirm = false;
@@ -3847,6 +3921,10 @@
 		btn.addEventListener('click', e => {
 			e.stopPropagation();
 			const page = parseInt(btn.dataset.page);
+			if (page === 0 && currentPage === 0) {
+				toggleConfigLoadMode();
+				return;
+			}
 			if (page === 4 && currentPage === 4) {
 				page3ClickCount++;
 				if (page3ClickTimer) clearTimeout(page3ClickTimer);
@@ -3864,8 +3942,393 @@
 				page3ClickCount = 0;
 				if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
 			}
+			if (isConfigLoadMode) exitConfigLoadMode();
 			goToPage(page);
 		});
+	});
+
+	const CONFIG_LOAD_SVG = '<svg viewBox="0 0 1276.8 1276.8" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M667.4 626.4 Q680.4 627.4 697.9 634.9 Q715.4 642.4 738.4 653.4 L1079.4 802.4 L1095.4 809.4 Q1128.4 824.4 1143.4 834.4 Q1158.4 844.4 1164.4 855.4 Q1170.4 868.4 1170.4 882.4 Q1170.4 896.4 1164.4 907.4 Q1158.4 919.4 1143.9 928.9 Q1129.4 938.4 1093.4 954.4 Q1089.4 957.4 1079.4 961.4 L738.4 1111.4 Q693.4 1132.4 667.4 1138.4 Q641.4 1142.4 614.4 1138.4 Q588.4 1132.4 543.4 1111.4 L202.4 961.4 Q192.4 957.4 188.4 954.4 Q152.4 938.4 137.9 928.9 Q123.4 919.4 117.4 907.4 Q111.4 896.4 111.4 882.4 Q111.4 868.4 117.4 855.4 Q123.4 844.4 138.4 834.4 Q153.4 824.4 186.4 809.4 L202.4 802.4 L543.4 653.4 Q566.4 642.4 583.9 634.9 Q601.4 627.4 614.4 626.4 Q641.4 622.4 667.4 626.4 Z M666.4 139.4 Q695.4 146.4 734.4 164.4 L1075.4 310.4 Q1115.4 328.4 1134.4 338.9 Q1153.4 349.4 1161.4 360.4 Q1169.4 372.4 1169.4 387.4 Q1169.4 402.4 1161.4 415.4 Q1155.4 427.4 1139.4 437.9 Q1123.4 448.4 1093.4 462.4 L1067.4 474.4 Q1057.4 477.4 1050.4 474.4 L956.4 434.4 Q946.4 430.4 946.4 421.9 Q946.4 413.4 956.4 408.4 L979.4 398.4 Q986.4 394.4 986.4 390.4 Q986.4 386.4 980.4 384.4 L670.4 254.4 Q658.4 249.4 648.4 247.4 Q641.4 246.4 633.4 247.4 Q623.4 249.4 611.4 254.4 L299.4 384.4 Q294.4 386.4 294.9 390.9 Q295.4 395.4 300.4 397.4 L325.4 408.4 Q335.4 413.4 334.9 421.4 Q334.4 429.4 324.4 434.4 L231.4 474.4 Q223.4 477.4 214.4 473.4 L188.4 462.4 Q155.4 446.4 139.9 436.9 Q124.4 427.4 119.4 414.4 Q106.4 387.4 119.4 362.4 Q125.4 350.4 142.4 340.9 Q159.4 331.4 206.4 310.4 L547.4 164.4 Q586.4 146.4 615.4 139.4 Q641.4 134.4 666.4 139.4 Z M666.4 383.4 Q682.4 386.4 722.4 402.4 L734.4 407.4 L1075.4 554.4 Q1121.4 574.4 1138.4 583.9 Q1155.4 593.4 1162.4 605.4 Q1169.4 617.4 1169.4 631.9 Q1169.4 646.4 1162.4 659.4 Q1155.4 671.4 1139.4 681.9 Q1123.4 692.4 1089.4 708.4 L1068.4 717.4 Q1058.4 722.4 1051.4 717.4 L960.4 676.4 Q950.4 672.4 950.4 664.4 Q950.4 656.4 960.4 651.4 L979.4 642.4 Q987.4 638.4 986.9 634.4 Q986.4 630.4 978.4 627.4 L670.4 499.4 L661.4 495.4 Q655.4 492.4 647.4 490.4 Q641.4 489.4 634.4 490.4 Q626.4 492.4 620.4 495.4 L611.4 499.4 L300.4 628.4 Q294.4 631.4 293.9 634.9 Q293.4 638.4 298.4 640.4 L320.4 652.4 Q330.4 656.4 329.9 664.4 Q329.4 672.4 319.4 676.4 L230.4 717.4 Q222.4 722.4 212.4 717.4 L192.4 708.4 Q154.4 689.4 139.4 680.4 Q124.4 671.4 119.4 658.4 Q107.4 631.4 119.4 605.4 Q125.4 593.4 143.9 582.9 Q162.4 572.4 206.4 554.4 L547.4 407.4 L559.4 402.4 Q599.4 386.4 615.4 383.4 Q641.4 379.4 666.4 383.4 Z M608.4 742.4 L304.4 875.4 Q299.4 877.4 299.4 881.4 Q299.4 885.4 305.4 888.4 L608.4 1022.4 Q626.4 1030.4 633.4 1031.4 Q641.4 1032.4 648.4 1031.4 Q655.4 1030.4 673.4 1022.4 L975.4 889.4 Q982.4 885.4 982.4 881.4 Q982.4 877.4 976.4 874.4 L673.4 742.4 Q655.4 734.4 648.4 733.4 Q641.4 732.4 633.4 733.4 Q626.4 734.4 608.4 742.4 Z" transform="matrix(1 0 0 -1 0 1276.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
+	const OPERATION_SVG = '<svg viewBox="0 0 1197.6 1197.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M988.8 161.3 Q1046.8 191.3 1073.8 246.3 Q1089.8 277.3 1093.8 319.8 Q1097.8 362.3 1097.8 459.3 V739.3 Q1097.8 836.3 1093.8 878.8 Q1089.8 921.3 1073.8 952.3 Q1045.8 1009.3 988.8 1037.3 Q957.8 1053.3 915.3 1057.3 Q872.8 1061.3 775.8 1061.3 H420.8 Q324.8 1061.3 282.3 1057.3 Q239.8 1053.3 207.8 1037.3 Q151.8 1009.3 123.8 952.3 Q107.8 921.3 103.8 878.8 Q99.8 836.3 99.8 739.3 V459.3 Q99.8 362.3 103.8 319.8 Q107.8 277.3 123.8 246.3 Q150.8 191.3 207.8 161.3 Q239.8 144.3 282.3 140.3 Q324.8 136.3 420.8 136.3 H775.8 Q872.8 136.3 915.3 140.3 Q957.8 144.3 988.8 161.3 Z M263.8 261.3 Q238.8 275.3 222.8 300.3 Q215.8 315.3 214.3 337.8 Q212.8 360.3 212.8 413.3 V785.3 Q212.8 839.3 214.3 860.8 Q215.8 882.3 222.8 897.3 Q237.8 924.3 263.8 937.3 Q277.8 944.3 299.8 945.8 Q321.8 947.3 376.8 947.3 H682.8 V251.3 H376.8 Q321.8 251.3 299.8 252.8 Q277.8 254.3 263.8 261.3 Z M796.8 947.3 H820.8 Q875.8 947.3 897.3 945.8 Q918.8 944.3 933.8 937.3 Q960.8 922.3 973.8 897.3 Q980.8 882.3 982.3 860.8 Q983.8 839.3 983.8 785.3 V413.3 Q983.8 359.3 982.3 337.3 Q980.8 315.3 973.8 300.3 Q960.8 277.3 933.8 261.3 Q918.8 254.3 897.3 252.8 Q875.8 251.3 820.8 251.3 H796.8 Z M420.8 769.3 V790.3 Q420.8 810.3 412.3 819.8 Q403.8 829.3 385.8 829.3 H310.8 Q291.8 829.3 283.3 819.8 Q274.8 810.3 274.8 790.3 V769.3 Q274.8 748.3 283.3 739.3 Q291.8 730.3 310.8 730.3 H385.8 Q403.8 730.3 412.3 739.3 Q420.8 748.3 420.8 769.3 Z M420.8 588.3 V609.3 Q420.8 629.3 412.3 638.8 Q403.8 648.3 385.8 648.3 H310.8 Q291.8 648.3 283.3 638.8 Q274.8 629.3 274.8 609.3 V588.3 Q274.8 567.3 283.3 558.3 Q291.8 549.3 310.8 549.3 H385.8 Q403.8 549.3 412.3 558.3 Q420.8 567.3 420.8 588.3 Z M626.8 769.3 V790.3 Q626.8 810.3 618.8 819.8 Q610.8 829.3 591.8 829.3 H515.8 Q497.8 829.3 489.3 819.8 Q480.8 810.3 480.8 790.3 V769.3 Q480.8 748.3 489.3 739.3 Q497.8 730.3 515.8 730.3 H591.8 Q610.8 730.3 618.8 739.3 Q626.8 748.3 626.8 769.3 Z M626.8 588.3 V609.3 Q626.8 629.3 618.8 638.8 Q610.8 648.3 591.8 648.3 H515.8 Q497.8 648.3 489.3 638.8 Q480.8 629.3 480.8 609.3 V588.3 Q480.8 567.3 489.3 558.3 Q497.8 549.3 515.8 549.3 H591.8 Q610.8 549.3 618.8 558.3 Q626.8 567.3 626.8 588.3 Z M420.8 407.3 V429.3 Q420.8 449.3 412.3 458.8 Q403.8 468.3 385.8 468.3 H310.8 Q291.8 468.3 283.3 458.8 Q274.8 449.3 274.8 429.3 V407.3 Q274.8 386.3 283.3 377.8 Q291.8 369.3 310.8 369.3 H385.8 Q403.8 369.3 412.3 377.8 Q420.8 386.3 420.8 407.3 Z" transform="matrix(1 0 0 -1 0 1197.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
+
+	function toggleConfigLoadMode() {
+		isConfigLoadMode = !isConfigLoadMode;
+		const page0Btn = panel.querySelector('.auto-op-page-btn[data-page="0"]');
+		const page0 = pageContainer.querySelector('.auto-op-page[data-page="0"]');
+		const btnGroup = panel.querySelector('.auto-op-btn-group');
+		if (isConfigLoadMode) {
+			page0Btn.innerHTML = CONFIG_LOAD_SVG;
+			page0Btn.title = '配置加载';
+			Array.from(page0.children).forEach(child => {
+				if (child !== configLoadWrap) {
+					child.dataset._prevDisplay = child.style.display;
+					child.style.display = 'none';
+				}
+			});
+			configLoadWrap.classList.add('active');
+			if (btnGroup) { btnGroup.dataset._prevDisplay = btnGroup.style.display; btnGroup.style.display = 'none'; }
+			statusDiv.dataset._prevDisplay = statusDiv.style.display;
+			statusDiv.style.display = 'none';
+			updatePageHeight();
+		} else {
+			page0Btn.innerHTML = OPERATION_SVG;
+			page0Btn.title = '操作';
+			Array.from(page0.children).forEach(child => {
+				child.style.display = child.dataset._prevDisplay || '';
+				delete child.dataset._prevDisplay;
+			});
+			configLoadWrap.classList.remove('active');
+			if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
+			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
+			delete statusDiv.dataset._prevDisplay;
+			updatePageHeight();
+		}
+	}
+
+	function exitConfigLoadMode() {
+		if (!isConfigLoadMode) return;
+		isConfigLoadMode = false;
+		const page0Btn = panel.querySelector('.auto-op-page-btn[data-page="0"]');
+		const page0 = pageContainer.querySelector('.auto-op-page[data-page="0"]');
+		const btnGroup = panel.querySelector('.auto-op-btn-group');
+		page0Btn.innerHTML = OPERATION_SVG;
+		page0Btn.title = '操作';
+		Array.from(page0.children).forEach(child => {
+			child.style.display = child.dataset._prevDisplay || '';
+			delete child.dataset._prevDisplay;
+		});
+		configLoadWrap.classList.remove('active');
+		if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
+		statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
+		delete statusDiv.dataset._prevDisplay;
+	}
+
+	function exportConfig() {
+		try {
+			const ci = activeConfig;
+			const c = configs[ci];
+			const data = {
+				version: '5.2.0',
+				exportedAt: new Date().toISOString(),
+				hostname: window.location.hostname,
+				isMultiMode: c.isMultiMode,
+				clickStrategy: c.clickStrategy,
+				clickInterval: c.clickInterval,
+				maxClicks: c.maxClicks === Infinity ? '' : c.maxClicks,
+				missingAction: c.missingAction || 'wait',
+				autoStartIntervalMin: c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '',
+				maxDurationMin: c.maxDurationMin > 0 ? c.maxDurationMin : '',
+				targets: c.targets.map(t => ({
+					strict: t.strict,
+					loose: t.loose,
+					fingerprint: t.fingerprint,
+					desc: t.desc,
+					isInput: t.isInput,
+					matchMode: t.matchMode,
+					parentSelector: t.parentSelector,
+					parentChain: t.parentChain || [],
+					isAuto: !!t.isAuto,
+					enabled: t.enabled !== false,
+					matchTag: t.matchTag !== false,
+					matchText: t.matchText !== false,
+					matchTextMode: t.matchTextMode || 'exact',
+					matchDataAttrs: t.matchDataAttrs !== false,
+					matchAttrs: t.matchAttrs !== false,
+					matchOnclick: t.matchOnclick !== false,
+					autoDiscover: t.autoDiscover !== false,
+					matchParent: t.matchParent !== false,
+					matchId: t.matchId !== false,
+					matchClass: t.matchClass !== false,
+					isCommand: !!t.isCommand,
+					customCommand: t.customCommand || '',
+					customFill: t.customFill || '',
+					customInterval: t.customInterval != null ? t.customInterval : '',
+					scrollIntoView: !!t.scrollIntoView,
+					showParent: !!t.showParent,
+					enableHighlight: t.enableHighlight !== false
+				}))
+			};
+			const json = JSON.stringify(data, null, 2);
+			const blob = new Blob([json], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+			a.download = 'auto-op-config-' + window.location.hostname + '-' + ts + '.json';
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (e) {
+			console.error('[AUTO_OP] exportConfig 异常:', e);
+			alert('导出配置失败: ' + e.message);
+		}
+	}
+
+	function importConfig() {
+		try {
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = '.json';
+			input.style.display = 'none';
+			document.body.appendChild(input);
+			input.addEventListener('change', function() {
+				try {
+					const file = input.files[0];
+					if (!file) { document.body.removeChild(input); return; }
+					if (!file.name.toLowerCase().endsWith('.json')) {
+						document.body.removeChild(input);
+						showConfirm('请选择 .json 格式的配置文件').then(() => {});
+						return;
+					}
+					if (file.size > 10 * 1024 * 1024) {
+						document.body.removeChild(input);
+						showConfirm('文件过大（最大 10MB），请检查文件是否为有效的配置文件').then(() => {});
+						return;
+					}
+					const reader = new FileReader();
+					reader.onload = function(e) {
+						let data;
+						try {
+							data = JSON.parse(e.target.result);
+						} catch (parseErr) {
+							console.error('[AUTO_OP] importConfig JSON 解析失败:', parseErr);
+							showConfirm('文件格式错误：不是有效的 JSON 文件').then(() => {});
+							return;
+						}
+						if (!data || typeof data !== 'object') {
+							showConfirm('文件格式错误：不是有效的配置文件').then(() => {});
+							return;
+						}
+						if (!data.targets || !Array.isArray(data.targets)) {
+							showConfirm('文件格式错误：缺少 targets 字段或格式不正确').then(() => {});
+							return;
+						}
+						const hasConfigFields = data.isMultiMode !== undefined || data.clickStrategy !== undefined ||
+							data.clickInterval !== undefined || data.maxClicks !== undefined;
+						const hasTargets = data.targets.length > 0;
+						if (!hasConfigFields && !hasTargets) {
+							showConfirm('文件格式错误：未找到有效的配置数据').then(() => {});
+							return;
+						}
+						showConfirm(
+							'即将导入配置：\n' +
+							'• 目标元素：' + data.targets.length + ' 个\n' +
+							'• 操作间隔：' + (data.clickInterval || '默认') + ' ms\n' +
+							'• 最大次数：' + (data.maxClicks || '无限') + '\n' +
+							'• 操作策略：' + (data.clickStrategy === 'sequential' ? '队列操作' : '同时操作') + '\n\n' +
+							'当前配置将被覆盖，确认导入？'
+						).then(confirmed => {
+							if (!confirmed) return;
+							try {
+								const c = cv();
+								const backup = {
+									isMultiMode: c.isMultiMode,
+									clickStrategy: c.clickStrategy,
+									clickInterval: c.clickInterval,
+									maxClicks: c.maxClicks,
+									missingAction: c.missingAction,
+									autoStartEnabled: c.autoStartEnabled,
+									autoStartIntervalMin: c.autoStartIntervalMin,
+									maxDurationMin: c.maxDurationMin,
+									targets: c.targets.map(t => ({
+										strict: t.strict,
+										loose: t.loose,
+										fingerprint: t.fingerprint,
+										desc: t.desc,
+										isInput: t.isInput,
+										matchMode: t.matchMode,
+										parentSelector: t.parentSelector,
+										parentChain: t.parentChain ? [...t.parentChain] : [],
+										isAuto: !!t.isAuto,
+										enabled: t.enabled !== false,
+										matchTag: t.matchTag !== false,
+										matchText: t.matchText !== false,
+										matchTextMode: t.matchTextMode || 'exact',
+										matchDataAttrs: t.matchDataAttrs !== false,
+										matchAttrs: t.matchAttrs !== false,
+										matchOnclick: t.matchOnclick !== false,
+										autoDiscover: t.autoDiscover !== false,
+										matchParent: t.matchParent !== false,
+										matchId: t.matchId !== false,
+										matchClass: t.matchClass !== false,
+										isCommand: !!t.isCommand,
+										customCommand: t.customCommand || '',
+										customFill: t.customFill || '',
+										customInterval: t.customInterval,
+										scrollIntoView: !!t.scrollIntoView,
+										showParent: !!t.showParent,
+										enableHighlight: t.enableHighlight !== false,
+										element: t.element,
+										nearestParent: t.nearestParent,
+										blueParent: t.blueParent,
+										_blueParent: t._blueParent,
+										_nearestEl: t._nearestEl,
+										_isValid: t._isValid,
+										missCount: t.missCount
+									}))
+								};
+								try {
+									c.targets.forEach(t => {
+										if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
+										if (t._blueParent && t._blueParent.classList) {
+											t._blueParent.classList.remove('auto-op-parent-highlight');
+											t._blueParent.classList.remove('auto-op-parent-highlight-Overlap');
+										}
+										if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
+									});
+									c.targets = [];
+									c.discoveredElements.clear();
+									if (data.isMultiMode !== undefined) c.isMultiMode = !!data.isMultiMode;
+									if (data.clickStrategy !== undefined) c.clickStrategy = data.clickStrategy;
+									if (data.clickInterval !== undefined) c.clickInterval = parseInt(data.clickInterval) || 1000;
+									if (data.maxClicks !== undefined) c.maxClicks = (data.maxClicks === '' || data.maxClicks === undefined) ? Infinity : (parseInt(data.maxClicks) || Infinity);
+									if (data.missingAction !== undefined) c.missingAction = data.missingAction;
+									if (data.autoStartIntervalMin !== undefined && data.autoStartIntervalMin !== '' && parseFloat(data.autoStartIntervalMin) > 0) {
+										c.autoStartEnabled = true;
+										c.autoStartIntervalMin = parseFloat(data.autoStartIntervalMin);
+									} else {
+										c.autoStartEnabled = false;
+										c.autoStartIntervalMin = 0;
+									}
+									if (data.maxDurationMin !== undefined && data.maxDurationMin !== '' && parseFloat(data.maxDurationMin) > 0) {
+										c.maxDurationMin = parseFloat(data.maxDurationMin);
+									} else {
+										c.maxDurationMin = 0;
+									}
+									data.targets.forEach(t => {
+										const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
+										const base = {
+											strict: t.strict,
+											loose: t.loose,
+											fingerprint: t.fingerprint,
+											desc: t.desc,
+											isInput: !!t.isInput,
+											customFill: t.customFill || '',
+											customInterval: (t.customInterval === '' || t.customInterval === undefined || t.customInterval === null) ? undefined : Number(t.customInterval),
+											scrollIntoView: !!t.scrollIntoView,
+											showParent: !!t.showParent,
+											enableHighlight: t.enableHighlight !== false,
+											isCommand: !!t.isCommand,
+											customCommand: t.customCommand || '',
+											parentSelector: t.parentSelector || '',
+											parentChain: t.parentChain || [],
+											isAuto: !!t.isAuto,
+											missCount: 0,
+											nearestParent: null,
+											blueParent: null,
+											_blueParent: null,
+											_nearestEl: null,
+											enabled: t.enabled !== false,
+											matchTag: t.matchTag !== false,
+											matchText: t.matchText !== false,
+											matchTextMode: t.matchTextMode || 'exact',
+											matchDataAttrs: t.matchDataAttrs !== false,
+											matchAttrs: t.matchAttrs !== false,
+											matchOnclick: t.matchOnclick !== false,
+											autoDiscover,
+											matchParent: t.matchParent !== false,
+											matchId: t.matchId !== false,
+											matchClass: t.matchClass !== false
+										};
+										const found = base.isCommand ? [] : tryFindTarget({ ...base, element: null });
+										if (found && found.length > 0) {
+											found.forEach(el => {
+												const obj = { ...base, element: el };
+												const parentInfo = resolveParentInfo(el);
+												obj.nearestParent = parentInfo.nearestParent;
+												obj.blueParent = parentInfo.blueParent;
+												c.targets.push(obj);
+												c.discoveredElements.add(el);
+											});
+										} else {
+											c.targets.push({ ...base, element: null });
+										}
+									});
+									c.targets.forEach(t => {
+										t._isValid = t.isCommand || (!!t.element && document.contains(t.element) && matchesFingerprint(t.element, t));
+									});
+									multiModeCheckbox.checked = c.isMultiMode;
+									strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+									updateCmdTargetBtn();
+									strategySelect.value = c.clickStrategy;
+									clickIntervalInput.value = c.clickInterval;
+									maxClicksInput.value = c.maxClicks === Infinity ? '' : c.maxClicks;
+									missingActionSelect.value = c.missingAction || 'wait';
+									autoStartIntervalInput.value = c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '';
+									maxDurationInput.value = c.maxDurationMin > 0 ? c.maxDurationMin : '';
+									refreshParentHighlights();
+									updateTargetUI();
+									updateTargetCount();
+									countSpan.textContent = c.clickedCount;
+									if (c.targets.length > 0) stateSpan.textContent = '就绪';
+									else stateSpan.textContent = '请选取目标元素';
+									updateConfigBtnLabel();
+									saveData();
+									exitConfigLoadMode();
+									updatePageHeight();
+									showConfirm('配置导入成功！\n\n导入了 ' + data.targets.length + ' 个目标元素').then(() => {});
+								} catch (applyErr) {
+									console.error('[AUTO_OP] importConfig 应用失败:', applyErr);
+									c.isMultiMode = backup.isMultiMode;
+									c.clickStrategy = backup.clickStrategy;
+									c.clickInterval = backup.clickInterval;
+									c.maxClicks = backup.maxClicks;
+									c.missingAction = backup.missingAction;
+									c.autoStartEnabled = backup.autoStartEnabled;
+									c.autoStartIntervalMin = backup.autoStartIntervalMin;
+									c.maxDurationMin = backup.maxDurationMin;
+									c.targets = backup.targets;
+									c.discoveredElements.clear();
+									backup.targets.forEach(t => {
+										if (t.element) c.discoveredElements.add(t.element);
+									});
+									multiModeCheckbox.checked = c.isMultiMode;
+									strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+									updateCmdTargetBtn();
+									strategySelect.value = c.clickStrategy;
+									clickIntervalInput.value = c.clickInterval;
+									maxClicksInput.value = c.maxClicks === Infinity ? '' : c.maxClicks;
+									missingActionSelect.value = c.missingAction || 'wait';
+									autoStartIntervalInput.value = c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '';
+									maxDurationInput.value = c.maxDurationMin > 0 ? c.maxDurationMin : '';
+									refreshParentHighlights();
+									updateTargetUI();
+									updateTargetCount();
+									refreshParentHighlights();
+									showConfirm('导入失败：配置数据无法应用，已恢复原配置\n\n' + (applyErr.message || '未知错误')).then(() => {});
+								}
+							} catch (backupErr) {
+								console.error('[AUTO_OP] importConfig 备份失败:', backupErr);
+								showConfirm('导入失败：无法备份当前配置，操作已取消').then(() => {});
+							}
+						});
+					};
+					reader.onerror = function() {
+						console.error('[AUTO_OP] importConfig 文件读取失败');
+						showConfirm('文件读取失败，请重试').then(() => {});
+					};
+					reader.readAsText(file);
+				} catch (err) {
+					console.error('[AUTO_OP] importConfig 异常:', err);
+					showConfirm('导入失败: ' + (err.message || '未知错误')).then(() => {});
+				} finally {
+					document.body.removeChild(input);
+				}
+			});
+			input.click();
+		} catch (e) {
+			console.error('[AUTO_OP] importConfig 异常:', e);
+			showConfirm('导入配置失败: ' + e.message).then(() => {});
+		}
+	}
+
+	btnImportConfig.addEventListener('click', e => {
+		e.stopPropagation();
+		importConfig();
+	});
+	btnExportConfig.addEventListener('click', e => {
+		e.stopPropagation();
+		exportConfig();
 	});
 
 	function measureCollapsedWidth() {
