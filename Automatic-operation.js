@@ -3791,7 +3791,7 @@
 		if (!el) return;
 		const h = el.offsetHeight;
 		if (h > 0) pageContainer.style.height = (h + 2) + 'px';
-		
+
 		if (!panelBody.style.maxHeight) panelBody.style.minHeight = '';
 	}
 
