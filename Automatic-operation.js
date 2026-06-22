@@ -196,10 +196,10 @@
 			--panel-highlight-border: #3482FF;
 			--panel-active-border: #32d486;
 			--panel-active-text: #32d486;
-			--panel-waiting-text: var(--panel-waiting-text);
-			--panel-highlight: var(--panel-waiting-text);
-			--panel-missing-border: var(--panel-missing-border);
-			--panel-missing-text: var(--panel-missing-border)
+			--panel-waiting-text: #d97706;
+			--panel-highlight: #d97706;
+			--panel-missing-border: #dc2626;
+			--panel-missing-text: #dc2626
 		}
 
 		[data-theme="light"] .auto-op-status {
