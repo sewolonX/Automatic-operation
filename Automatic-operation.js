@@ -4007,7 +4007,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.0',
+				version: '5.2.1',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				isMultiMode: c.isMultiMode,
@@ -4942,10 +4942,9 @@
 
 	function restoreBodyHeight() {
 		const pageH = pageContainer.scrollHeight;
-		// Animate height transition when restoring from overlay-fit height
 		if (panelBody.style.maxHeight && panelBody.style.maxHeight !== '') {
 			panelBody.style.minHeight = panelBody.offsetHeight + 'px';
-			void panelBody.offsetHeight; // force reflow to lock current height for transition
+			void panelBody.offsetHeight;
 		}
 		if (pageH > 0) {
 			panelBody.style.minHeight = pageH + 'px';

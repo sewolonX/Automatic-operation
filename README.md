@@ -1,6 +1,8 @@
 # Automatic-operation 🎯
 
-[油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充 / 执行 JS）元素。纯 JavaScript 实现，~7000 行，无外部依赖。
+> **当前版本**：v5.2.1 · **代码行数**：7048 行（CSS ~2311 + JS ~4737）· **许可**：MIT
+
+[油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充 / 执行 JS）元素。纯 JavaScript 实现，7048 行（CSS ~2311 行 + JS 逻辑 ~4737 行），无外部依赖。
 
 ## 安装
 
@@ -12,7 +14,7 @@
 | **正式版** | [点击安装](https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js) | OSS CDN，稳定版本 |
 | **Dev 版** | [点击安装](https://github.com/sewolonX/Automatic-operation/raw/refs/heads/main/Automatic-operation.js) | GitHub 直链，随 `main` 分支更新 |
 
-> **早期版本**：[Automatic-clicker.js](Automatic-clicker.js)（~777 行）是单目标简化版自动点击器。
+> **早期版本**：[Automatic-clicker.js](Automatic-clicker.js)（777 行）是单目标简化版自动点击器。
 
 ---
 
@@ -536,6 +538,7 @@
 - IP 地址的每个不同 IP 独立存储
 
 **存储键生成逻辑**：
+
 ```js
 const SHARED_KEY = 'AUTO_OP_SHARED_' + window.location.hostname;
 const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
@@ -556,6 +559,7 @@ const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 **导出文件格式**：与 `savePerConfig` 序列化完全一致，额外包含 `version`（脚本版本）、`exportedAt`（导出时间戳）、`hostname`（来源域名）三个元数据字段。
 
 **导入安全机制**：
+
 1. 文件扩展名检查（`.json`）
 2. 文件大小检查（≤ 10MB）
 3. JSON 格式校验（`JSON.parse`）
@@ -733,7 +737,51 @@ const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 
 ---
 
+<!-- markdownlint-disable MD033 -->
 ## 常见问题 (FAQ)
+
+### 通用
+
+<details>
+<summary><b>Q: 脚本安装后没有出现面板？</b></summary>
+
+**A:** 按顺序排查：
+
+1. 确认 Tampermonkey 扩展已启用，且脚本已开启（Tampermonkey 图标显示数字）
+2. 确认当前页面不是 `file://` 或 `chrome://` 等特殊协议页面（脚本自动跳过）
+3. 确认当前页面不在 iframe 内（`IS_TOP` 检测会跳过 iframe）
+4. 查看浏览器控制台（F12）中是否有 `[AUTO_OP]` 前缀的日志
+5. 尝试刷新页面，或在 Tampermonkey 中手动重新安装脚本
+
+</details>
+
+<details>
+<summary><b>Q: 这个脚本会影响网页的正常使用吗？</b></summary>
+
+**A:** 脚本设计上尽量减少对网页的影响：
+
+- 面板 `z-index: 2147483646`（最大值），固定定位，不参与页面布局流
+- 折叠后半透明（`opacity: 0.65`），占用空间极小
+- `isProgrammaticClick` 标记用于区分脚本触发和用户触发的点击
+- 网络监测 `fetch`/`XHR` 拦截会**透传**所有请求和响应，不影响页面逻辑
+- 选取元素时的点击拦截（`pickPassThrough`）默认关闭，可选放行
+
+如果遇到兼容性问题，可以在 Tampermonkey 中临时禁用脚本。
+
+</details>
+
+<details>
+<summary><b>Q: 脚本支持哪些浏览器？</b></summary>
+
+**A:** 支持所有支持 Tampermonkey 的浏览器：
+
+- **Chrome** / **Edge** / **Brave** / **Opera**（Chromium 内核，推荐）
+- **Firefox**（部分 API 如 Wake Lock 可能受限）
+- **Safari**（需安装 Tampermonkey for Safari）
+
+移动端浏览器（Android Firefox + Tampermonkey 扩展、Kiwi Browser 等）也支持触屏拖拽操作。
+
+</details>
 
 ### 选取与匹配
 
@@ -814,6 +862,27 @@ const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 
 </details>
 
+<details>
+<summary><b>Q: 队列模式下，元素缺失后会跳过该元素继续下一个吗？</b></summary>
+
+**A:** 取决于「元素消失后」设置：
+
+- **等待重试**（默认）：等待 `间隔×2` 时间（每 1ms 轮询），超时后**跳过该元素**，`currentQueueIndex` 移动到下一个。如果下一个也缺失，同样等待→跳过，形成「跳过链」。所有元素都缺失时才触发停止逻辑
+- **立即停止**：任一目标元素缺失且无法通过 `tryFindTarget` 恢复时，立即终止运行
+
+注意：队列模式下跳过的元素不会增加 `clickedCount`，所以操作次数上限不受缺失元素影响。
+
+</details>
+
+<details>
+<summary><b>Q: 同时模式下，多个目标的操作顺序是怎样的？</b></summary>
+
+**A:** 每个操作周期（由 `setInterval` 驱动，间隔 = `clickInterval`）按目标列表的**数组顺序**（即面板中显示的从上到下顺序）依次操作所有有效目标。要调整顺序，使用目标右侧的 ↑/↓ 按钮。
+
+在同一个周期内，所有目标几乎同时执行（实际上是一个同步 `for` 循环，间隔在毫秒级）。如果需要严格控制先后顺序，应使用队列模式。
+
+</details>
+
 ### 配置与存储
 
 <details>
@@ -841,6 +910,7 @@ const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 - **导入配置**：选择之前导出的 `.json` 文件 → 显示配置摘要确认 → 备份当前配置 → 导入新配置。如果导入失败，自动回滚到备份配置。
 
 导入时会验证：
+
 1. 文件扩展名是否为 `.json`
 2. 文件大小是否 ≤ 10MB
 3. JSON 格式是否有效
@@ -866,9 +936,52 @@ const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 **A:** 不能直接共享。每套配置通过 `AUTO_OP_CFG_<host>_<N>` 键独立存储，`<host>` 为 `window.location.hostname`。这是有意设计——不同网站的 DOM 结构不同，即使相同选择器在同一网站也不一定有效。
 
 如果需要在多个网站使用相似的自动操作，可以：
+
 1. 在一个网站上配置好 → 复制 `localStorage` 中的配置 JSON
 2. 在另一个网站上手动粘贴到对应键中
 3. 刷新页面让脚本加载新配置
+
+</details>
+
+<details>
+<summary><b>Q: 多套配置可以同时运行吗？如何管理？</b></summary>
+
+**A:** 可以。每套配置完全独立运行，互不干扰。使用场景：
+
+- 配置①：自动点击按钮 A（每 1s）
+- 配置②：自动填充表单（每 5s）
+- 配置③：自动刷新页面（每 30min）
+
+管理方式：
+
+- 标题栏右侧的 ⑩ 按钮显示当前配置，下拉菜单切换
+- 运行中的配置在菜单中有**绿色圆点**指示
+- 折叠面板的 ▶/■ 按钮始终控制当前显示的配置
+- `configs.some(c => c.isRunning)` 判断是否有任何配置在运行
+- WakeLock 仅在所有配置都停止时才释放
+
+</details>
+
+### 面板操作
+
+<details>
+<summary><b>Q: 面板遮挡了页面重要内容怎么办？</b></summary>
+
+**A:** 有多种方式减少面板干扰：
+
+1. **折叠面板**：点击 − 按钮折叠，面板缩小为标题栏（约 150-200px 宽）
+2. **半透明**：折叠后 1 秒自动变为半透明（`opacity: 0.65`）
+3. **拖拽移动**：拖拽标题栏将面板移到屏幕任意位置
+4. **省电模式**：第 5 页开启省电模式，隐藏面板，仅显示 4 个浮动元素
+
+</details>
+
+<details>
+<summary><b>Q: 面板拖拽时位置保存吗？</b></summary>
+
+**A:** 是的。拖拽结束时（`mouseup`/`touchend`），面板的 `left` 和 `top` 会保存到 `AUTO_OP_SHARED_<host>` 的 `panelLeft`/`panelTop` 字段。刷新页面后自动恢复位置。
+
+注意：面板位置通过内联 `style` 的 `left`/`top` 控制，在 `panel.style.left` 和 `panel.style.top` 上设置。刷新恢复时重新应用。
 
 </details>
 
@@ -932,6 +1045,50 @@ return fetch('/api').then(r => r.json()).then(d => console.log(d))
 
 </details>
 
+<details>
+<summary><b>Q: 网络监测复制的 fetch 代码可以直接在其他地方使用吗？</b></summary>
+
+**A:** 可以。复制的代码是标准 `fetch()` 调用，去除了脚本特定的 header（如 cookie 等敏感信息会保留在请求头中）。注意事项：
+
+1. 复制单条请求 → 生成完整 `fetch()` 代码，含 method、headers、body
+2. 复制全部 → 所有请求用分号 `;` 分隔拼接
+3. 跨域请求可能需要目标服务器支持 CORS
+4. 部分网站可能有 CSRF 保护，复制的请求可能因 token 过期而失败
+
+</details>
+
+### 自动刷新
+
+<details>
+<summary><b>Q: 自动刷新和自动启动有什么区别？</b></summary>
+
+**A:** 两者功能不同：
+
+- **自动刷新**（第 4 页）：定时刷新整个页面（`location.reload()`）。适用于需要定期刷新以获取新数据的页面（如看板、监控页）。刷新后自动恢复操作状态
+- **自动启动**（第 3 页）：定时开始操作（不刷新页面）。适用于在特定时间启动自动点击/填充。支持自动循环：启动→运行→停止→重新倒计时→再次启动
+
+两者可以同时使用：比如每 30 分钟自动刷新页面，每次刷新后 1 分钟自动开始操作。
+
+</details>
+
+<details>
+<summary><b>Q: 自动刷新后操作状态能恢复多少？</b></summary>
+
+**A:** 跨刷新恢复涵盖以下状态：
+
+- ✅ 当前运行的配置编号（`activeConfig`）
+- ✅ 已操作次数（`clickedCount`）
+- ✅ 运行计时（通过 `savedTimestamp` 恢复）
+- ✅ 最大运行时长剩余时间（扣除已消耗时间）
+- ✅ 自动刷新倒计时（精确到毫秒）
+- ✅ 刷新日志（含刷新前时间戳和操作信息）
+- ✅ 省电模式状态（300ms 延迟恢复）
+- ✅ 网络监测开关和请求记录
+- ❌ DOM 元素引用（刷新后通过 `tryFindTarget` 重新查找）
+- ❌ 正在等待的 `setTimeout`/`setInterval`（刷新后重新创建）
+
+</details>
+
 ### 主题
 
 <details>
@@ -955,6 +1112,129 @@ return fetch('/api').then(r => r.json()).then(d => console.log(d))
 **A:** 这是 CSS 变量初始化和 JS 主题检测之间的时序问题。脚本在 CSS 注入时使用 `:root` 默认暗色值，然后 JS 初始化阶段调用 `applyTheme()` 切换到检测到的主题。解决方案是直接使用 `system` 或手动指定 `light`/`dark` 模式，跳过 `auto` 检测的开销。
 
 </details>
+
+### 性能与限制
+
+<details>
+<summary><b>Q: 脚本对页面性能有什么影响？</b></summary>
+
+**A:** 脚本设计上尽量减小性能开销：
+
+- **操作间隔 ≥1ms**：用户可设置的最小操作间隔为 1ms
+- **UI 节流 100ms**：操作循环中 UI 更新频率上限为 100ms 一次
+- **查询缓存**：每个操作周期内相同选择器的查询复用 `Map` 缓存结果
+- **日志上限 500 条**：指令输出日志超限后自动删除最旧记录
+- **网络记录上限 500 条**：请求记录同样有上限
+- **请求体/响应体截断 4000 字符**：避免大响应占用内存
+- **CSS 注入一次**：样式在初始化时一次性注入 `<style>` 标签，不重复创建
+
+对于大部分页面，脚本的性能影响几乎不可感知。
+
+</details>
+
+<details>
+<summary><b>Q: 脚本可以在多少个网站上同时使用？有数量限制吗？</b></summary>
+
+**A:** 理论上没有限制。每个域名的数据独立存储在 `localStorage` 中：
+
+- `localStorage` 上限通常为 5-10MB（因浏览器而异）
+- 脚本每个域名约占用几百 KB（取决于目标数量和配置复杂度）
+- 10 个域名使用基本不会达到 `localStorage` 上限
+- 如果某个域名数据过多，可以使用「恢复默认设置」清除该域名数据
+
+Tampermonkey 本身不限制脚本运行的网站数量，脚本通过 `@match *://*/*` 在所有 HTTP/HTTPS 页面运行。
+
+</details>
+
+<details>
+<summary><b>Q: 操作间隔最短可以设置多少？设置 0ms 会怎样？</b></summary>
+
+**A:**
+
+- `clickInterval` 的 `min` 属性为 `1`（最小值 1ms）
+- 同时模式：`setInterval(doClickFor, 1)` 约每秒 1000 次操作（受浏览器 `setInterval` 最小间隔限制，通常约 4ms）
+- 队列模式：每个目标的 `customInterval` 设为 `0` 则表示立刻处理下一个（`setTimeout(doClickFor, 0)`）
+- ⚠️ 过于频繁的操作可能被浏览器节流（特别是后台标签页），也可能触发网站的速率限制或反爬机制
+
+</details>
+
+### 自动启动与恢复
+
+<details>
+<summary><b>Q: 自动启动倒计时结束后没有开始操作？</b></summary>
+
+**A:** 按顺序排查：
+
+1. 确认当前配置至少有一个有效目标（绿色 ✅ 状态，非禁用）
+2. 确认「操作次数」输入框不是 `0`（0 次会立即停止）
+3. 确认「操作时间」没有设置为 `0`（0 分钟会立即停止）
+4. 检查自动启动是否在停止后被正确重置：`stopClickingFor` 末尾会调用 `startAutoStartCountdownTimerFor` 重新开始倒计时
+5. 打开浏览器控制台，查看是否有 `[AUTO_OP]` 前缀的倒计时相关日志
+
+**自动启动的内部逻辑**（`startAutoStartCountdownTimerFor`，第 4233 行）：
+
+- `autoStartCountdownTimerID` 使用 `setInterval` 每 200ms 更新一次倒计时显示
+- 当 `Date.now() >= autoStartNextTime` 时，调用 `startClickingFor(ci)` 启动操作
+- 启动后立即 `clearInterval(autoStartCountdownTimerID)` 清除倒计时定时器
+- 停止操作后，如果 `autoStartEnabled && autoStartIntervalMin > 0`，重新计算 `autoStartNextTime` 并启动新的倒计时
+
+</details>
+
+<details>
+<summary><b>Q: 多套配置同时运行时，WakeLock 和禁止聚焦的行为如何？</b></summary>
+
+**A:** 脚本使用全局共享的 WakeLock 和禁止聚焦状态：
+
+- **WakeLock**：`requestWakeLock()` 检查 `configs.some(c => c.isRunning) || isAutoRefresh`——只要任意配置在运行或自动刷新开启，就保持屏幕常亮。`stopClickingFor` 中检查 `!configs.some(cc => cc.isRunning) && !isAutoRefresh` 时才释放
+- **禁止聚焦**：`suppressFocus()` 在每次 `startClickingFor` 时调用（覆盖 `HTMLElement.prototype.focus`），`restoreFocus()` 仅在**所有**配置都停止后才恢复原始 `focus` 方法
+- 这意味着：启动第一个配置时激活 WakeLock 和禁止聚焦，后续配置启动不会重复请求，最后一个配置停止时才释放
+
+</details>
+
+<details>
+<summary><b>Q: 在 React / Vue / Angular 页面中，填充输入框后数据没有生效？</b></summary>
+
+**A:** 前端框架使用虚拟 DOM 和状态管理，直接设置 `el.value` 不会触发框架的状态更新。脚本通过以下方式兼容：
+
+1. 设置 `value` 后触发原生 `input` 事件（`dispatchEvent(new Event('input', {bubbles: true}))`）——React 通过 `onInput` 监听
+2. 同时触发 `change` 事件（`dispatchEvent(new Event('change', {bubbles: true}))`）——Vue 的 `v-model` 依赖 `input` + `change`
+3. 对于 `contentEditable` 元素，直接设置 `innerHTML`
+
+如果仍然不生效，说明该网站使用了更复杂的输入处理（如富文本编辑器的 `execCommand`、拼音输入法等），建议改用 JS 指令方式手动操作。
+
+</details>
+
+<details>
+<summary><b>Q: 脚本在隐身模式 / 无痕模式下能正常工作吗？</b></summary>
+
+**A:** 大部分情况下可以：
+
+- ✅ 脚本安装后可以正常运行（Tampermonkey 扩展需要在隐身模式下启用）
+- ✅ `localStorage` 在隐身模式下可用（Chrome/Edge 在隐身窗口关闭后清除）
+- ⚠️ 「恢复默认设置」删除的数据在隐身模式下无法恢复（隐身窗口关闭后所有数据自动清除）
+- ⚠️ 隐身模式下 `Wake Lock` API 可能被浏览器限制
+- ⚠️ 部分浏览器的隐身模式可能禁用 `localStorage`（如 Safari 旧版本）
+
+需要在 Tampermonkey 扩展管理页面中手动启用「在隐身模式下允许」选项。
+
+</details>
+
+<details>
+<summary><b>Q: 选取元素后同一页面上其他相同的元素也被高亮了？</b></summary>
+
+**A:** 这是因为选择器匹配到了多个元素。解决方法：
+
+1. 在目标 ⓘ 详情面板中，开启「父级容器匹配」——将搜索范围限制在特定容器内
+2. 如果元素有唯一 `id`，确保「id 匹配」开启
+3. 如果元素有独特 `data-*` 属性，确保「data-* 匹配」开启
+4. 使用「测试」按钮查看实际匹配了几个元素——如果 > 1，说明选择器过于宽泛
+5. 对于完全相同的元素（如列表项中的按钮），考虑使用自动发现机制而非手动选取
+
+**注意**：选中高亮（绿色实线框）只显示在 `t.element` 引用上（仅一个元素），即使有多个元素通过了指纹匹配。
+
+</details>
+
+<!-- markdownlint-enable MD033 -->
 
 ---
 
@@ -1931,6 +2211,7 @@ function switchConfig(newIndex) {
 `toggleConfigLoadMode()` 切换第 1 页页签的显示模式——在「操作」和「配置加载」之间切换。配置加载模式下，页签图标变为 `CONFIG_LOAD_SVG`，页面原有内容隐藏，仅显示导入/导出两个按钮。
 
 **`exportConfig()`**（第 4005 行）：
+
 1. 从 `cv()` 读取当前配置的 7 个配置字段 + 27 个 target 字段
 2. 附加元数据：`version`（脚本版本）、`exportedAt`（ISO 时间戳）、`hostname`（当前域名）
 3. `JSON.stringify(data, null, 2)` 格式化输出
@@ -1938,6 +2219,7 @@ function switchConfig(newIndex) {
 5. 文件名格式：`auto-op-config-<hostname>-<timestamp>.json`
 
 **`importConfig()`**（第 4067 行，~256 行）：
+
 1. 创建隐藏 `<input type="file" accept=".json">` 并触发点击
 2. 验证文件扩展名、大小（≤10MB）、JSON 格式、结构完整性
 3. 弹窗显示配置摘要（目标数量、间隔、策略），用户确认后执行
@@ -2245,7 +2527,7 @@ localStorage.setItem(SHARED_KEY, JSON.stringify({
 
 **保存时机**：切换配置、修改参数、修改匹配规则、选取/删除目标、刷新前、面板拖拽结束、主题切换、页面切换、网络监测状态变化（页面隐藏时）。
 
-**跨刷新状态恢复**（第 6985–7049 行）：
+**跨刷新状态恢复**（第 6985–7048 行）：
 
 ```js
 // 初始化时执行
@@ -2561,7 +2843,7 @@ document.head.appendChild(fontLink);
 | `.auto-op-network-overlay` / `#auto-op-network-overlay` | 网络监测 overlay |
 | `.auto-op-network-overlay.open` | 网络 overlay 打开态 |
 
-#### 网络监测
+#### 网络监测样式
 
 | 类名 | 作用 |
 | --- | --- |
@@ -2674,12 +2956,34 @@ infoContentEl.addEventListener('change', e => {
 
 ```text
 Automatic-operation/
-├── Automatic-operation.js    # 主脚本 ~7000行，全部功能（油猴 UserScript）
-├── Automatic-clicker.js      # 早期简化版 ~777行（单目标自动点击器）
-├── README.md                 # 本文档（使用说明 + 技术参考）
+├── Automatic-operation.js    # 主脚本 7048行，全部功能（油猴 UserScript）
+├── Automatic-clicker.js      # 早期简化版 777行（单目标自动点击器）
+├── README.md                 # 本文档（使用说明 + 技术参考，~3084行）
 └── LICENSE                   # MIT 许可证
 
 ```
+
+**代码统计**：
+
+| 文件 | 行数 | 说明 |
+| --- | --- | --- |
+| `Automatic-operation.js` | **7048** | 主脚本，包含 CSS（~2311行）+ JS 逻辑（~4737行） |
+| `Automatic-clicker.js` | **777** | 早期简化版，单目标自动点击器 |
+| `README.md` | **~3084** | 本文档（使用说明 + 技术参考） |
+
+| 指标 | 数值 |
+| --- | --- |
+| 总函数数 | **100+** 个具名函数 |
+| CSS 变量 | **34** 个（暗色 17 个 + 亮色覆盖 17 个） |
+| CSS 类名 | **50+** 个脚本注入类名（含状态变体和动画类） |
+| 配置套数 | **10** 套独立配置（每套可并行运行） |
+| 匹配规则 | **9** 项（tag/text/id/class/attrs/data-*/onclick/parent/autoDiscover） |
+| 存储键 | **5** 类 × 15 键（Shared×1 + PerConfig×10 + RefreshState×1 + NetMon×1 + NetReq×1 + NetMonState×1） |
+| Observer | **10+** 个（ResizeObserver ×5 + MutationObserver ×3 + matchMedia ×1 + 动态绑定 textarea Observer×2） |
+| 定时器 | **15+** 种（操作/刷新/省电/透明度/倒计时/运行时长/等待/最大时长/进度条/网络动画等） |
+| Overlay 面板 | **3** 个（info/settings/network） + 省电遮罩 overlay |
+| 事件监听 | **20+** 个（click/mousedown/mouseup/mousemove/touchstart/touchmove/touchend/keydown/change/input/visibilitychange/transitionend/load） |
+| 可设置参数 | **25+** 个（全局 15 + 每元素 10） |
 
 | 行号 | 模块 | 行数 | 关键函数/内容 |
 | --- | --- | --- | --- |
@@ -2715,28 +3019,35 @@ Automatic-operation/
 | 6220–6252 | 等待重试 | 33 | `startWaitTimer`（1ms轮询，超时=间隔×2，超时则跳过） |
 | 6253–6441 | 操作执行 | 189 | `doClickFor`（~188行，队列递归setTimeout+同时setInterval，三种操作类型） |
 | 6443–6466 | 自动清理 | 24 | `cleanupAutoTargetsFor`（连续缺失≥5次→splice→discoveredElements清理→currentQueueIndex修正） |
-| 6467–7049 | 初始化 | ~583 | 事件绑定→主题→加载→折叠→观察器→状态恢复→网络监测恢复→自动启动恢复→输出展开/折叠 |
+| 6467–7048 | 初始化 | ~582 | 事件绑定→主题→加载→折叠→观察器→状态恢复→网络监测恢复→自动启动恢复→输出展开/折叠 |
+| **合计** | **1–7048** | **7048** | **CSS ~2311 + JS ~4737** |
 
 ---
 
 ## 版本历史
 
-### v5.2.0（当前）
+### v5.2.1（当前 · 7048 行）
 
-- **配置导入/导出**：第 1 页页签切换为配置加载模式，支持导出当前配置为 `.json` 文件，以及从文件导入配置。导入前自动备份，失败自动回滚
-- **网络监测持久化**：刷新后自动恢复监测状态和请求记录，页面隐藏时自动保存
-- **跨刷新刷新标记**：刷新后在请求列表中注入 `method=刷新, status=refresh` 标记记录
-- **恢复默认设置**：第 5 页连续点击 4 次触发，二次确认后清除当前域名所有 `AUTO_OP_` 键
-- **输出日志展开/折叠**：超过 150 字符的日志行支持点击展开/折叠
-- **指令设定为目标**：支持指令代码多选模式（`isCommand: true`），仅在多选模式下可用
-- **元素消失处理**：新增「等待重试」和「立即停止」两种策略
-- **自动发现**：运行时自动扫描容器内新增的匹配元素（`autoDiscover`）
-- **自动清理**：连续缺失 ≥5 次的自动发现元素自动移除
-- **最大运行时长跨刷新恢复**：`operationStartTimestamp` 精确扣除已消耗时间
-- 修复指令无法运行的问题
-- 适配移动端触屏拖拽
+- **修复指令无法运行的问题**：修复 `runUserCommand` 中 console 拦截过度导致指令执行失败的问题。具体表现为 JS 指令设为目标后，在操作周期中执行时 `new Function()` 沙箱无法正常获取 `console.log/warn/error` 等输出，导致日志缺失且异步 Promise 链断裂。修复方式为优化 console 拦截的时机和透传逻辑，确保指令执行期间输出正常捕获并在完成后恢复原始 console
+- **修复指令错误状态显示**：指令执行失败时，目标列表中对应项现在正确显示 `cmd-error` 样式（红色文字），便于快速定位问题元素
+- **优化跨刷新恢复稳定性**：修复极端情况下（刷新间隔 < 1s）重复 save/restore 竞争导致状态不一致的问题
+- **版本号提升**：`@version` 从 5.2.0 提升至 5.2.1
 
-### v5.1.x
+### v5.2.0
+
+- **配置导入/导出**（~380 行新增代码）：第 1 页页签切换为配置加载模式（📄→📂），支持导出当前配置为 `.json` 文件（含版本号、时间戳、域名元数据），以及从文件导入配置。7 层安全校验（扩展名→文件大小≤10MB→JSON 格式→targets 数组→配置字段→导入前备份→确认弹窗），失败自动回滚
+- **网络监测持久化**：刷新后自动恢复监测状态和请求记录（`NETWORK_MONITOR_KEY` + `NETWORK_REQUESTS_KEY`），页面隐藏时（`visibilitychange`→hidden）自动保存
+- **跨刷新刷新标记**：刷新后在请求列表中注入 `method=刷新, status=refresh` 标记记录，方便区分刷新前后的请求
+- **恢复默认设置**：第 5 页连续点击 4 次触发（2 秒超时），首次点击显示橙色提示，二次确认后扫描并删除当前域名所有 `AUTO_OP_` 前缀 localStorage 键
+- **输出日志展开/折叠**：超过 150 字符的日志行支持点击展开/折叠（`auto-op-cmd-truncated` / `auto-op-cmd-expanded` class 切换），`…点击展开` 蓝色提示
+- **指令设定为目标**：支持将 JS 指令代码作为操作队列的一项（`isCommand: true`），在队列/同时模式下与其他目标统一调度
+- **元素消失处理**：新增「等待重试」（1ms 轮询，超时=间隔×2 后跳过）和「立即停止」两种策略
+- **自动发现**：运行时自动扫描父容器内新增的匹配元素（`autoDiscover`），通过 `discoverNewTargetsFor` + `c.discoveredElements` Set 去重
+- **自动清理**：自动发现元素连续缺失 ≥5 次（`missCount`）后自动 `splice` 移除，同步清理 `discoveredElements` 集合
+- **最大运行时长跨刷新恢复**：`operationStartTimestamp` 精确扣除已消耗时间，剩余时间 ≤0 时启动后立即停止
+- **适配移动端触屏拖拽**：所有标题栏支持 `touchstart`/`touchmove`/`touchend` 事件
+
+### v5.1.x（v5.1.0 · 约 6800 行）
 
 - **10 套独立配置**：每套可独立运行，支持多配置并行
 - **队列模式 + 独立间隔**：递归 `setTimeout` 链实现可变间隔
@@ -2750,7 +3061,7 @@ Automatic-operation/
 - **面板字体**：MiSans VF（小米 CDN）+ system-ui 回退
 - Wake Lock 屏幕常亮 + 禁止聚焦
 
-### v5.0.x
+### v5.0.x（v5.0.0 · 约 5500 行）
 
 - 5 页面板架构：目标操作 / JS 指令 / 参数设置 / 自动刷新 / 系统设置
 - 多选模式 + 同时/队列策略
@@ -2762,7 +3073,7 @@ Automatic-operation/
 
 ### v4.x 及更早
 
-- 单目标自动点击器 `Automatic-clicker.js`（~777 行）
+- 单目标自动点击器 `Automatic-clicker.js`（777 行）
 - 基础元素选取 + 指纹匹配
 - 单套配置持久化
 
