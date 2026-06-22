@@ -1087,7 +1087,7 @@
 
 		.auto-op-btn-clear {
 			flex-shrink: 0;
-			padding: 0px;
+			padding: 0 6px;
 			font-size: 11px;
 			font-family: var(--auto-op-font);
 			background: var(--panel-button-bg);
@@ -1096,8 +1096,8 @@
 			border-radius: 4px;
 			cursor: pointer;
 			white-space: nowrap;
-			max-width: 35px;
 			max-height: 16px;
+			max-width: 35px;
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
@@ -1115,7 +1115,16 @@
 		}
 
 		.auto-op-btn-clear:active {
+			background: var(--panel-missing-border);
+			color: #fff;
+			border-color: var(--panel-missing-border);
 			transform: scale(0.85) !important
+		}
+		.auto-op-btn-copy:hover,
+		.auto-op-btn-copy:active {
+			background: var(--panel-highlight-border);
+			color: #fff;
+			border-color: var(--panel-highlight-border)
 		}
 
 		.auto-op-target-count {
@@ -1300,6 +1309,10 @@
 			font-family: var(--auto-op-font);
 			color: var(--panel-label-text);
 			letter-spacing: 0.5px
+		}
+		.auto-op-log-header span {
+			display: inline-flex;
+			gap: 4px
 		}
 
 		.auto-op-log-container {
@@ -1566,16 +1579,8 @@
 			cursor: pointer
 		}
 
-		.auto-op-cmd-output-log.auto-op-cmd-truncated:hover {
-			opacity: 0.8
-		}
-
 		.auto-op-cmd-output-log.auto-op-cmd-expanded {
 			cursor: pointer
-		}
-
-		.auto-op-cmd-output-log.auto-op-cmd-expanded:hover {
-			opacity: 0.8
 		}
 
 		.auto-op-cmd-expand-hint {
@@ -2662,7 +2667,7 @@
             <button class="auto-op-btn-cmd-target" id="auto-op-btn-cmd-target" disabled>设为目标</button>
           </div>
           <div class="auto-op-row">
-            <div class="auto-op-log-header"><label>输出</label><button class="auto-op-btn-clear" id="auto-op-btn-clear-cmd-output2">清空</button></div>
+            <div class="auto-op-log-header"><label>输出</label><span><button class="auto-op-btn-clear auto-op-btn-copy" id="auto-op-btn-copy-cmd-output">复制</button><button class="auto-op-btn-clear" id="auto-op-btn-clear-cmd-output2">清空</button></span></div>
             <div class="auto-op-cmd-output" id="auto-op-cmd-output">
               <div class="auto-op-cmd-output-empty">等待指令执行...</div>
             </div>
@@ -2831,6 +2836,7 @@
 	const cmdTestBtn = document.getElementById('auto-op-btn-cmd-test');
 	const cmdTargetBtn = document.getElementById('auto-op-btn-cmd-target');
 	const cmdClearOutputBtn2 = document.getElementById('auto-op-btn-clear-cmd-output2');
+	const cmdCopyOutputBtn = document.getElementById('auto-op-btn-copy-cmd-output');
 	const cmdPresetSelect = document.getElementById('auto-op-cmd-preset');
 	const networkOverlayEl = document.getElementById('auto-op-network-overlay');
 	const networkContentEl = document.getElementById('auto-op-network-content');
@@ -4987,7 +4993,7 @@
 			let existCount = 0,
 				missingCount = 0;
 			for (const t of c.targets) {
-				if (t.element && document.contains(t.element) && t._isValid) existCount++;
+				if ((t.isCommand && !t.commandError) || (t.element && document.contains(t.element) && t._isValid)) existCount++;
 				else missingCount++;
 			}
 			targetCountSpan.innerHTML = '[<span class="auto-op-target-count-exist">' + existCount + '</span>/<span class="auto-op-target-count-missing">' + missingCount + '</span>/<span class="auto-op-target-count-total">' + c.targets.length + '</span>]';
@@ -5591,6 +5597,16 @@
 		cmdOutputLogs = [];
 		updateCmdOutputUI();
 	});
+		cmdCopyOutputBtn.addEventListener('click', () => {
+			if (cmdOutputLogs.length === 0) return;
+			let text = '';
+			for (const entry of cmdOutputLogs) {
+				text += '[' + entry.time + '] [' + entry.type + '] ' + entry.message + '\n';
+			}
+			const ok = copyToClipboard(text.trimEnd());
+			if (ok) appendCmdOutput('log', '已复制全部 ' + cmdOutputLogs.length + ' 条输出');
+			else appendCmdOutput('error', '复制失败，请手动复制');
+		});
 
 	cmdOutput.addEventListener('click', e => {
 		const logSpan = e.target.closest('.auto-op-cmd-output-log');
@@ -6270,6 +6286,10 @@
 				if (t.enabled === false) {
 					if (ci === activeConfig) updateTargetItemStyle(i, null);
 					return 'disabled';
+				}
+				if (t.isCommand) {
+					if (ci === activeConfig) updateTargetItemStyle(i, false);
+					return true;
 				}
 				let el = t.element;
 				let isValid = el && document.contains(el) && matchesFingerprint(el, t);
