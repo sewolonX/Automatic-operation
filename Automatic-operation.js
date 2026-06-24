@@ -3173,9 +3173,7 @@
 				const found = tryFindTarget(t);
 				if (found && found.length > 0) {
 					t.element = found[0];
-					const pi = resolveParentInfo(found[0]);
-					t.nearestParent = pi.nearestParent;
-					t.blueParent = pi.blueParent;
+						rebuildParentInfo(found[0], t);
 				} else {
 					t.element = null;
 				}
@@ -3265,8 +3263,6 @@
 				autoStartIntervalMin: c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '',
 				maxDurationMin: c.maxDurationMin > 0 ? c.maxDurationMin : '',
 				targets: c.targets.map(t => ({
-					strict: t.strict,
-					loose: t.loose,
 					fingerprint: t.fingerprint,
 					desc: t.desc,
 					isInput: t.isInput,
@@ -3317,8 +3313,6 @@
 			c.targets = [];
 			(cfg.targets || []).forEach(t => {
 									const base = {
-					strict: t.strict,
-					loose: t.loose,
 					fingerprint: t.fingerprint,
 					desc: t.desc,
 					isInput: !!t.isInput,
@@ -3359,9 +3353,7 @@
 						...base,
 						element: el
 					};
-					const parentInfo = resolveParentInfo(el);
-					obj.nearestParent = parentInfo.nearestParent;
-					obj.blueParent = parentInfo.blueParent;
+					rebuildParentInfo(el, obj);
 					c.targets.push(obj);
 				} else {
 					c.targets.push({
@@ -3501,17 +3493,22 @@
 			};
 		}
 		let strict = base;
-		const parent = el.parentElement;
-		if (parent) {
-			try {
-				const sameTagSiblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-				if (sameTagSiblings.length > 1) strict += ':nth-of-type(' + (sameTagSiblings.indexOf(el) + 1) + ')';
-			} catch (e) {}
-		}
+		const idx = getNthOfType(el);
+		if (idx > 1) strict += ':nth-of-type(' + idx + ')';
 		return {
 			strict,
 			loose: base
 		};
+	}
+
+	// 计算元素在其父级同标签兄弟中的位置（1-based），即 CSS :nth-of-type 的值
+	function getNthOfType(el) {
+		const parent = el.parentElement;
+		if (!parent) return 1;
+		try {
+			const sameTag = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+			return sameTag.indexOf(el) + 1;
+		} catch (e) { return 1; }
 	}
 
 	function isInputField(el) {
@@ -3610,12 +3607,32 @@
 			matchParent = t.matchParent !== false,
 			textMode = t.matchTextMode || 'exact';
 		if (matchTag && el.tagName.toLowerCase() !== fp.tagName) return false;
-		if (matchParent && t.parentSelector) {
-			let parent;
-			try {
-				parent = document.querySelector(t.parentSelector);
-			} catch (e) {}
-			if (!parent || !parent.contains(el)) return false;
+		if (matchParent) {
+			const chain = t.parentChain;
+			if (chain && chain.length > 0) {
+				let ancestor = el.parentElement;
+				for (const link of chain) {
+					let found = false;
+					while (ancestor && ancestor !== document.body) {
+						try {
+							if (ancestor.matches(link.selector)) {
+								found = true;
+								ancestor = ancestor.parentElement;
+								break;
+							}
+						} catch (e) {}
+						ancestor = ancestor.parentElement;
+					}
+					if (!found) return false;
+				}
+			} else if (t.parentSelector) {
+				// 兼容旧配置
+				let parent;
+				try {
+					parent = document.querySelector(t.parentSelector);
+				} catch (e) {}
+				if (!parent || !parent.contains(el)) return false;
+			}
 		}
 		if (matchId && fp.id && el.id !== fp.id) return false;
 		if (matchClass && fp.className) {
@@ -3679,6 +3696,32 @@
 		return result;
 	}
 
+	// 把 parentChain（最近→最远）反转拼成一根 CSS 选择器（最远 ancestor ... target）
+	// parentChain 已有 :nth-of-type/:nth-child，整根选择器全局唯一
+	function buildCompoundSelector(t) {
+		const fp = t.fingerprint;
+		if (!fp || !fp.tagName) return '';
+		// 目标自身选择器
+		let targetSel;
+		if (fp.id) {
+			targetSel = '#' + CSS.escape(fp.id);
+		} else {
+			targetSel = fp.tagName;
+			if (fp.className) {
+				targetSel += '.' + fp.className.split(/\s+/).filter(Boolean).map(c => CSS.escape(c)).join('.');
+			}
+		}
+		const chain = t.parentChain;
+		if (!chain || chain.length === 0) return targetSel;
+		// 反转：最远祖先在前
+		const parts = [];
+		for (let i = chain.length - 1; i >= 0; i--) {
+			parts.push(chain[i].selector);
+		}
+		parts.push(targetSel);
+		return parts.join(' ');
+	}
+
 	function tryFindTarget(targetObj) {
 		if (!targetObj || !targetObj.fingerprint) return null;
 		const fp = targetObj.fingerprint;
@@ -3691,38 +3734,23 @@
 			}
 			return matched.length > 0 ? matched : null;
 		}
-		let root = document;
-		const useParent = targetObj.matchParent !== false && targetObj.parentSelector;
-		if (useParent) {
-			try {
-				const p = document.querySelector(targetObj.parentSelector);
-				if (p) root = p;
-			} catch (e) {}
-		}
+		const compoundSel = buildCompoundSelector(targetObj);
+		const cssSel = fp.id ? '#' + CSS.escape(fp.id) : fp.tagName + (fp.className ? '.' + fp.className.split(/\s+/).filter(Boolean).map(c => CSS.escape(c)).join('.') : '');
 		try {
-			if (targetObj.strict) {
-				const found = verifyList(cachedQuery(root, targetObj.strict));
+			// 优先：parentChain 拼成的全局唯一选择器，一步定位
+			if (compoundSel && compoundSel !== cssSel) {
+				const found = verifyList(cachedQuery(document, compoundSel));
 				if (found) return found;
 			}
-			if (targetObj.loose) {
-				const found = verifyList(cachedQuery(root, targetObj.loose));
-				if (found) return found;
-			}
-			const found = verifyList(cachedQuery(root, fp.tagName));
+			// 其次：目标自身选择器
+			const found = verifyList(cachedQuery(document, cssSel));
 			if (found) return found;
+			// 兜底：标签名
+			if (cssSel !== fp.tagName) {
+				const found2 = verifyList(cachedQuery(document, fp.tagName));
+				if (found2) return found2;
+			}
 		} catch (e) {}
-		if (root !== document) {
-			try {
-				if (targetObj.strict) {
-					const found = verifyList(cachedQuery(document, targetObj.strict));
-					if (found) return found;
-				}
-				if (targetObj.loose) {
-					const found = verifyList(cachedQuery(document, targetObj.loose));
-					if (found) return found;
-				}
-			} catch (e) {}
-		}
 		return null;
 	}
 
@@ -3741,6 +3769,39 @@
 			ancestor = ancestor.parentElement;
 		}
 		return result;
+	}
+
+	// 从元素重建所有父级相关信息，用于 tryFindTarget 重新获取后更新位置索引
+	function rebuildParentInfo(el, t) {
+		if (!el || !t) return;
+		let parentSelector = '';
+		const parentChain = [];
+		let blueParent = null;
+		let ancestor = el.parentElement;
+		while (ancestor && ancestor !== document.body) {
+			const base = buildBaseSelector(ancestor);
+			let selector;
+			if (base !== ancestor.tagName.toLowerCase()) {
+				selector = buildSelectors(ancestor).strict;
+				if (!parentSelector) parentSelector = selector;
+				if (!blueParent) blueParent = ancestor;
+			} else {
+				const idx = getNthOfType(ancestor);
+				selector = ancestor.tagName.toLowerCase() + ':nth-of-type(' + idx + ')';
+			}
+			let pdesc = ancestor.tagName.toLowerCase();
+			if (ancestor.id) pdesc += '#' + ancestor.id;
+			if (ancestor.className && typeof ancestor.className === 'string') {
+				const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.');
+				if (cls) pdesc += '.' + cls;
+			}
+			parentChain.push({ selector, desc: pdesc });
+			ancestor = ancestor.parentElement;
+		}
+		t.parentSelector = parentSelector;
+		t.parentChain = parentChain;
+		t.nearestParent = el.parentElement;
+		t.blueParent = blueParent;
 	}
 
 	function refreshParentHighlights() {
@@ -4080,8 +4141,6 @@
 				autoStartIntervalMin: c.autoStartIntervalMin > 0 ? c.autoStartIntervalMin : '',
 				maxDurationMin: c.maxDurationMin > 0 ? c.maxDurationMin : '',
 				targets: c.targets.map(t => ({
-					strict: t.strict,
-					loose: t.loose,
 					fingerprint: t.fingerprint,
 					desc: t.desc,
 					isInput: t.isInput,
@@ -4190,8 +4249,6 @@
 									autoStartIntervalMin: c.autoStartIntervalMin,
 									maxDurationMin: c.maxDurationMin,
 									targets: c.targets.map(t => ({
-										strict: t.strict,
-										loose: t.loose,
 										fingerprint: t.fingerprint,
 										desc: t.desc,
 										isInput: t.isInput,
@@ -4252,8 +4309,6 @@
 									}
 									data.targets.forEach(t => {
 																					const base = {
-											strict: t.strict,
-											loose: t.loose,
 											fingerprint: t.fingerprint,
 											desc: t.desc,
 											isInput: !!t.isInput,
@@ -4286,9 +4341,7 @@
 										if (found && found.length > 0) {
 											const el = found[0];
 											const obj = { ...base, element: el };
-											const parentInfo = resolveParentInfo(el);
-											obj.nearestParent = parentInfo.nearestParent;
-											obj.blueParent = parentInfo.blueParent;
+					rebuildParentInfo(el, obj);
 											c.targets.push(obj);
 										} else {
 											c.targets.push({ ...base, element: null });
@@ -5214,30 +5267,21 @@
 			el.textContent = '⊘';
 			el.className = el.className.replace(/\s*(pass|fail|disabled)/g, '') + ' disabled';
 		});
-		let cssFound = false,
-			cssCount = 0,
-			cssElements = [];
+
+		let cssFound = false, cssCount = 0, cssElements = [];
 		try {
-			if (t.strict) {
-				const els = document.querySelectorAll(t.strict);
-				cssElements = Array.from(els).filter(e => !panel.contains(e));
-				if (cssElements.length > 0) {
-					cssFound = true;
+			const compoundSel = buildCompoundSelector(t);
+			const cssSel = fp.id ? '#' + CSS.escape(fp.id) : fp.tagName + (fp.className ? '.' + fp.className.split(/\s+/).filter(Boolean).map(c => CSS.escape(c)).join('.') : '');
+			const testSel = compoundSel && compoundSel !== cssSel ? compoundSel : cssSel;
+			cssElements = Array.from(document.querySelectorAll(testSel)).filter(e => !panel.contains(e));
+			if (cssElements.length > 0) { cssFound = true; cssCount = cssElements.length; }
+			else if (testSel !== cssSel) {
+				cssElements = Array.from(document.querySelectorAll(cssSel)).filter(e => !panel.contains(e));
+				if (cssElements.length > 0) { cssFound = true; cssCount = cssElements.length; }
+				else if (cssSel !== fp.tagName) {
+					cssElements = Array.from(document.querySelectorAll(fp.tagName)).filter(e => !panel.contains(e));
 					cssCount = cssElements.length;
 				}
-			}
-			if (!cssFound && t.loose) {
-				const els = document.querySelectorAll(t.loose);
-				cssElements = Array.from(els).filter(e => !panel.contains(e));
-				if (cssElements.length > 0) {
-					cssFound = true;
-					cssCount = cssElements.length;
-				}
-			}
-			if (!cssFound && fp.tagName) {
-				const els = document.querySelectorAll(fp.tagName);
-				cssElements = Array.from(els).filter(e => !panel.contains(e));
-				cssCount = cssElements.length;
 			}
 		} catch (e) {}
 		if (cssResult) {
@@ -5248,6 +5292,7 @@
 			el.classList.add('auto-op-test-highlight');
 			_testHighlightedElements.push(el);
 		});
+
 		if (t.matchTag !== false && fp.tagName) {
 			const els = Array.from(document.querySelectorAll(fp.tagName)).filter(e => !panel.contains(e));
 			setResult('tag', els.length > 0, els.length);
@@ -5771,8 +5816,7 @@
 		}
 		el.classList.remove('auto-op-highlight');
 		const c = cv();
-		const sels = buildSelectors(el),
-			fp = getElementFingerprint(el);
+		const fp = getElementFingerprint(el);
 		let desc = el.tagName.toLowerCase();
 		if (el.id) desc += '#' + el.id;
 		if (el.className && typeof el.className === 'string') {
@@ -5789,27 +5833,32 @@
 			blueParent = null,
 			ancestor = el.parentElement;
 		while (ancestor && ancestor !== document.body) {
-			const s = buildBaseSelector(ancestor);
-			if (s !== ancestor.tagName.toLowerCase()) {
-				if (!parentSelector) parentSelector = s;
+			const base = buildBaseSelector(ancestor);
+			let selector;
+			if (base !== ancestor.tagName.toLowerCase()) {
+				// 有 class/id：使用 strict 选择器，含 :nth-of-type
+				selector = buildSelectors(ancestor).strict;
+				if (!parentSelector) parentSelector = selector;
 				if (!blueParent) blueParent = ancestor;
-				let pdesc = ancestor.tagName.toLowerCase();
-				if (ancestor.id) pdesc += '#' + ancestor.id;
-				if (ancestor.className && typeof ancestor.className === 'string') {
-					const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.');
-					if (cls) pdesc += '.' + cls;
-				}
-				parentChain.push({
-					selector: s,
-					desc: pdesc
-				});
+			} else {
+				// 裸标签祖先：使用 :nth-of-type() 确保位置唯一（只算同标签，不受 script/style 插入影响）
+				const idx = getNthOfType(ancestor);
+				selector = ancestor.tagName.toLowerCase() + ':nth-of-type(' + idx + ')';
 			}
+			let pdesc = ancestor.tagName.toLowerCase();
+			if (ancestor.id) pdesc += '#' + ancestor.id;
+			if (ancestor.className && typeof ancestor.className === 'string') {
+				const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.');
+				if (cls) pdesc += '.' + cls;
+			}
+			parentChain.push({
+				selector: selector,
+				desc: pdesc
+			});
 			ancestor = ancestor.parentElement;
 		}
 		const targetObj = {
 			element: el,
-			strict: sels.strict,
-			loose: sels.loose,
 			fingerprint: fp,
 			desc,
 			isInput,
@@ -6571,9 +6620,7 @@
 				if (found && found.length > 0) {
 					if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
 					t.element = found[0];
-					const parentInfo = resolveParentInfo(found[0]);
-					t.nearestParent = parentInfo.nearestParent;
-					t.blueParent = parentInfo.blueParent;
+					rebuildParentInfo(found[0], t);
 					if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
 				}
 			} else {
@@ -6757,9 +6804,7 @@
 					if (found && found.length > 0) {
 						if (t.element && document.contains(t.element)) t.element.classList.remove('auto-op-selected-highlight');
 						t.element = found[0];
-						const parentInfo = resolveParentInfo(found[0]);
-						t.nearestParent = parentInfo.nearestParent;
-						t.blueParent = parentInfo.blueParent;
+						rebuildParentInfo(found[0], t);
 						if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
 						isValid = true;
 					}
