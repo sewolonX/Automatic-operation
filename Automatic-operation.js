@@ -116,7 +116,6 @@
 			clickedCount: 0,
 			maxClicks: Infinity,
 			clickInterval: 1000,
-			isMultiMode: false,
 			clickStrategy: 'simultaneous',
 			currentQueueIndex: 0,
 			waitStartTime: 0,
@@ -129,7 +128,6 @@
 			autoStartNextTime: 0,
 			maxDurationMin: 0,
 			maxDurationTimerID: null,
-			discoveredElements: new Set(),
 			uiThrottled: false,
 			doClickLastUIUpdate: 0,
 			missingAction: 'wait'
@@ -223,8 +221,8 @@
 			--panel-button-hover-bg: rgba(0, 0, 0, 0.1);
 			--panel-button-hover-text: #1f2937;
 			--panel-highlight-border: #3482FF;
-			--panel-active-border: #32d486;
-			--panel-active-text: #32d486;
+			--panel-active-border: #07C160;
+			--panel-active-text: #07C160;
 			--panel-waiting-text: #d97706;
 			--panel-highlight: #d97706;
 			--panel-missing-border: #dc2626;
@@ -973,11 +971,21 @@
 			gap: 4px;
 			padding: 0;
 			flex: 1;
-			width: 100%
+			width: 100%;
+			opacity: 0;
+			transform: translateY(8px);
+			transition: opacity 0.2s ease, transform 0.2s ease
 		}
 
 		.auto-op-config-load-wrap.active {
-			display: flex
+			display: flex;
+			opacity: 1;
+			transform: translateY(0)
+		}
+
+		.auto-op-config-load-wrap.leaving {
+			opacity: 0;
+			transform: translateY(8px)
 		}
 
 		.auto-op-config-load-btn {
@@ -1020,7 +1028,11 @@
 		.auto-op-btn-group {
 			display: flex;
 			gap: 8px;
-			margin-top: 14px
+			margin-top: 14px;
+			max-height: 80px;
+			opacity: 1;
+			overflow: hidden;
+			transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease
 		}
 
 		.auto-op-btn {
@@ -1094,7 +1106,11 @@
 			color: var(--panel-label-text);
 			display: flex;
 			justify-content: space-between;
-			align-items: center
+			align-items: center;
+			max-height: 60px;
+			opacity: 1;
+			overflow: hidden;
+			transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease, padding-top 0.3s ease
 		}
 
 		.auto-op-status .auto-op-count {
@@ -1120,6 +1136,15 @@
 			font-family: var(--auto-op-font);
 			font-variant-numeric: tabular-nums;
 			margin-left: 8px
+		}
+
+		.auto-op-btn-group.config-collapsed,
+		.auto-op-status.config-collapsed {
+			max-height: 0;
+			opacity: 0;
+			margin-top: 0;
+			padding-top: 0;
+			border-top-width: 0
 		}
 
 		.auto-op-highlight {
@@ -2662,8 +2687,8 @@
 	panel.id = 'auto-op-panel';
 	panel.innerHTML = `
     <div class="auto-op-header">
-      <button class="auto-op-toggle" title="收起/展开"><svg viewBox="0 0 1153.2 1153.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M768.1 135.1 V380.1 Q768.1 382.1 769.6 384.1 Q771.1 386.1 773.1 386.1 H1018.1 Q1034.1 386.1 1045.6 397.6 Q1057.1 409.1 1057.1 425.1 V462.1 Q1057.1 478.1 1045.6 490.1 Q1034.1 502.1 1018.1 502.1 H708.1 Q682.1 502.1 666.6 486.1 Q651.1 470.1 651.1 444.1 V135.1 Q651.1 119.1 663.1 107.6 Q675.1 96.1 691.1 96.1 H728.1 Q744.1 96.1 756.1 107.6 Q768.1 119.1 768.1 135.1 Z M502.1 709.1 V1018.1 Q502.1 1034.1 490.6 1045.6 Q479.1 1057.1 463.1 1057.1 H426.1 Q409.1 1057.1 397.6 1045.6 Q386.1 1034.1 386.1 1018.1 V774.1 Q386.1 768.1 380.1 768.1 H136.1 Q120.1 768.1 108.1 756.6 Q96.1 745.1 96.1 728.1 V691.1 Q96.1 675.1 107.6 663.6 Q119.1 652.1 136.1 652.1 H445.1 Q471.1 652.1 486.6 668.1 Q502.1 684.1 502.1 709.1 Z" transform="matrix(1 0 0 -1 0 1153.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
-      <button class="auto-op-header-start" id="auto-op-btn-header-start" title="开始/停止"><svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+      <button class="auto-op-toggle" title="折叠/展开"><svg viewBox="0 0 1153.2 1153.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M768.1 135.1 V380.1 Q768.1 382.1 769.6 384.1 Q771.1 386.1 773.1 386.1 H1018.1 Q1034.1 386.1 1045.6 397.6 Q1057.1 409.1 1057.1 425.1 V462.1 Q1057.1 478.1 1045.6 490.1 Q1034.1 502.1 1018.1 502.1 H708.1 Q682.1 502.1 666.6 486.1 Q651.1 470.1 651.1 444.1 V135.1 Q651.1 119.1 663.1 107.6 Q675.1 96.1 691.1 96.1 H728.1 Q744.1 96.1 756.1 107.6 Q768.1 119.1 768.1 135.1 Z M502.1 709.1 V1018.1 Q502.1 1034.1 490.6 1045.6 Q479.1 1057.1 463.1 1057.1 H426.1 Q409.1 1057.1 397.6 1045.6 Q386.1 1034.1 386.1 1018.1 V774.1 Q386.1 768.1 380.1 768.1 H136.1 Q120.1 768.1 108.1 756.6 Q96.1 745.1 96.1 728.1 V691.1 Q96.1 675.1 107.6 663.6 Q119.1 652.1 136.1 652.1 H445.1 Q471.1 652.1 486.6 668.1 Q502.1 684.1 502.1 709.1 Z" transform="matrix(1 0 0 -1 0 1153.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+      <button class="auto-op-header-start" id="auto-op-btn-header-start" title="开始/暂停"><svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
       <h3>自动操作</h3>
       <div class="auto-op-config-wrap">
         <button class="auto-op-config-btn" id="auto-op-config-btn" title="切换配置"><svg viewBox="0 0 1216.2 1216.2" fill="none" aria-hidden="true" style="width:20px;height:20px;display:inline-block"><path d="M1019.1 157.0 Q1069.5 181.2 1095.6 232.6 Q1108.8 258.7 1111.8 294.1 Q1114.8 329.5 1114.8 411.1 V805.1 Q1114.8 887.7 1111.8 923.1 Q1108.8 958.4 1095.6 984.6 Q1070.5 1034.0 1019.1 1060.1 Q993.9 1073.3 958.3 1076.3 Q922.6 1079.3 840.6 1079.3 H375.6 Q294.0 1079.3 258.1 1076.3 Q222.2 1073.3 197.1 1060.1 Q146.1 1035.0 120.5 984.6 Q107.3 958.4 104.3 923.1 Q101.3 887.7 101.3 805.1 V411.1 Q101.3 329.5 104.3 294.1 Q107.3 258.7 120.5 232.6 Q147.7 179.6 197.1 157.0 Q222.2 143.4 258.1 140.1 Q294.0 136.8 375.6 136.8 H840.6 Q922.6 136.8 958.3 140.1 Q993.9 143.4 1019.1 157.0 Z M249.1 255.1 Q229.1 267.0 219.6 285.6 Q214.8 295.4 213.8 312.9 Q212.8 330.4 212.8 362.1 V724.1 Q212.8 755.2 214.0 773.0 Q215.2 790.7 219.6 800.6 Q230.1 819.6 249.1 830.0 Q258.9 834.4 276.7 835.6 Q294.5 836.8 325.6 836.8 H889.6 Q921.7 836.8 939.0 835.8 Q956.2 834.8 966.1 830.0 Q984.7 820.6 996.5 800.6 Q1000.9 790.7 1002.1 773.0 Q1003.3 755.2 1003.3 724.1 V362.1 Q1003.3 330.4 1002.3 312.9 Q1001.3 295.4 996.5 285.6 Q985.7 266.0 966.1 255.1 Q956.2 250.3 939.0 249.3 Q921.7 248.3 889.6 248.3 H325.6 Q294.5 248.3 276.7 249.5 Q258.9 250.7 249.1 255.1 Z M597.3 370.9 H638.6 Q647.9 370.9 652.8 376.1 Q657.7 381.3 657.7 390.0 V697.1 Q657.7 706.4 652.8 711.3 Q647.9 716.2 638.6 716.2 H604.3 Q592.2 716.2 580.6 711.0 L515.6 677.2 Q501.1 670.0 501.1 654.5 V612.3 Q501.1 600.9 507.8 596.7 Q514.6 592.6 524.3 598.3 L578.2 626.6 V390.0 Q578.2 381.3 583.4 376.1 Q588.6 370.9 597.3 370.9 Z" transform="matrix(1 0 0 -1 0 1216.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
@@ -2671,19 +2696,15 @@
     </div>
     <div class="auto-op-body">
       <div class="auto-op-page-selector">
-        <button class="auto-op-page-btn active" data-page="0" title="操作"><svg viewBox="0 0 1197.6 1197.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M988.8 161.3 Q1046.8 191.3 1073.8 246.3 Q1089.8 277.3 1093.8 319.8 Q1097.8 362.3 1097.8 459.3 V739.3 Q1097.8 836.3 1093.8 878.8 Q1089.8 921.3 1073.8 952.3 Q1045.8 1009.3 988.8 1037.3 Q957.8 1053.3 915.3 1057.3 Q872.8 1061.3 775.8 1061.3 H420.8 Q324.8 1061.3 282.3 1057.3 Q239.8 1053.3 207.8 1037.3 Q151.8 1009.3 123.8 952.3 Q107.8 921.3 103.8 878.8 Q99.8 836.3 99.8 739.3 V459.3 Q99.8 362.3 103.8 319.8 Q107.8 277.3 123.8 246.3 Q150.8 191.3 207.8 161.3 Q239.8 144.3 282.3 140.3 Q324.8 136.3 420.8 136.3 H775.8 Q872.8 136.3 915.3 140.3 Q957.8 144.3 988.8 161.3 Z M263.8 261.3 Q238.8 275.3 222.8 300.3 Q215.8 315.3 214.3 337.8 Q212.8 360.3 212.8 413.3 V785.3 Q212.8 839.3 214.3 860.8 Q215.8 882.3 222.8 897.3 Q237.8 924.3 263.8 937.3 Q277.8 944.3 299.8 945.8 Q321.8 947.3 376.8 947.3 H682.8 V251.3 H376.8 Q321.8 251.3 299.8 252.8 Q277.8 254.3 263.8 261.3 Z M796.8 947.3 H820.8 Q875.8 947.3 897.3 945.8 Q918.8 944.3 933.8 937.3 Q960.8 922.3 973.8 897.3 Q980.8 882.3 982.3 860.8 Q983.8 839.3 983.8 785.3 V413.3 Q983.8 359.3 982.3 337.3 Q980.8 315.3 973.8 300.3 Q960.8 277.3 933.8 261.3 Q918.8 254.3 897.3 252.8 Q875.8 251.3 820.8 251.3 H796.8 Z M420.8 769.3 V790.3 Q420.8 810.3 412.3 819.8 Q403.8 829.3 385.8 829.3 H310.8 Q291.8 829.3 283.3 819.8 Q274.8 810.3 274.8 790.3 V769.3 Q274.8 748.3 283.3 739.3 Q291.8 730.3 310.8 730.3 H385.8 Q403.8 730.3 412.3 739.3 Q420.8 748.3 420.8 769.3 Z M420.8 588.3 V609.3 Q420.8 629.3 412.3 638.8 Q403.8 648.3 385.8 648.3 H310.8 Q291.8 648.3 283.3 638.8 Q274.8 629.3 274.8 609.3 V588.3 Q274.8 567.3 283.3 558.3 Q291.8 549.3 310.8 549.3 H385.8 Q403.8 549.3 412.3 558.3 Q420.8 567.3 420.8 588.3 Z M626.8 769.3 V790.3 Q626.8 810.3 618.8 819.8 Q610.8 829.3 591.8 829.3 H515.8 Q497.8 829.3 489.3 819.8 Q480.8 810.3 480.8 790.3 V769.3 Q480.8 748.3 489.3 739.3 Q497.8 730.3 515.8 730.3 H591.8 Q610.8 730.3 618.8 739.3 Q626.8 748.3 626.8 769.3 Z M626.8 588.3 V609.3 Q626.8 629.3 618.8 638.8 Q610.8 648.3 591.8 648.3 H515.8 Q497.8 648.3 489.3 638.8 Q480.8 629.3 480.8 609.3 V588.3 Q480.8 567.3 489.3 558.3 Q497.8 549.3 515.8 549.3 H591.8 Q610.8 549.3 618.8 558.3 Q626.8 567.3 626.8 588.3 Z M420.8 407.3 V429.3 Q420.8 449.3 412.3 458.8 Q403.8 468.3 385.8 468.3 H310.8 Q291.8 468.3 283.3 458.8 Q274.8 449.3 274.8 429.3 V407.3 Q274.8 386.3 283.3 377.8 Q291.8 369.3 310.8 369.3 H385.8 Q403.8 369.3 412.3 377.8 Q420.8 386.3 420.8 407.3 Z" transform="matrix(1 0 0 -1 0 1197.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
-        <button class="auto-op-page-btn" data-page="1" title="指令"><svg viewBox="0 0 1024 1024" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M256 192 L576 448 Q608 480 608 512 Q608 544 576 576 L256 832 Q224 864 192 832 L160 800 Q128 768 160 736 L416 512 L160 288 Q128 256 160 224 L192 192 Q224 160 256 192 Z M640 832 L864 832 Q896 832 896 800 L896 768 Q896 736 864 736 L640 736 Q608 736 608 768 L608 800 Q608 832 640 832 Z" fill="currentColor" fill-rule="nonzero"></path></svg></button>
-        <button class="auto-op-page-btn" data-page="2" title="参数"><svg viewBox="0 0 1173.6 1173.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M1075.8 939.3 V968.3 Q1075.8 989.3 1062.8 999.8 Q1049.8 1010.3 1030.8 1010.3 H398.8 Q379.8 1010.3 367.3 999.3 Q354.8 988.3 354.8 969.3 V940.3 Q354.8 919.3 367.3 908.3 Q379.8 897.3 398.8 897.3 H1030.8 Q1049.8 897.3 1062.8 907.8 Q1075.8 918.3 1075.8 939.3 Z M230.8 138.3 Q253.8 149.3 264.8 172.3 Q267.8 180.3 268.3 191.8 Q268.8 203.3 268.8 219.3 Q268.8 256.3 264.8 266.3 Q254.8 290.3 230.8 299.3 Q222.8 302.3 211.3 303.3 Q199.8 304.3 183.8 304.3 Q167.8 304.3 155.8 303.3 Q143.8 302.3 135.8 299.3 Q112.8 289.3 103.8 267.3 Q99.8 259.3 98.8 247.3 Q97.8 235.3 97.8 219.3 Q97.8 203.3 98.8 191.3 Q99.8 179.3 103.8 171.3 Q112.8 149.3 135.8 138.3 Q143.8 135.3 155.8 134.8 Q167.8 134.3 183.8 134.3 Q199.8 134.3 211.3 134.8 Q222.8 135.3 230.8 138.3 Z M230.8 506.3 Q253.8 518.3 264.8 541.3 Q267.8 548.3 268.3 560.3 Q268.8 572.3 268.8 587.3 Q268.8 618.3 264.8 633.3 Q252.8 657.3 231.8 666.3 Q223.8 670.3 211.8 671.3 Q199.8 672.3 183.8 672.3 Q167.8 672.3 155.3 671.3 Q142.8 670.3 134.8 666.3 Q112.8 656.3 103.8 634.3 Q99.8 626.3 98.8 614.8 Q97.8 603.3 97.8 587.3 Q97.8 571.3 98.8 559.8 Q99.8 548.3 103.8 540.3 Q112.8 517.3 135.8 506.3 Q143.8 503.3 155.8 502.8 Q167.8 502.3 183.8 502.3 Q199.8 502.3 211.3 502.8 Q222.8 503.3 230.8 506.3 Z M1075.8 205.3 V234.3 Q1075.8 255.3 1062.8 265.8 Q1049.8 276.3 1030.8 276.3 H398.8 Q379.8 276.3 367.3 265.3 Q354.8 254.3 354.8 235.3 V206.3 Q354.8 185.3 367.3 174.3 Q379.8 163.3 398.8 163.3 H1030.8 Q1049.8 163.3 1062.8 173.8 Q1075.8 184.3 1075.8 205.3 Z M230.8 873.3 Q254.8 883.3 264.8 907.3 Q268.8 917.3 268.8 954.3 Q268.8 970.3 268.3 981.8 Q267.8 993.3 264.8 1001.3 Q253.8 1024.3 230.8 1035.3 Q222.8 1038.3 211.3 1038.8 Q199.8 1039.3 183.8 1039.3 Q167.8 1039.3 155.8 1038.8 Q143.8 1038.3 135.8 1035.3 Q112.8 1024.3 103.8 1002.3 Q99.8 994.3 98.8 982.3 Q97.8 970.3 97.8 954.3 Q97.8 938.3 98.8 926.3 Q99.8 914.3 103.8 906.3 Q112.8 885.3 135.8 873.3 Q143.8 870.3 155.8 869.8 Q167.8 869.3 183.8 869.3 Q199.8 869.3 211.3 869.8 Q222.8 870.3 230.8 873.3 Z M1075.8 572.3 V601.3 Q1075.8 622.3 1062.8 632.8 Q1049.8 643.3 1030.8 643.3 H398.8 Q379.8 643.3 367.3 632.3 Q354.8 621.3 354.8 602.3 V573.3 Q354.8 552.3 367.3 541.3 Q379.8 530.3 398.8 530.3 H1030.8 Q1049.8 530.3 1062.8 540.8 Q1075.8 551.3 1075.8 572.3 Z" transform="matrix(1 0 0 -1 0 1173.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn active" data-page="0" title="操作列表"><svg viewBox="0 0 1197.6 1197.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M988.8 161.3 Q1046.8 191.3 1073.8 246.3 Q1089.8 277.3 1093.8 319.8 Q1097.8 362.3 1097.8 459.3 V739.3 Q1097.8 836.3 1093.8 878.8 Q1089.8 921.3 1073.8 952.3 Q1045.8 1009.3 988.8 1037.3 Q957.8 1053.3 915.3 1057.3 Q872.8 1061.3 775.8 1061.3 H420.8 Q324.8 1061.3 282.3 1057.3 Q239.8 1053.3 207.8 1037.3 Q151.8 1009.3 123.8 952.3 Q107.8 921.3 103.8 878.8 Q99.8 836.3 99.8 739.3 V459.3 Q99.8 362.3 103.8 319.8 Q107.8 277.3 123.8 246.3 Q150.8 191.3 207.8 161.3 Q239.8 144.3 282.3 140.3 Q324.8 136.3 420.8 136.3 H775.8 Q872.8 136.3 915.3 140.3 Q957.8 144.3 988.8 161.3 Z M263.8 261.3 Q238.8 275.3 222.8 300.3 Q215.8 315.3 214.3 337.8 Q212.8 360.3 212.8 413.3 V785.3 Q212.8 839.3 214.3 860.8 Q215.8 882.3 222.8 897.3 Q237.8 924.3 263.8 937.3 Q277.8 944.3 299.8 945.8 Q321.8 947.3 376.8 947.3 H682.8 V251.3 H376.8 Q321.8 251.3 299.8 252.8 Q277.8 254.3 263.8 261.3 Z M796.8 947.3 H820.8 Q875.8 947.3 897.3 945.8 Q918.8 944.3 933.8 937.3 Q960.8 922.3 973.8 897.3 Q980.8 882.3 982.3 860.8 Q983.8 839.3 983.8 785.3 V413.3 Q983.8 359.3 982.3 337.3 Q980.8 315.3 973.8 300.3 Q960.8 277.3 933.8 261.3 Q918.8 254.3 897.3 252.8 Q875.8 251.3 820.8 251.3 H796.8 Z M420.8 769.3 V790.3 Q420.8 810.3 412.3 819.8 Q403.8 829.3 385.8 829.3 H310.8 Q291.8 829.3 283.3 819.8 Q274.8 810.3 274.8 790.3 V769.3 Q274.8 748.3 283.3 739.3 Q291.8 730.3 310.8 730.3 H385.8 Q403.8 730.3 412.3 739.3 Q420.8 748.3 420.8 769.3 Z M420.8 588.3 V609.3 Q420.8 629.3 412.3 638.8 Q403.8 648.3 385.8 648.3 H310.8 Q291.8 648.3 283.3 638.8 Q274.8 629.3 274.8 609.3 V588.3 Q274.8 567.3 283.3 558.3 Q291.8 549.3 310.8 549.3 H385.8 Q403.8 549.3 412.3 558.3 Q420.8 567.3 420.8 588.3 Z M626.8 769.3 V790.3 Q626.8 810.3 618.8 819.8 Q610.8 829.3 591.8 829.3 H515.8 Q497.8 829.3 489.3 819.8 Q480.8 810.3 480.8 790.3 V769.3 Q480.8 748.3 489.3 739.3 Q497.8 730.3 515.8 730.3 H591.8 Q610.8 730.3 618.8 739.3 Q626.8 748.3 626.8 769.3 Z M626.8 588.3 V609.3 Q626.8 629.3 618.8 638.8 Q610.8 648.3 591.8 648.3 H515.8 Q497.8 648.3 489.3 638.8 Q480.8 629.3 480.8 609.3 V588.3 Q480.8 567.3 489.3 558.3 Q497.8 549.3 515.8 549.3 H591.8 Q610.8 549.3 618.8 558.3 Q626.8 567.3 626.8 588.3 Z M420.8 407.3 V429.3 Q420.8 449.3 412.3 458.8 Q403.8 468.3 385.8 468.3 H310.8 Q291.8 468.3 283.3 458.8 Q274.8 449.3 274.8 429.3 V407.3 Q274.8 386.3 283.3 377.8 Q291.8 369.3 310.8 369.3 H385.8 Q403.8 369.3 412.3 377.8 Q420.8 386.3 420.8 407.3 Z" transform="matrix(1 0 0 -1 0 1197.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn" data-page="1" title="指令终端"><svg viewBox="0 0 1024 1024" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M256 192 L576 448 Q608 480 608 512 Q608 544 576 576 L256 832 Q224 864 192 832 L160 800 Q128 768 160 736 L416 512 L160 288 Q128 256 160 224 L192 192 Q224 160 256 192 Z M640 832 L864 832 Q896 832 896 800 L896 768 Q896 736 864 736 L640 736 Q608 736 608 768 L608 800 Q608 832 640 832 Z" fill="currentColor" fill-rule="nonzero"></path></svg></button>
+        <button class="auto-op-page-btn" data-page="2" title="操作参数"><svg viewBox="0 0 1173.6 1173.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M1075.8 939.3 V968.3 Q1075.8 989.3 1062.8 999.8 Q1049.8 1010.3 1030.8 1010.3 H398.8 Q379.8 1010.3 367.3 999.3 Q354.8 988.3 354.8 969.3 V940.3 Q354.8 919.3 367.3 908.3 Q379.8 897.3 398.8 897.3 H1030.8 Q1049.8 897.3 1062.8 907.8 Q1075.8 918.3 1075.8 939.3 Z M230.8 138.3 Q253.8 149.3 264.8 172.3 Q267.8 180.3 268.3 191.8 Q268.8 203.3 268.8 219.3 Q268.8 256.3 264.8 266.3 Q254.8 290.3 230.8 299.3 Q222.8 302.3 211.3 303.3 Q199.8 304.3 183.8 304.3 Q167.8 304.3 155.8 303.3 Q143.8 302.3 135.8 299.3 Q112.8 289.3 103.8 267.3 Q99.8 259.3 98.8 247.3 Q97.8 235.3 97.8 219.3 Q97.8 203.3 98.8 191.3 Q99.8 179.3 103.8 171.3 Q112.8 149.3 135.8 138.3 Q143.8 135.3 155.8 134.8 Q167.8 134.3 183.8 134.3 Q199.8 134.3 211.3 134.8 Q222.8 135.3 230.8 138.3 Z M230.8 506.3 Q253.8 518.3 264.8 541.3 Q267.8 548.3 268.3 560.3 Q268.8 572.3 268.8 587.3 Q268.8 618.3 264.8 633.3 Q252.8 657.3 231.8 666.3 Q223.8 670.3 211.8 671.3 Q199.8 672.3 183.8 672.3 Q167.8 672.3 155.3 671.3 Q142.8 670.3 134.8 666.3 Q112.8 656.3 103.8 634.3 Q99.8 626.3 98.8 614.8 Q97.8 603.3 97.8 587.3 Q97.8 571.3 98.8 559.8 Q99.8 548.3 103.8 540.3 Q112.8 517.3 135.8 506.3 Q143.8 503.3 155.8 502.8 Q167.8 502.3 183.8 502.3 Q199.8 502.3 211.3 502.8 Q222.8 503.3 230.8 506.3 Z M1075.8 205.3 V234.3 Q1075.8 255.3 1062.8 265.8 Q1049.8 276.3 1030.8 276.3 H398.8 Q379.8 276.3 367.3 265.3 Q354.8 254.3 354.8 235.3 V206.3 Q354.8 185.3 367.3 174.3 Q379.8 163.3 398.8 163.3 H1030.8 Q1049.8 163.3 1062.8 173.8 Q1075.8 184.3 1075.8 205.3 Z M230.8 873.3 Q254.8 883.3 264.8 907.3 Q268.8 917.3 268.8 954.3 Q268.8 970.3 268.3 981.8 Q267.8 993.3 264.8 1001.3 Q253.8 1024.3 230.8 1035.3 Q222.8 1038.3 211.3 1038.8 Q199.8 1039.3 183.8 1039.3 Q167.8 1039.3 155.8 1038.8 Q143.8 1038.3 135.8 1035.3 Q112.8 1024.3 103.8 1002.3 Q99.8 994.3 98.8 982.3 Q97.8 970.3 97.8 954.3 Q97.8 938.3 98.8 926.3 Q99.8 914.3 103.8 906.3 Q112.8 885.3 135.8 873.3 Q143.8 870.3 155.8 869.8 Q167.8 869.3 183.8 869.3 Q199.8 869.3 211.3 869.8 Q222.8 870.3 230.8 873.3 Z M1075.8 572.3 V601.3 Q1075.8 622.3 1062.8 632.8 Q1049.8 643.3 1030.8 643.3 H398.8 Q379.8 643.3 367.3 632.3 Q354.8 621.3 354.8 602.3 V573.3 Q354.8 552.3 367.3 541.3 Q379.8 530.3 398.8 530.3 H1030.8 Q1049.8 530.3 1062.8 540.8 Q1075.8 551.3 1075.8 572.3 Z" transform="matrix(1 0 0 -1 0 1173.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
         <button class="auto-op-page-btn" data-page="3" title="自动刷新"><svg viewBox="0 0 1300.8 1300.8" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M1036.9 289.4 Q1110.9 367.4 1147.9 467.4 Q1184.9 567.4 1181.9 668.4 Q1178.9 769.4 1137.9 851.4 Q1129.9 869.4 1114.9 872.9 Q1099.9 876.4 1087.9 864.4 L1055.9 836.4 Q1041.9 824.4 1040.4 814.4 Q1038.9 804.4 1042.9 790.4 Q1069.9 726.4 1069.9 651.4 Q1069.9 576.4 1041.4 501.9 Q1012.9 427.4 954.9 367.4 Q877.9 286.4 772.4 256.4 Q666.9 226.4 560.9 251.4 Q454.9 276.4 373.9 353.4 Q292.9 430.4 262.4 535.9 Q231.9 641.4 257.4 747.9 Q282.9 854.4 359.9 935.4 Q430.9 1008.4 525.4 1039.9 Q619.9 1071.4 717.9 1056.9 Q815.9 1042.4 896.9 983.4 L678.9 754.4 Q675.9 751.4 672.9 752.4 Q667.9 753.4 655.9 753.4 Q612.9 751.4 583.4 720.9 Q553.9 690.4 554.9 647.4 Q556.9 605.4 587.4 576.9 Q617.9 548.4 660.9 549.4 Q702.9 550.4 731.9 580.9 Q760.9 611.4 759.9 653.4 Q759.9 664.4 757.9 670.4 Q756.9 674.4 758.9 676.4 L1031.9 962.4 Q1043.9 974.4 1043.4 989.4 Q1042.9 1004.4 1032.9 1016.4 L1018.9 1030.4 Q915.9 1128.4 779.9 1160.4 Q643.9 1192.4 509.9 1153.4 Q375.9 1114.4 277.9 1011.4 Q179.9 908.4 147.9 772.9 Q115.9 637.4 154.4 503.4 Q192.9 369.4 296.9 271.4 Q399.9 173.4 535.9 140.9 Q671.9 108.4 805.9 146.9 Q939.9 185.4 1036.9 289.4 Z" transform="matrix(1 0 0 -1 0 1300.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
         <button class="auto-op-page-btn" data-page="4" title="系统设置"><svg viewBox="0 0 1274.4 1274.4" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M664.2 112.2 Q675.2 114.2 689.2 120.7 Q703.2 127.2 719.2 136.2 L737.2 146.2 L1018.2 304.2 Q1049.2 321.2 1063.2 330.7 Q1077.2 340.2 1087.2 351.2 Q1106.2 371.2 1115.2 399.2 Q1120.2 413.2 1121.2 429.7 Q1122.2 446.2 1122.2 482.2 V791.2 Q1122.2 827.2 1121.2 843.2 Q1120.2 859.2 1115.2 873.2 Q1106.2 900.2 1087.2 922.2 Q1079.2 932.2 1066.2 940.2 Q1053.2 948.2 1030.2 961.2 L1018.2 968.2 L737.2 1127.2 Q706.2 1145.2 692.2 1151.7 Q678.2 1158.2 664.2 1160.2 Q637.2 1168.2 610.2 1160.2 Q596.2 1158.2 582.2 1151.7 Q568.2 1145.2 537.2 1127.2 L256.2 968.2 Q247.2 963.2 237.2 957.2 Q221.2 948.2 207.7 939.7 Q194.2 931.2 187.2 922.2 Q168.2 900.2 159.2 873.2 Q154.2 859.2 153.2 843.2 Q152.2 827.2 152.2 791.2 V482.2 Q152.2 446.2 153.2 429.7 Q154.2 413.2 159.2 399.2 Q168.2 371.2 187.2 351.2 Q196.2 341.2 209.2 332.2 Q222.2 323.2 245.2 310.2 L256.2 304.2 L537.2 146.2 L555.2 136.2 Q571.2 127.2 585.2 120.7 Q599.2 114.2 610.2 112.2 Q637.2 106.2 664.2 112.2 Z M266.2 457.2 V821.2 Q266.2 834.2 270.7 842.2 Q275.2 850.2 287.2 856.2 L612.2 1039.2 Q628.2 1048.2 636.7 1048.7 Q645.2 1049.2 659.2 1041.2 L977.2 862.2 Q999.2 850.2 1004.2 841.2 Q1009.2 832.2 1009.2 807.2 V458.2 Q1009.2 443.2 1005.7 434.7 Q1002.2 426.2 992.2 420.2 L663.2 233.2 Q646.2 224.2 636.7 224.2 Q627.2 224.2 611.2 234.2 L290.2 415.2 Q275.2 423.2 270.7 431.2 Q266.2 439.2 266.2 457.2 Z M851.2 636.2 Q851.2 694.2 822.2 743.2 Q793.2 792.2 744.2 821.2 Q695.2 850.2 637.2 850.2 Q579.2 850.2 530.2 821.7 Q481.2 793.2 452.2 743.7 Q423.2 694.2 423.2 636.2 Q423.2 578.2 452.2 529.2 Q481.2 480.2 530.2 451.2 Q579.2 422.2 637.2 422.2 Q695.2 422.2 744.7 451.2 Q794.2 480.2 822.7 529.2 Q851.2 578.2 851.2 636.2 Z M539.2 636.2 Q539.2 677.2 567.7 705.7 Q596.2 734.2 637.2 734.2 Q678.2 734.2 706.7 705.7 Q735.2 677.2 735.2 636.2 Q735.2 595.2 706.7 566.7 Q678.2 538.2 637.2 538.2 Q596.2 538.2 567.7 566.7 Q539.2 595.2 539.2 636.2 Z" transform="matrix(1 0 0 -1 0 1274.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
       </div>
       <div class="auto-op-page-container" id="auto-op-page-container">
         <div class="auto-op-page active" data-page="0">
-          <div class="auto-op-row-switch">
-            <label>多选模式</label>
-            <label class="auto-op-switch"><input type="checkbox" id="auto-op-multi-mode"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label>
-          </div>
-          <div class="auto-op-row" id="auto-op-strategy-row" style="display: none">
+          <div class="auto-op-row" id="auto-op-strategy-row">
             <label>操作策略</label>
             <select id="auto-op-click-strategy">
               <option value="simultaneous">同时操作（0ms队列）</option>
@@ -2691,7 +2712,7 @@
             </select>
           </div>
           <div class="auto-op-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <label style="margin-bottom: 0;">目标元素</label>
+            <label style="margin-bottom: 0;">目标列表</label>
             <span id="auto-op-target-count" class="auto-op-target-count"></span>
             <span style="flex: 1;"></span>
             <button class="auto-op-btn-clear" id="auto-op-btn-clear-all" style="display: none;">清空</button>
@@ -2708,13 +2729,13 @@
         </div>
         <div class="auto-op-page" data-page="1">
           <div class="auto-op-row">
-            <label>JavaScript 指令</label>
+            <label>JavaScript</label>
             <textarea id="auto-op-cmd-input" class="auto-op-cmd-input" placeholder="输入 JavaScript 代码...&#10;可用变量：$el(当前元素) $targets(所有目标) $config(当前配置)" rows="4"></textarea>
           </div>
           <div class="auto-op-row auto-op-cmd-presets">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
-              <label style="margin-bottom:0;">快捷指令</label>
-              <button class="auto-op-network-btn" id="auto-op-btn-network-monitor" title="网络监测器"><svg viewBox="0 0 1245.6 1245.6" fill="none" aria-hidden="true" style="width:15px;height:15px;display:block"><path d="M472.8 215.8 V245.8 Q472.8 267.8 460.8 278.8 Q448.8 289.8 427.8 289.8 H411.8 Q369.8 289.8 350.3 291.3 Q330.8 292.8 316.8 299.8 Q288.8 315.8 274.8 341.8 Q268.8 355.8 267.3 376.8 Q265.8 397.8 265.8 450.8 V867.8 Q265.8 920.8 267.3 941.8 Q268.8 962.8 274.8 976.8 Q290.8 1004.8 316.8 1018.8 Q331.8 1025.8 352.8 1027.3 Q373.8 1028.8 425.8 1028.8 H706.8 Q759.8 1028.8 780.3 1027.3 Q800.8 1025.8 815.8 1018.8 Q843.8 1003.8 855.8 976.8 Q863.8 962.8 865.3 941.8 Q866.8 920.8 866.8 867.8 V756.8 Q866.8 736.8 878.8 725.3 Q890.8 713.8 910.8 713.8 H937.8 Q956.8 713.8 968.8 725.3 Q980.8 736.8 980.8 756.8 V824.8 Q980.8 918.8 977.3 959.8 Q973.8 1000.8 957.8 1030.8 Q927.8 1090.8 868.8 1119.8 Q839.8 1134.8 798.3 1138.3 Q756.8 1141.8 662.8 1141.8 H469.8 Q375.8 1141.8 334.3 1138.3 Q292.8 1134.8 263.8 1119.8 Q205.8 1091.8 173.8 1030.8 Q158.8 1000.8 155.3 959.8 Q151.8 918.8 151.8 824.8 V459.8 Q151.8 394.8 153.3 365.8 Q154.8 336.8 162.8 313.8 Q177.8 269.8 211.8 236.3 Q245.8 202.8 289.8 187.8 Q312.8 179.8 343.8 177.8 Q374.8 175.8 432.8 176.8 Q448.8 176.8 460.8 188.8 Q472.8 200.8 472.8 215.8 Z M753.8 658.8 V684.8 Q753.8 705.8 741.8 715.8 Q729.8 725.8 707.8 725.8 H424.8 Q399.8 725.8 389.3 715.3 Q378.8 704.8 378.8 682.8 V658.8 Q378.8 636.8 389.8 626.3 Q400.8 615.8 424.8 615.8 H707.8 Q730.8 615.8 742.3 626.3 Q753.8 636.8 753.8 658.8 Z M753.8 852.8 V878.8 Q753.8 899.8 741.8 909.8 Q729.8 919.8 707.8 919.8 H424.8 Q399.8 919.8 389.3 909.3 Q378.8 898.8 378.8 876.8 V852.8 Q378.8 830.8 389.8 820.3 Q400.8 809.8 424.8 809.8 H707.8 Q730.8 809.8 742.3 820.3 Q753.8 830.8 753.8 852.8 Z M626.8 233.8 L758.8 116.8 Q773.8 103.8 789.3 104.3 Q804.8 104.8 814.3 116.3 Q823.8 127.8 823.8 145.8 V199.8 H1054.8 Q1070.8 199.8 1081.8 209.8 Q1092.8 219.8 1092.8 240.8 V264.8 Q1092.8 285.8 1082.3 295.8 Q1071.8 305.8 1054.8 305.8 H649.8 Q629.8 305.8 617.8 294.8 Q605.8 283.8 607.3 266.8 Q608.8 249.8 626.8 233.8 Z M1071.8 451.8 L939.8 568.8 Q924.8 581.8 909.8 581.3 Q894.8 580.8 885.3 569.3 Q875.8 557.8 875.8 539.8 V485.8 H644.8 Q628.8 485.8 617.8 476.3 Q606.8 466.8 606.8 444.8 V420.8 Q606.8 399.8 617.3 389.8 Q627.8 379.8 644.8 379.8 H1049.8 Q1069.8 379.8 1081.8 391.3 Q1093.8 402.8 1091.8 419.3 Q1089.8 435.8 1071.8 451.8 Z" transform="matrix(1 0 0 -1 0 1245.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
+              <label style="margin-bottom:0;">快捷输入</label>
+              <button class="auto-op-network-btn" id="auto-op-btn-network-monitor" title="网络监测"><svg viewBox="0 0 1245.6 1245.6" fill="none" aria-hidden="true" style="width:15px;height:15px;display:block"><path d="M472.8 215.8 V245.8 Q472.8 267.8 460.8 278.8 Q448.8 289.8 427.8 289.8 H411.8 Q369.8 289.8 350.3 291.3 Q330.8 292.8 316.8 299.8 Q288.8 315.8 274.8 341.8 Q268.8 355.8 267.3 376.8 Q265.8 397.8 265.8 450.8 V867.8 Q265.8 920.8 267.3 941.8 Q268.8 962.8 274.8 976.8 Q290.8 1004.8 316.8 1018.8 Q331.8 1025.8 352.8 1027.3 Q373.8 1028.8 425.8 1028.8 H706.8 Q759.8 1028.8 780.3 1027.3 Q800.8 1025.8 815.8 1018.8 Q843.8 1003.8 855.8 976.8 Q863.8 962.8 865.3 941.8 Q866.8 920.8 866.8 867.8 V756.8 Q866.8 736.8 878.8 725.3 Q890.8 713.8 910.8 713.8 H937.8 Q956.8 713.8 968.8 725.3 Q980.8 736.8 980.8 756.8 V824.8 Q980.8 918.8 977.3 959.8 Q973.8 1000.8 957.8 1030.8 Q927.8 1090.8 868.8 1119.8 Q839.8 1134.8 798.3 1138.3 Q756.8 1141.8 662.8 1141.8 H469.8 Q375.8 1141.8 334.3 1138.3 Q292.8 1134.8 263.8 1119.8 Q205.8 1091.8 173.8 1030.8 Q158.8 1000.8 155.3 959.8 Q151.8 918.8 151.8 824.8 V459.8 Q151.8 394.8 153.3 365.8 Q154.8 336.8 162.8 313.8 Q177.8 269.8 211.8 236.3 Q245.8 202.8 289.8 187.8 Q312.8 179.8 343.8 177.8 Q374.8 175.8 432.8 176.8 Q448.8 176.8 460.8 188.8 Q472.8 200.8 472.8 215.8 Z M753.8 658.8 V684.8 Q753.8 705.8 741.8 715.8 Q729.8 725.8 707.8 725.8 H424.8 Q399.8 725.8 389.3 715.3 Q378.8 704.8 378.8 682.8 V658.8 Q378.8 636.8 389.8 626.3 Q400.8 615.8 424.8 615.8 H707.8 Q730.8 615.8 742.3 626.3 Q753.8 636.8 753.8 658.8 Z M753.8 852.8 V878.8 Q753.8 899.8 741.8 909.8 Q729.8 919.8 707.8 919.8 H424.8 Q399.8 919.8 389.3 909.3 Q378.8 898.8 378.8 876.8 V852.8 Q378.8 830.8 389.8 820.3 Q400.8 809.8 424.8 809.8 H707.8 Q730.8 809.8 742.3 820.3 Q753.8 830.8 753.8 852.8 Z M626.8 233.8 L758.8 116.8 Q773.8 103.8 789.3 104.3 Q804.8 104.8 814.3 116.3 Q823.8 127.8 823.8 145.8 V199.8 H1054.8 Q1070.8 199.8 1081.8 209.8 Q1092.8 219.8 1092.8 240.8 V264.8 Q1092.8 285.8 1082.3 295.8 Q1071.8 305.8 1054.8 305.8 H649.8 Q629.8 305.8 617.8 294.8 Q605.8 283.8 607.3 266.8 Q608.8 249.8 626.8 233.8 Z M1071.8 451.8 L939.8 568.8 Q924.8 581.8 909.8 581.3 Q894.8 580.8 885.3 569.3 Q875.8 557.8 875.8 539.8 V485.8 H644.8 Q628.8 485.8 617.8 476.3 Q606.8 466.8 606.8 444.8 V420.8 Q606.8 399.8 617.3 389.8 Q627.8 379.8 644.8 379.8 H1049.8 Q1069.8 379.8 1081.8 391.3 Q1093.8 402.8 1091.8 419.3 Q1089.8 435.8 1071.8 451.8 Z" transform="matrix(1 0 0 -1 0 1245.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
             </div>
             <select id="auto-op-cmd-preset">
               <option value="">选择预设指令...</option>
@@ -2747,7 +2768,7 @@
           <div class="auto-op-row"><label>操作时间 (min)</label><input type="number" id="auto-op-max-duration" min="0" step="0.0001" placeholder="留空为无限 支持小数"></div>
           <div class="auto-op-row"><div class="auto-op-label-with-countdown"><label style="margin-bottom:0;">自动启动 (min)</label><span class="auto-op-autostart-countdown" id="auto-op-autostart-countdown"></span></div><input type="number" id="auto-op-autostart-interval" min="0" step="0.0001" placeholder="留空为关闭 支持小数"></div>
           <div class="auto-op-row"><label>操作间隔 (ms)</label><input type="number" id="auto-op-click-interval" min="1" placeholder="1000" value="1000"></div>
-          <div class="auto-op-row"><label>元素消失后</label><select id="auto-op-missing-action"><option value="wait">等待重试（自动继续）</option><option value="stop">立即停止</option></select></div>
+          <div class="auto-op-row"><label>目标消失</label><select id="auto-op-missing-action"><option value="wait">等待重试（自动继续）</option><option value="stop">立即停止</option></select></div>
         </div>
         <div class="auto-op-page" data-page="3">
           <div class="auto-op-row-switch"><label>自动刷新网页</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-auto-refresh"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
@@ -2756,9 +2777,9 @@
         </div>
         <div class="auto-op-page" data-page="4">
           <div class="auto-op-row-switch"><label>选取元素放行点击</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-pick-pass-through"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
-          <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
-          <div class="auto-op-row-switch"><label>屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
-          <div class="auto-op-row-switch"><label>禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+          <div class="auto-op-row-switch"><label>运行状态屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+          <div class="auto-op-row-switch"><label>运行状态禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
+		  <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="auto">跟随网页</option><option value="system">跟随系统</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
           <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
           <button class="auto-op-reset-btn" id="auto-op-reset-btn" style="display:none;">恢复默认设置</button>
@@ -2793,10 +2814,10 @@
 	infoOverlay.innerHTML = `
     <div class="auto-op-info-panel-header">
       <button class="auto-op-info-back-btn" id="auto-op-info-back-btn"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
-      <span class="auto-op-info-title" id="auto-op-info-title">元素详情</span>
+      <span class="auto-op-info-title" id="auto-op-info-title">匹配规则</span>
     </div>
     <div class="auto-op-info-content" id="auto-op-info-content">
-      <span class="auto-op-info-empty">暂无详情信息</span>
+      <span class="auto-op-info-empty">暂无匹配项</span>
     </div>
   `;
 	panel.appendChild(infoOverlay);
@@ -2819,7 +2840,7 @@
 	networkOverlay.innerHTML = `
     <div class="auto-op-network-header">
       <button class="auto-op-network-back-btn" id="auto-op-network-back-btn"><svg viewBox="0 0 1375.2 1375.2" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z" transform="matrix(1 0 0 -1 0 1375.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button>
-      <span class="auto-op-network-title">网络监测器</span>
+      <span class="auto-op-network-title">网络监测</span>
       <div class="auto-op-network-header-right">
         <span class="auto-op-network-count" id="auto-op-network-count">0</span>
         <label class="auto-op-switch"><input type="checkbox" id="auto-op-network-toggle"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label>
@@ -2861,7 +2882,6 @@
 		dragHandle = panel.querySelector('.auto-op-header'),
 		btnClearAll = document.getElementById('auto-op-btn-clear-all'),
 		targetCountSpan = document.getElementById('auto-op-target-count'),
-		multiModeCheckbox = document.getElementById('auto-op-multi-mode'),
 		strategyRow = document.getElementById('auto-op-strategy-row'),
 		strategySelect = document.getElementById('auto-op-click-strategy'),
 		btnHeaderStart = document.getElementById('auto-op-btn-header-start'),
@@ -3069,9 +3089,6 @@
 		} catch (e) {}
 		for (let i = 0; i < CONFIG_COUNT; i++) {
 			const cfg = configs[i];
-			for (const el of cfg.discoveredElements) {
-				if (!document.contains(el)) cfg.discoveredElements.delete(el);
-			}
 			for (let j = cfg.targets.length - 1; j >= 0; j--) {
 				const t = cfg.targets[j];
 				if (t.element && !document.contains(t.element)) {
@@ -3098,7 +3115,7 @@
 		updateTargetUI();
 		updateTargetCount();
 		if (c.targets.length > 0) stateSpan.textContent = c.isRunning ? '运行中' : '就绪';
-		else stateSpan.textContent = '请选取目标元素';
+		else stateSpan.textContent = '请选取或添加目标';
 	}
 	powerSaveCheckbox.addEventListener('change', e => {
 		e.stopPropagation();
@@ -3125,8 +3142,7 @@
 	});
 
 	function updateCmdTargetBtn() {
-		const c = cv();
-		cmdTargetBtn.disabled = !c.isMultiMode && c.targets.length > 0;
+		cmdTargetBtn.disabled = false;
 	}
 
 	function switchConfig(newIndex) {
@@ -3139,7 +3155,6 @@
 		old.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
 		old.maxDurationMin = parseFloat(maxDurationInput.value) || 0;
 		old.clickStrategy = strategySelect.value;
-		old.isMultiMode = multiModeCheckbox.checked;
 		old.missingAction = missingActionSelect.value;
 		savePerConfig(activeConfig);
 		old.targets.forEach(t => {
@@ -3170,8 +3185,7 @@
 		c.targets.forEach(t => {
 			if (t.enableHighlight !== false && t.enabled !== false && t.element && t.element.classList && document.contains(t.element)) t.element.classList.add('auto-op-selected-highlight');
 		});
-		multiModeCheckbox.checked = c.isMultiMode;
-		strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+		strategyRow.style.display = 'block';
 		updateCmdTargetBtn();
 		strategySelect.value = c.clickStrategy;
 		maxClicksInput.value = c.maxClicks === Infinity ? '' : c.maxClicks;
@@ -3185,7 +3199,6 @@
 			btnHeaderStart.innerHTML = '<svg viewBox="0 0 1172.4 1172.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M927.7 149.7 V1022.7 Q926.7 1051.7 916.7 1063.2 Q906.7 1074.7 880.7 1074.7 H852.7 Q826.7 1074.7 816.2 1062.7 Q805.7 1050.7 805.7 1022.7 V149.7 Q805.7 121.7 816.2 109.7 Q826.7 97.7 851.7 97.7 H879.7 Q907.7 97.7 917.7 109.7 Q927.7 121.7 927.7 149.7 Z M366.7 149.7 V1022.7 Q365.7 1052.7 355.7 1063.7 Q345.7 1074.7 319.7 1074.7 H291.7 Q264.7 1074.7 254.7 1062.7 Q244.7 1050.7 244.7 1022.7 V149.7 Q244.7 121.7 254.2 109.7 Q263.7 97.7 291.7 97.7 H319.7 Q347.7 97.7 357.2 109.7 Q366.7 121.7 366.7 149.7 Z" transform="matrix(1 0 0 -1 0 1172.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 			btnHeaderStart.classList.add('is-stop');
 			btnPick.disabled = true;
-			multiModeCheckbox.disabled = true;
 			strategySelect.disabled = true;
 			maxClicksInput.disabled = true;
 			clickIntervalInput.disabled = true;
@@ -3199,7 +3212,6 @@
 			btnHeaderStart.innerHTML = '<svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 			btnHeaderStart.classList.remove('is-stop');
 			btnPick.disabled = false;
-			multiModeCheckbox.disabled = false;
 			strategySelect.disabled = false;
 			maxClicksInput.disabled = false;
 			clickIntervalInput.disabled = false;
@@ -3236,7 +3248,7 @@
 		if (c.isWaiting) stateSpan.classList.add('auto-op-waiting');
 		else stateSpan.classList.remove('auto-op-waiting');
 		if (c.targets.length > 0) stateSpan.textContent = c.isRunning ? '运行中' : '就绪';
-		else stateSpan.textContent = '请选取目标元素';
+		else stateSpan.textContent = '请选取或添加目标';
 		updateConfigBtnLabel();
 		saveData();
 		goToPage(0, false);
@@ -3246,7 +3258,6 @@
 		try {
 			const c = configs[ci];
 			localStorage.setItem(PER_CONFIG_KEY + ci, JSON.stringify({
-				isMultiMode: c.isMultiMode,
 				clickStrategy: c.clickStrategy,
 				clickInterval: c.clickInterval,
 				maxClicks: c.maxClicks === Infinity ? '' : c.maxClicks,
@@ -3262,7 +3273,6 @@
 					matchMode: t.matchMode,
 					parentSelector: t.parentSelector,
 					parentChain: t.parentChain || [],
-					isAuto: !!t.isAuto,
 					enabled: t.enabled !== false,
 					matchTag: t.matchTag !== false,
 					matchText: t.matchText !== false,
@@ -3270,7 +3280,6 @@
 					matchDataAttrs: t.matchDataAttrs !== false,
 					matchAttrs: t.matchAttrs !== false,
 					matchOnclick: t.matchOnclick !== false,
-					autoDiscover: t.autoDiscover !== false,
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
@@ -3296,7 +3305,6 @@
 			if (!saved) return;
 			const cfg = JSON.parse(saved),
 				c = configs[ci];
-			c.isMultiMode = cfg.isMultiMode || false;
 			c.clickStrategy = cfg.clickStrategy || 'simultaneous';
 			c.clickInterval = cfg.clickInterval || 1000;
 			c.maxClicks = (cfg.maxClicks === '' || cfg.maxClicks === undefined) ? Infinity : (parseInt(cfg.maxClicks) || Infinity);
@@ -3308,8 +3316,7 @@
 			if (cfg.maxDurationMin !== undefined && cfg.maxDurationMin !== '' && parseFloat(cfg.maxDurationMin) > 0) c.maxDurationMin = parseFloat(cfg.maxDurationMin);
 			c.targets = [];
 			(cfg.targets || []).forEach(t => {
-				const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
-				const base = {
+									const base = {
 					strict: t.strict,
 					loose: t.loose,
 					fingerprint: t.fingerprint,
@@ -3324,7 +3331,6 @@
 					customCommand: t.customCommand || '',
 					parentSelector: t.parentSelector || '',
 					parentChain: t.parentChain || [],
-					isAuto: !!t.isAuto,
 					missCount: 0,
 					nearestParent: null,
 					blueParent: null,
@@ -3337,7 +3343,6 @@
 					matchDataAttrs: t.matchDataAttrs !== false,
 					matchAttrs: t.matchAttrs !== false,
 					matchOnclick: t.matchOnclick !== false,
-					autoDiscover,
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
@@ -3349,17 +3354,15 @@
 					element: null
 				});
 				if (found && found.length > 0) {
-					found.forEach(el => {
-						const obj = {
-							...base,
-							element: el
-						};
-						const parentInfo = resolveParentInfo(el);
-						obj.nearestParent = parentInfo.nearestParent;
-						obj.blueParent = parentInfo.blueParent;
-						c.targets.push(obj);
-						c.discoveredElements.add(el);
-					});
+					const el = found[0];
+					const obj = {
+						...base,
+						element: el
+					};
+					const parentInfo = resolveParentInfo(el);
+					obj.nearestParent = parentInfo.nearestParent;
+					obj.blueParent = parentInfo.blueParent;
+					c.targets.push(obj);
 				} else {
 					c.targets.push({
 						...base,
@@ -3461,8 +3464,7 @@
 		loadShared();
 		for (let i = 0; i < CONFIG_COUNT; i++) loadPerConfig(i);
 		const c = cv();
-		multiModeCheckbox.checked = c.isMultiMode;
-		strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+		strategyRow.style.display = 'block';
 	updateCmdTargetBtn();
 		strategySelect.value = c.clickStrategy;
 		clickIntervalInput.value = c.clickInterval;
@@ -3795,74 +3797,6 @@
 		}
 	}
 
-	function discoverNewTargetsFor(ci) {
-		const c = configs[ci];
-		if (c.targets.length === 0 || !c.targets.some(t => t.autoDiscover !== false)) return;
-		const existingElements = new Set(c.targets.map(t => t.element));
-		for (const el of c.discoveredElements) {
-			if (!document.contains(el)) c.discoveredElements.delete(el);
-		}
-		const newTargets = [],
-			seenKeys = new Set();
-		for (const t of c.targets) {
-			if (t.autoDiscover === false || !t.parentSelector) continue;
-			const selector = t.loose || t.strict,
-				seenKey = selector + '|' + t.parentSelector;
-			if (seenKeys.has(seenKey)) continue;
-			seenKeys.add(seenKey);
-			let parent;
-			try {
-				parent = document.querySelector(t.parentSelector);
-			} catch (e) {}
-			if (!parent) continue;
-			let candidates;
-			try {
-				candidates = parent.querySelectorAll(selector);
-			} catch (e) {
-				candidates = [];
-			}
-			if (!candidates || candidates.length === 0) {
-				try {
-					candidates = parent.querySelectorAll(t.fingerprint.tagName);
-				} catch (e) {
-					candidates = [];
-				}
-			}
-			for (const el of candidates) {
-				if (panel.contains(el) || existingElements.has(el) || c.discoveredElements.has(el) || !matchesFingerprint(el, t)) continue;
-				c.discoveredElements.add(el);
-				if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) el.classList.add('auto-op-selected-highlight');
-				const pi = resolveParentInfo(el);
-				newTargets.push({
-					element: el,
-					strict: t.strict,
-					loose: t.loose,
-					fingerprint: t.fingerprint,
-					desc: t.desc,
-					isInput: t.isInput,
-					matchMode: t.matchMode,
-					parentSelector: t.parentSelector,
-					parentChain: t.parentChain,
-					nearestParent: pi.nearestParent,
-					blueParent: pi.blueParent,
-					isAuto: true,
-					missCount: 0,
-					enabled: t.enabled,
-					matchTag: t.matchTag,
-					matchText: t.matchText,
-					matchTextMode: t.matchTextMode,
-					matchDataAttrs: t.matchDataAttrs,
-					matchAttrs: t.matchAttrs,
-					matchOnclick: t.matchOnclick,
-					autoDiscover: t.autoDiscover,
-					matchParent: t.matchParent,
-					matchId: t.matchId,
-					matchClass: t.matchClass
-				});
-			}
-		}
-		if (newTargets.length > 0) c.targets.push(...newTargets);
-	}
 
 	function updatePageHeight() {
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
@@ -3875,6 +3809,7 @@
 	}
 
 	function goToPage(page, animated) {
+		if (isPicking) exitPickMode();
 		closeConfigMenu();
 		if (infoOverlayEl.classList.contains('open')) hideInfoPanel(false);
 		if (settingsOverlayEl.classList.contains('open')) hideSettingsPanel(false);
@@ -3950,56 +3885,184 @@
 	const CONFIG_LOAD_SVG = '<svg viewBox="0 0 1276.8 1276.8" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M667.4 626.4 Q680.4 627.4 697.9 634.9 Q715.4 642.4 738.4 653.4 L1079.4 802.4 L1095.4 809.4 Q1128.4 824.4 1143.4 834.4 Q1158.4 844.4 1164.4 855.4 Q1170.4 868.4 1170.4 882.4 Q1170.4 896.4 1164.4 907.4 Q1158.4 919.4 1143.9 928.9 Q1129.4 938.4 1093.4 954.4 Q1089.4 957.4 1079.4 961.4 L738.4 1111.4 Q693.4 1132.4 667.4 1138.4 Q641.4 1142.4 614.4 1138.4 Q588.4 1132.4 543.4 1111.4 L202.4 961.4 Q192.4 957.4 188.4 954.4 Q152.4 938.4 137.9 928.9 Q123.4 919.4 117.4 907.4 Q111.4 896.4 111.4 882.4 Q111.4 868.4 117.4 855.4 Q123.4 844.4 138.4 834.4 Q153.4 824.4 186.4 809.4 L202.4 802.4 L543.4 653.4 Q566.4 642.4 583.9 634.9 Q601.4 627.4 614.4 626.4 Q641.4 622.4 667.4 626.4 Z M666.4 139.4 Q695.4 146.4 734.4 164.4 L1075.4 310.4 Q1115.4 328.4 1134.4 338.9 Q1153.4 349.4 1161.4 360.4 Q1169.4 372.4 1169.4 387.4 Q1169.4 402.4 1161.4 415.4 Q1155.4 427.4 1139.4 437.9 Q1123.4 448.4 1093.4 462.4 L1067.4 474.4 Q1057.4 477.4 1050.4 474.4 L956.4 434.4 Q946.4 430.4 946.4 421.9 Q946.4 413.4 956.4 408.4 L979.4 398.4 Q986.4 394.4 986.4 390.4 Q986.4 386.4 980.4 384.4 L670.4 254.4 Q658.4 249.4 648.4 247.4 Q641.4 246.4 633.4 247.4 Q623.4 249.4 611.4 254.4 L299.4 384.4 Q294.4 386.4 294.9 390.9 Q295.4 395.4 300.4 397.4 L325.4 408.4 Q335.4 413.4 334.9 421.4 Q334.4 429.4 324.4 434.4 L231.4 474.4 Q223.4 477.4 214.4 473.4 L188.4 462.4 Q155.4 446.4 139.9 436.9 Q124.4 427.4 119.4 414.4 Q106.4 387.4 119.4 362.4 Q125.4 350.4 142.4 340.9 Q159.4 331.4 206.4 310.4 L547.4 164.4 Q586.4 146.4 615.4 139.4 Q641.4 134.4 666.4 139.4 Z M666.4 383.4 Q682.4 386.4 722.4 402.4 L734.4 407.4 L1075.4 554.4 Q1121.4 574.4 1138.4 583.9 Q1155.4 593.4 1162.4 605.4 Q1169.4 617.4 1169.4 631.9 Q1169.4 646.4 1162.4 659.4 Q1155.4 671.4 1139.4 681.9 Q1123.4 692.4 1089.4 708.4 L1068.4 717.4 Q1058.4 722.4 1051.4 717.4 L960.4 676.4 Q950.4 672.4 950.4 664.4 Q950.4 656.4 960.4 651.4 L979.4 642.4 Q987.4 638.4 986.9 634.4 Q986.4 630.4 978.4 627.4 L670.4 499.4 L661.4 495.4 Q655.4 492.4 647.4 490.4 Q641.4 489.4 634.4 490.4 Q626.4 492.4 620.4 495.4 L611.4 499.4 L300.4 628.4 Q294.4 631.4 293.9 634.9 Q293.4 638.4 298.4 640.4 L320.4 652.4 Q330.4 656.4 329.9 664.4 Q329.4 672.4 319.4 676.4 L230.4 717.4 Q222.4 722.4 212.4 717.4 L192.4 708.4 Q154.4 689.4 139.4 680.4 Q124.4 671.4 119.4 658.4 Q107.4 631.4 119.4 605.4 Q125.4 593.4 143.9 582.9 Q162.4 572.4 206.4 554.4 L547.4 407.4 L559.4 402.4 Q599.4 386.4 615.4 383.4 Q641.4 379.4 666.4 383.4 Z M608.4 742.4 L304.4 875.4 Q299.4 877.4 299.4 881.4 Q299.4 885.4 305.4 888.4 L608.4 1022.4 Q626.4 1030.4 633.4 1031.4 Q641.4 1032.4 648.4 1031.4 Q655.4 1030.4 673.4 1022.4 L975.4 889.4 Q982.4 885.4 982.4 881.4 Q982.4 877.4 976.4 874.4 L673.4 742.4 Q655.4 734.4 648.4 733.4 Q641.4 732.4 633.4 733.4 Q626.4 734.4 608.4 742.4 Z" transform="matrix(1 0 0 -1 0 1276.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 	const OPERATION_SVG = '<svg viewBox="0 0 1197.6 1197.6" fill="none" aria-hidden="true" style="width:16px;height:16px;display:block"><path d="M988.8 161.3 Q1046.8 191.3 1073.8 246.3 Q1089.8 277.3 1093.8 319.8 Q1097.8 362.3 1097.8 459.3 V739.3 Q1097.8 836.3 1093.8 878.8 Q1089.8 921.3 1073.8 952.3 Q1045.8 1009.3 988.8 1037.3 Q957.8 1053.3 915.3 1057.3 Q872.8 1061.3 775.8 1061.3 H420.8 Q324.8 1061.3 282.3 1057.3 Q239.8 1053.3 207.8 1037.3 Q151.8 1009.3 123.8 952.3 Q107.8 921.3 103.8 878.8 Q99.8 836.3 99.8 739.3 V459.3 Q99.8 362.3 103.8 319.8 Q107.8 277.3 123.8 246.3 Q150.8 191.3 207.8 161.3 Q239.8 144.3 282.3 140.3 Q324.8 136.3 420.8 136.3 H775.8 Q872.8 136.3 915.3 140.3 Q957.8 144.3 988.8 161.3 Z M263.8 261.3 Q238.8 275.3 222.8 300.3 Q215.8 315.3 214.3 337.8 Q212.8 360.3 212.8 413.3 V785.3 Q212.8 839.3 214.3 860.8 Q215.8 882.3 222.8 897.3 Q237.8 924.3 263.8 937.3 Q277.8 944.3 299.8 945.8 Q321.8 947.3 376.8 947.3 H682.8 V251.3 H376.8 Q321.8 251.3 299.8 252.8 Q277.8 254.3 263.8 261.3 Z M796.8 947.3 H820.8 Q875.8 947.3 897.3 945.8 Q918.8 944.3 933.8 937.3 Q960.8 922.3 973.8 897.3 Q980.8 882.3 982.3 860.8 Q983.8 839.3 983.8 785.3 V413.3 Q983.8 359.3 982.3 337.3 Q980.8 315.3 973.8 300.3 Q960.8 277.3 933.8 261.3 Q918.8 254.3 897.3 252.8 Q875.8 251.3 820.8 251.3 H796.8 Z M420.8 769.3 V790.3 Q420.8 810.3 412.3 819.8 Q403.8 829.3 385.8 829.3 H310.8 Q291.8 829.3 283.3 819.8 Q274.8 810.3 274.8 790.3 V769.3 Q274.8 748.3 283.3 739.3 Q291.8 730.3 310.8 730.3 H385.8 Q403.8 730.3 412.3 739.3 Q420.8 748.3 420.8 769.3 Z M420.8 588.3 V609.3 Q420.8 629.3 412.3 638.8 Q403.8 648.3 385.8 648.3 H310.8 Q291.8 648.3 283.3 638.8 Q274.8 629.3 274.8 609.3 V588.3 Q274.8 567.3 283.3 558.3 Q291.8 549.3 310.8 549.3 H385.8 Q403.8 549.3 412.3 558.3 Q420.8 567.3 420.8 588.3 Z M626.8 769.3 V790.3 Q626.8 810.3 618.8 819.8 Q610.8 829.3 591.8 829.3 H515.8 Q497.8 829.3 489.3 819.8 Q480.8 810.3 480.8 790.3 V769.3 Q480.8 748.3 489.3 739.3 Q497.8 730.3 515.8 730.3 H591.8 Q610.8 730.3 618.8 739.3 Q626.8 748.3 626.8 769.3 Z M626.8 588.3 V609.3 Q626.8 629.3 618.8 638.8 Q610.8 648.3 591.8 648.3 H515.8 Q497.8 648.3 489.3 638.8 Q480.8 629.3 480.8 609.3 V588.3 Q480.8 567.3 489.3 558.3 Q497.8 549.3 515.8 549.3 H591.8 Q610.8 549.3 618.8 558.3 Q626.8 567.3 626.8 588.3 Z M420.8 407.3 V429.3 Q420.8 449.3 412.3 458.8 Q403.8 468.3 385.8 468.3 H310.8 Q291.8 468.3 283.3 458.8 Q274.8 449.3 274.8 429.3 V407.3 Q274.8 386.3 283.3 377.8 Q291.8 369.3 310.8 369.3 H385.8 Q403.8 369.3 412.3 377.8 Q420.8 386.3 420.8 407.3 Z" transform="matrix(1 0 0 -1 0 1197.6)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 
+	let _configLoadAnimTimer = null,
+		_collapseEndHandler = null,
+		_exitTransEndHandler = null;
 	function toggleConfigLoadMode() {
+		if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
+		// Clean up any stale transition listeners
+		if (_collapseEndHandler) {
+			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
+			const bg = panel.querySelector('.auto-op-btn-group');
+			if (bg) bg.removeEventListener('transitionend', _collapseEndHandler);
+			_collapseEndHandler = null;
+		}
+		if (_exitTransEndHandler) {
+			configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+			_exitTransEndHandler = null;
+		}
 		isConfigLoadMode = !isConfigLoadMode;
 		const page0Btn = panel.querySelector('.auto-op-page-btn[data-page="0"]');
 		const page0 = pageContainer.querySelector('.auto-op-page[data-page="0"]');
 		const btnGroup = panel.querySelector('.auto-op-btn-group');
+		const normalChildren = Array.from(page0.children).filter(child => child !== configLoadWrap);
 		if (isConfigLoadMode) {
 			page0Btn.innerHTML = CONFIG_LOAD_SVG;
 			page0Btn.title = '配置加载';
-			Array.from(page0.children).forEach(child => {
-				if (child !== configLoadWrap) {
-					child.dataset._prevDisplay = child.style.display;
-					child.style.display = 'none';
-				}
-			});
-			configLoadWrap.classList.add('active');
-			if (btnGroup) { btnGroup.dataset._prevDisplay = btnGroup.style.display; btnGroup.style.display = 'none'; }
+			// Reset btnGroup/statusDiv to visible state first (in case of rapid toggle)
+			if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; }
+			statusDiv.classList.remove('config-collapsed');
+			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
+			void statusDiv.offsetHeight;
+			// Now collapse them with transition
+			if (btnGroup) { btnGroup.dataset._prevDisplay = btnGroup.style.display; btnGroup.classList.add('config-collapsed'); }
 			statusDiv.dataset._prevDisplay = statusDiv.style.display;
-			statusDiv.style.display = 'none';
-			updatePageHeight();
+			statusDiv.classList.add('config-collapsed');
+			// After collapse animation, hide them
+			_collapseEndHandler = (e) => {
+				if (e.target !== statusDiv && e.target !== btnGroup) return;
+				if (btnGroup) { btnGroup.removeEventListener('transitionend', _collapseEndHandler); btnGroup.style.display = 'none'; }
+				statusDiv.removeEventListener('transitionend', _collapseEndHandler);
+				statusDiv.style.display = 'none';
+				_collapseEndHandler = null;
+			};
+			statusDiv.addEventListener('transitionend', _collapseEndHandler);
+			_configLoadAnimTimer = setTimeout(() => {
+				if (!_collapseEndHandler) return;
+				statusDiv.removeEventListener('transitionend', _collapseEndHandler);
+				if (btnGroup) { btnGroup.removeEventListener('transitionend', _collapseEndHandler); btnGroup.style.display = 'none'; }
+				statusDiv.style.display = 'none';
+				_collapseEndHandler = null;
+			}, 350);
+			// Hide normal page 0 content instantly
+			normalChildren.forEach(child => {
+				if (child.dataset._prevDisplay === undefined) child.dataset._prevDisplay = child.style.display;
+				child.style.display = 'none';
+			});
+			// Show configLoadWrap with slide-up animation
+			configLoadWrap.style.display = 'flex';
+			configLoadWrap.style.opacity = '0';
+			configLoadWrap.style.transform = 'translateY(8px)';
+			configLoadWrap.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+			void configLoadWrap.offsetHeight;
+			configLoadWrap.classList.add('active');
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					configLoadWrap.style.opacity = '';
+					configLoadWrap.style.transform = '';
+					updatePageHeight();
+				});
+			});
 		} else {
 			page0Btn.innerHTML = OPERATION_SVG;
 			page0Btn.title = '操作';
-			Array.from(page0.children).forEach(child => {
-				child.style.display = child.dataset._prevDisplay || '';
-				delete child.dataset._prevDisplay;
-			});
+			// Slide configLoadWrap out
+			configLoadWrap.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+			configLoadWrap.style.opacity = '0';
+			configLoadWrap.style.transform = 'translateY(8px)';
 			configLoadWrap.classList.remove('active');
-			if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
-			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
-			delete statusDiv.dataset._prevDisplay;
-			updatePageHeight();
+			const finishExit = () => {
+				if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
+				if (_exitTransEndHandler) {
+					configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+					_exitTransEndHandler = null;
+				}
+				configLoadWrap.style.display = 'none';
+				configLoadWrap.style.opacity = '';
+				configLoadWrap.style.transform = '';
+				configLoadWrap.style.transition = '';
+				// Restore normal content
+				normalChildren.forEach(child => {
+					child.style.display = child.dataset._prevDisplay || '';
+					delete child.dataset._prevDisplay;
+				});
+				// Expand btnGroup + statusDiv: restore display, reset collapsed state, reflow, then expand
+				if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
+				statusDiv.classList.remove('config-collapsed');
+				statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
+				delete statusDiv.dataset._prevDisplay;
+				void statusDiv.offsetHeight;
+				if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; }
+				updatePageHeight();
+			};
+			_exitTransEndHandler = (e) => {
+				if (e.target !== configLoadWrap) return;
+				configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+				_exitTransEndHandler = null;
+				finishExit();
+			};
+			configLoadWrap.addEventListener('transitionend', _exitTransEndHandler);
+			_configLoadAnimTimer = setTimeout(() => {
+				if (!_exitTransEndHandler) return;
+				configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+				_exitTransEndHandler = null;
+				finishExit();
+			}, 250);
 		}
 	}
 
 	function exitConfigLoadMode() {
 		if (!isConfigLoadMode) return;
 		isConfigLoadMode = false;
+		// Clean up stale listeners
+		if (_collapseEndHandler) {
+			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
+			const bg = panel.querySelector('.auto-op-btn-group');
+			if (bg) bg.removeEventListener('transitionend', _collapseEndHandler);
+			_collapseEndHandler = null;
+		}
+		if (_exitTransEndHandler) {
+			configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+			_exitTransEndHandler = null;
+		}
+		if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
 		const page0Btn = panel.querySelector('.auto-op-page-btn[data-page="0"]');
 		const page0 = pageContainer.querySelector('.auto-op-page[data-page="0"]');
 		const btnGroup = panel.querySelector('.auto-op-btn-group');
+		const normalChildren = Array.from(page0.children).filter(child => child !== configLoadWrap);
 		page0Btn.innerHTML = OPERATION_SVG;
 		page0Btn.title = '操作';
-		Array.from(page0.children).forEach(child => {
-			child.style.display = child.dataset._prevDisplay || '';
-			delete child.dataset._prevDisplay;
-		});
+		// Slide configLoadWrap out
+		configLoadWrap.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+		configLoadWrap.style.opacity = '0';
+		configLoadWrap.style.transform = 'translateY(8px)';
 		configLoadWrap.classList.remove('active');
-		if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
-		statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
-		delete statusDiv.dataset._prevDisplay;
+		const finishExit = () => {
+			if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
+			if (_exitTransEndHandler) {
+				configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+				_exitTransEndHandler = null;
+			}
+			configLoadWrap.style.display = 'none';
+			configLoadWrap.style.opacity = '';
+			configLoadWrap.style.transform = '';
+			configLoadWrap.style.transition = '';
+			normalChildren.forEach(child => {
+				child.style.display = child.dataset._prevDisplay || '';
+				delete child.dataset._prevDisplay;
+			});
+			// Expand btnGroup + statusDiv
+			if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
+			statusDiv.classList.remove('config-collapsed');
+			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
+			delete statusDiv.dataset._prevDisplay;
+			void statusDiv.offsetHeight;
+			if (btnGroup) { btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; }
+			updatePageHeight();
+		};
+		_exitTransEndHandler = (e) => {
+			if (e.target !== configLoadWrap) return;
+			configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+			_exitTransEndHandler = null;
+			finishExit();
+		};
+		configLoadWrap.addEventListener('transitionend', _exitTransEndHandler);
+		_configLoadAnimTimer = setTimeout(() => {
+			if (!_exitTransEndHandler) return;
+			configLoadWrap.removeEventListener('transitionend', _exitTransEndHandler);
+			_exitTransEndHandler = null;
+			finishExit();
+		}, 250);
 	}
 
 	function exportConfig() {
@@ -4010,7 +4073,6 @@
 				version: '5.2.1',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
-				isMultiMode: c.isMultiMode,
 				clickStrategy: c.clickStrategy,
 				clickInterval: c.clickInterval,
 				maxClicks: c.maxClicks === Infinity ? '' : c.maxClicks,
@@ -4026,7 +4088,6 @@
 					matchMode: t.matchMode,
 					parentSelector: t.parentSelector,
 					parentChain: t.parentChain || [],
-					isAuto: !!t.isAuto,
 					enabled: t.enabled !== false,
 					matchTag: t.matchTag !== false,
 					matchText: t.matchText !== false,
@@ -4034,7 +4095,6 @@
 					matchDataAttrs: t.matchDataAttrs !== false,
 					matchAttrs: t.matchAttrs !== false,
 					matchOnclick: t.matchOnclick !== false,
-					autoDiscover: t.autoDiscover !== false,
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
@@ -4103,7 +4163,7 @@
 							showConfirm('文件格式错误：缺少 targets 字段或格式不正确').then(() => {});
 							return;
 						}
-						const hasConfigFields = data.isMultiMode !== undefined || data.clickStrategy !== undefined ||
+						const hasConfigFields = data.clickStrategy !== undefined ||
 							data.clickInterval !== undefined || data.maxClicks !== undefined;
 						const hasTargets = data.targets.length > 0;
 						if (!hasConfigFields && !hasTargets) {
@@ -4112,7 +4172,7 @@
 						}
 						showConfirm(
 							'即将导入配置：\n' +
-							'• 目标元素：' + data.targets.length + ' 个\n' +
+							'• 目标列表：' + data.targets.length + ' 个\n' +
 							'• 操作间隔：' + (data.clickInterval || '默认') + ' ms\n' +
 							'• 最大次数：' + (data.maxClicks || '无限') + '\n' +
 							'• 操作策略：' + (data.clickStrategy === 'sequential' ? '队列操作' : '同时操作') + '\n\n' +
@@ -4122,7 +4182,6 @@
 							try {
 								const c = cv();
 								const backup = {
-									isMultiMode: c.isMultiMode,
 									clickStrategy: c.clickStrategy,
 									clickInterval: c.clickInterval,
 									maxClicks: c.maxClicks,
@@ -4139,16 +4198,14 @@
 										matchMode: t.matchMode,
 										parentSelector: t.parentSelector,
 										parentChain: t.parentChain ? [...t.parentChain] : [],
-										isAuto: !!t.isAuto,
-										enabled: t.enabled !== false,
+															enabled: t.enabled !== false,
 										matchTag: t.matchTag !== false,
 										matchText: t.matchText !== false,
 										matchTextMode: t.matchTextMode || 'exact',
 										matchDataAttrs: t.matchDataAttrs !== false,
 										matchAttrs: t.matchAttrs !== false,
 										matchOnclick: t.matchOnclick !== false,
-										autoDiscover: t.autoDiscover !== false,
-										matchParent: t.matchParent !== false,
+															matchParent: t.matchParent !== false,
 										matchId: t.matchId !== false,
 										matchClass: t.matchClass !== false,
 										isCommand: !!t.isCommand,
@@ -4177,8 +4234,6 @@
 										if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
 									});
 									c.targets = [];
-									c.discoveredElements.clear();
-									if (data.isMultiMode !== undefined) c.isMultiMode = !!data.isMultiMode;
 									if (data.clickStrategy !== undefined) c.clickStrategy = data.clickStrategy;
 									if (data.clickInterval !== undefined) c.clickInterval = parseInt(data.clickInterval) || 1000;
 									if (data.maxClicks !== undefined) c.maxClicks = (data.maxClicks === '' || data.maxClicks === undefined) ? Infinity : (parseInt(data.maxClicks) || Infinity);
@@ -4196,8 +4251,7 @@
 										c.maxDurationMin = 0;
 									}
 									data.targets.forEach(t => {
-										const autoDiscover = t.autoDiscover !== undefined ? t.autoDiscover !== false : (t.matchMode === 'loose');
-										const base = {
+																					const base = {
 											strict: t.strict,
 											loose: t.loose,
 											fingerprint: t.fingerprint,
@@ -4212,8 +4266,7 @@
 											customCommand: t.customCommand || '',
 											parentSelector: t.parentSelector || '',
 											parentChain: t.parentChain || [],
-											isAuto: !!t.isAuto,
-											missCount: 0,
+																	missCount: 0,
 											nearestParent: null,
 											blueParent: null,
 											_blueParent: null,
@@ -4225,21 +4278,18 @@
 											matchDataAttrs: t.matchDataAttrs !== false,
 											matchAttrs: t.matchAttrs !== false,
 											matchOnclick: t.matchOnclick !== false,
-											autoDiscover,
-											matchParent: t.matchParent !== false,
+																	matchParent: t.matchParent !== false,
 											matchId: t.matchId !== false,
 											matchClass: t.matchClass !== false
 										};
 										const found = base.isCommand ? [] : tryFindTarget({ ...base, element: null });
 										if (found && found.length > 0) {
-											found.forEach(el => {
-												const obj = { ...base, element: el };
-												const parentInfo = resolveParentInfo(el);
-												obj.nearestParent = parentInfo.nearestParent;
-												obj.blueParent = parentInfo.blueParent;
-												c.targets.push(obj);
-												c.discoveredElements.add(el);
-											});
+											const el = found[0];
+											const obj = { ...base, element: el };
+											const parentInfo = resolveParentInfo(el);
+											obj.nearestParent = parentInfo.nearestParent;
+											obj.blueParent = parentInfo.blueParent;
+											c.targets.push(obj);
 										} else {
 											c.targets.push({ ...base, element: null });
 										}
@@ -4247,8 +4297,7 @@
 									c.targets.forEach(t => {
 										t._isValid = t.isCommand || (!!t.element && document.contains(t.element) && matchesFingerprint(t.element, t));
 									});
-									multiModeCheckbox.checked = c.isMultiMode;
-									strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+									strategyRow.style.display = 'block';
 									updateCmdTargetBtn();
 									strategySelect.value = c.clickStrategy;
 									clickIntervalInput.value = c.clickInterval;
@@ -4261,15 +4310,14 @@
 									updateTargetCount();
 									countSpan.textContent = c.clickedCount;
 									if (c.targets.length > 0) stateSpan.textContent = '就绪';
-									else stateSpan.textContent = '请选取目标元素';
+									else stateSpan.textContent = '请选取或添加目标';
 									updateConfigBtnLabel();
 									saveData();
 									exitConfigLoadMode();
 									updatePageHeight();
-									showConfirm('配置导入成功！\n\n导入了 ' + data.targets.length + ' 个目标元素').then(() => {});
+									showConfirm('配置导入成功！\n\n导入了 ' + data.targets.length + ' 个目标').then(() => {});
 								} catch (applyErr) {
 									console.error('[AUTO_OP] importConfig 应用失败:', applyErr);
-									c.isMultiMode = backup.isMultiMode;
 									c.clickStrategy = backup.clickStrategy;
 									c.clickInterval = backup.clickInterval;
 									c.maxClicks = backup.maxClicks;
@@ -4278,12 +4326,9 @@
 									c.autoStartIntervalMin = backup.autoStartIntervalMin;
 									c.maxDurationMin = backup.maxDurationMin;
 									c.targets = backup.targets;
-									c.discoveredElements.clear();
 									backup.targets.forEach(t => {
-										if (t.element) c.discoveredElements.add(t.element);
 									});
-									multiModeCheckbox.checked = c.isMultiMode;
-									strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
+									strategyRow.style.display = 'block';
 									updateCmdTargetBtn();
 									strategySelect.value = c.clickStrategy;
 									clickIntervalInput.value = c.clickInterval;
@@ -4762,13 +4807,13 @@
 			updateTargetUI();
 			updateTargetCount();
 			if (c.targets.length === 0) {
-				stateSpan.textContent = '目标元素已清空';
+				stateSpan.textContent = '目标列表已清空';
 				if (stateTimerID) {
 					clearTimeout(stateTimerID);
 					stateTimerID = null;
 				}
 				stateTimerID = setTimeout(() => {
-					if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素';
+					if (stateSpan.textContent === '目标列表已清空') stateSpan.textContent = '请选取或添加目标';
 					stateTimerID = null;
 				}, 1000);
 			} else {
@@ -4816,6 +4861,7 @@
 	}
 
 	function showInfoPanel(index) {
+		if (isPicking) exitPickMode();
 		const c = cv();
 		const t = c.targets[index];
 		if (!t || t.isCommand) return;
@@ -4831,7 +4877,7 @@
 			infoAnimTimer = null;
 		}
 		infoOverlayEl.removeEventListener('transitionend', onInfoCloseTransition);
-		infoTitleEl.textContent = t.desc || '元素详情';
+		infoTitleEl.textContent = t.desc || '匹配策略';
 		const fp = t.fingerprint || {};
 		const dataAttrKeys = Object.keys(fp.dataAttrs || {});
 		const attrKeys = Object.keys(fp.attrs || {});
@@ -4870,7 +4916,7 @@
 		if (t.parentSelector) {
 			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><span class="auto-op-test-result" data-test-criterion="parent"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div></div>`;
 		}
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>自动发现同类元素</label><span class="auto-op-test-result" data-test-criterion="autoDiscover"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-autoDiscover" ${t.autoDiscover !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+		html += ``;
 		infoContentEl.innerHTML = html;
 		infoOverlayEl.classList.remove('open');
 		infoOverlayEl.style.display = 'flex';
@@ -4960,6 +5006,7 @@
 		_settingsCmdMutationObserver = null;
 
 	function showSettingsPanel(index) {
+		if (isPicking) exitPickMode();
 		const c = cv();
 		const t = c.targets[index];
 		if (!t) return;
@@ -4972,14 +5019,14 @@
 			settingsAnimTimer = null;
 		}
 		settingsOverlayEl.removeEventListener('transitionend', onSettingsCloseTransition);
-		settingsTitleEl.textContent = t.desc || '元素设置';
+		settingsTitleEl.textContent = t.desc || '目标设置';
 		const isCmd = t.isCommand === true;
 			const isInput = t.isInput || false;
 		const customFill = t.customFill || '';
 		let html = '';
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">元素描述</span><input type="text" data-settings-action="change-desc" value="${(t.desc || '').replace(/"/g, '&quot;')}" placeholder="元素描述"></div></div>`;
-		if (isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">JS 指令</span><textarea data-settings-action="change-customCommand" placeholder="输入 JS 代码，$el 为当前元素" style="width:100%;box-sizing:border-box;background:var(--panel-input-bg)!important;border:1px solid var(--panel-input-border)!important;border-radius:4px;color:var(--panel-input-text)!important;font-family:Cascadia Code,Fira Code,Consolas,monospace;font-size:11px;padding:5px 8px;resize:vertical;min-height:60px;outline:none;line-height:1.4">${(t.customCommand || '').replace(/"/g, '&quot;')}</textarea></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此目标</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">目标描述</span><input type="text" data-settings-action="change-desc" value="${(t.desc || '').replace(/"/g, '&quot;')}" placeholder="目标描述"></div></div>`;
+		if (isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">JS 指令</span><textarea data-settings-action="change-customCommand" placeholder="输入 JS 代码，$el 为当前目标" style="width:100%;box-sizing:border-box;background:var(--panel-input-bg)!important;border:1px solid var(--panel-input-border)!important;border-radius:4px;color:var(--panel-input-text)!important;font-family:Cascadia Code,Fira Code,Consolas,monospace;font-size:11px;padding:5px 8px;resize:vertical;min-height:60px;outline:none;line-height:1.4">${(t.customCommand || '').replace(/"/g, '&quot;')}</textarea></div></div>`;
 			if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${customFill.replace(/"/g, '&quot;')}" placeholder="留空为清空"></div></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">独立间隔 (ms)</span><input type="number" data-settings-action="change-customInterval" value="${t.customInterval != null ? t.customInterval : ''}" min="0" placeholder="使用全局"></div></div>`;
 		if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用高亮</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enableHighlight" ${t.enableHighlight !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
@@ -5097,7 +5144,7 @@
 			action = target.dataset.settingsAction;
 		if (action === 'change-desc') {
 			t.desc = target.value;
-			settingsTitleEl.textContent = t.desc || '元素设置';
+			settingsTitleEl.textContent = t.desc || '目标设置';
 		} else if (action === 'change-customFill') {
 			t.customFill = target.value;
 		} else if (action === 'change-customCommand') {
@@ -5287,20 +5334,6 @@
 				setCount('parent', 0);
 			}
 		}
-		if (t.autoDiscover !== false && t.parentSelector) {
-			try {
-				const parent = document.querySelector(t.parentSelector);
-				if (parent) {
-					let candidates = parent.querySelectorAll(t.loose || t.strict || fp.tagName);
-					const matched = Array.from(candidates).filter(el => !panel.contains(el) && matchesFingerprint(el, t));
-					setResult('autoDiscover', matched.length > 0, matched.length);
-				} else {
-					setResult('autoDiscover', false, 0);
-				}
-			} catch (e) {
-				setResult('autoDiscover', false, 0);
-			}
-		}
 		if (t.matchText !== false && fp.text) {
 			const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
 			let matched;
@@ -5369,9 +5402,6 @@
 				break;
 			case 'toggle-matchParent':
 				t.matchParent = target.checked;
-				break;
-			case 'toggle-autoDiscover':
-				t.autoDiscover = target.checked;
 				break;
 		}
 		clearTestHighlights();
@@ -5446,8 +5476,7 @@
 		targetListContainer.innerHTML = '<div class="auto-op-target-list">' + html + '</div>';
 		updateTargetCount();
 		updateCmdTargetBtn();
-	}
-
+		}
 	function updateTargetCount(status) {
 		if (isPowerSave) return;
 		const c = cv();
@@ -5564,15 +5593,8 @@
 		if (collapseAnimPhase !== 'collapsed') performCollapse();
 		else performExpand();
 	});
-	multiModeCheckbox.addEventListener('change', e => {
-		const c = cv();
-		c.isMultiMode = e.target.checked;
-		strategyRow.style.display = c.isMultiMode ? 'block' : 'none';
-		updateCmdTargetBtn();
-		c.clickStrategy = strategySelect.value;
-		clearSelection();
-		savePerConfig(activeConfig);
-	});
+	strategyRow.style.display = 'block';
+	updateCmdTargetBtn();
 	strategySelect.addEventListener('change', e => {
 		cv().clickStrategy = e.target.value;
 		savePerConfig(activeConfig);
@@ -5697,7 +5719,7 @@
 			setPanelTransparent();
 			btnPick.textContent = '取消选取';
 			btnPick.classList.add('picking');
-			stateSpan.textContent = cv().isMultiMode ? '请依次点击多个目标元素' : '请点击目标元素';
+			stateSpan.textContent = '请依次点击多个目标元素';
 			stateSpan.classList.remove('auto-op-waiting');
 			document.addEventListener('mouseover', onPickHover, true);
 			document.addEventListener('mouseout', onPickHoverOut, true);
@@ -5795,40 +5817,23 @@
 			parentChain,
 			nearestParent,
 			blueParent,
-			isAuto: false,
 			missCount: 0,
 			_isValid: true,
 			enabled: true,
-		enableHighlight: true,
+			enableHighlight: true,
 			matchTag: true,
 			matchText: true,
 			matchTextMode: 'exact',
 			matchDataAttrs: true,
 			matchAttrs: true,
-			autoDiscover: false,
 			matchParent: !!parentSelector,
 			matchOnclick: !!fp.onclickParam,
 			matchId: !!fp.id,
 			matchClass: !!fp.className
 		};
-		if (c.isMultiMode) {
-			c.targets.push(targetObj);
-			if (targetObj.enableHighlight !== false) el.classList.add('auto-op-selected-highlight');
-			stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`;
-		} else {
-			c.targets.forEach(t => {
-				if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
-				if (t._blueParent && t._blueParent.classList) {
-					t._blueParent.classList.remove('auto-op-parent-highlight');
-					t._blueParent.classList.remove('auto-op-parent-highlight-Overlap');
-				}
-				if (t._nearestEl && t._nearestEl.classList) t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
-			});
-			c.targets = [targetObj];
-			if (targetObj.enableHighlight !== false) el.classList.add('auto-op-selected-highlight');
-			exitPickMode();
-			if (c.targets.length > 0) stateSpan.textContent = '就绪';
-		}
+		c.targets.push(targetObj);
+		if (targetObj.enableHighlight !== false) el.classList.add('auto-op-selected-highlight');
+		stateSpan.textContent = `已选 ${c.targets.length} 个，继续选取或取消`;
 		updateTargetUI();
 		updateTargetCount();
 		refreshParentHighlights();
@@ -5846,18 +5851,14 @@
 		document.querySelectorAll('.auto-op-highlight').forEach(el => el.classList.remove('auto-op-highlight'));
 		restorePanelOpacity();
 		const c = cv();
-		if (c.isMultiMode) {
-			stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : `已选 ${c.targets.length} 个`;
-		} else {
-			stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : '就绪';
-		}
+		stateSpan.textContent = c.targets.length === 0 ? '未选取目标元素' : `已选 ${c.targets.length} 个`;
 		if (c.targets.length === 0) {
 			if (stateTimerID) {
 				clearTimeout(stateTimerID);
 				stateTimerID = null;
 			}
 			stateTimerID = setTimeout(() => {
-				if (stateSpan.textContent === '未选取目标元素') stateSpan.textContent = '请选取目标元素';
+				if (stateSpan.textContent === '无目标') stateSpan.textContent = '请选取或添加目标';
 				stateTimerID = null;
 			}, 1500);
 		}
@@ -5877,13 +5878,13 @@
 		c.currentQueueIndex = 0;
 		updateTargetUI();
 		updateTargetCount();
-		stateSpan.textContent = '目标元素已清空';
+		stateSpan.textContent = '目标列表已清空';
 		if (stateTimerID) {
 			clearTimeout(stateTimerID);
 			stateTimerID = null;
 		}
 		stateTimerID = setTimeout(() => {
-			if (stateSpan.textContent === '目标元素已清空') stateSpan.textContent = '请选取目标元素';
+			if (stateSpan.textContent === '目标列表已清空') stateSpan.textContent = '请选取或添加目标';
 			stateTimerID = null;
 		}, 1000);
 		refreshParentHighlights();
@@ -6036,7 +6037,6 @@
 
 	cmdTargetBtn.addEventListener('click', () => {
 		const c = cv();
-		if (!c.isMultiMode && c.targets.length > 0) { appendCmdOutput('error', '非多选模式下已有目标，请先清空或开启多选模式'); return; }
 		const code = cmdInput.value.trim();
 		if (!code) { appendCmdOutput('error', '请输入指令代码'); return; }
 		const desc = '指令: ' + code.slice(0, 40).replace(/\n/g, ' ') + (code.length > 40 ? '...' : '');
@@ -6453,6 +6453,7 @@
 	}
 
 	function showNetworkOverlay() {
+		if (isPicking) exitPickMode();
 		closeConfigMenu();
 		if (infoOverlayEl.classList.contains('open')) hideInfoPanel(false);
 		if (settingsOverlayEl.classList.contains('open')) hideSettingsPanel(false);
@@ -6583,7 +6584,6 @@
 				}
 			}
 		}
-		discoverNewTargetsFor(ci);
 		if (ci === activeConfig) {
 			c.clickInterval = parseInt(clickIntervalInput.value) || 1000;
 			c.maxClicks = maxClicksInput.value.trim() === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
@@ -6599,7 +6599,6 @@
 			btnHeaderStart.innerHTML = '<svg viewBox="0 0 1172.4 1172.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M927.7 149.7 V1022.7 Q926.7 1051.7 916.7 1063.2 Q906.7 1074.7 880.7 1074.7 H852.7 Q826.7 1074.7 816.2 1062.7 Q805.7 1050.7 805.7 1022.7 V149.7 Q805.7 121.7 816.2 109.7 Q826.7 97.7 851.7 97.7 H879.7 Q907.7 97.7 917.7 109.7 Q927.7 121.7 927.7 149.7 Z M366.7 149.7 V1022.7 Q365.7 1052.7 355.7 1063.7 Q345.7 1074.7 319.7 1074.7 H291.7 Q264.7 1074.7 254.7 1062.7 Q244.7 1050.7 244.7 1022.7 V149.7 Q244.7 121.7 254.2 109.7 Q263.7 97.7 291.7 97.7 H319.7 Q347.7 97.7 357.2 109.7 Q366.7 121.7 366.7 149.7 Z" transform="matrix(1 0 0 -1 0 1172.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 			btnHeaderStart.classList.add('is-stop');
 			btnPick.disabled = true;
-			multiModeCheckbox.disabled = true;
 			strategySelect.disabled = true;
 			maxClicksInput.disabled = true;
 			clickIntervalInput.disabled = true;
@@ -6637,7 +6636,7 @@
 			c.autoStartCountdownTimerID = null;
 		}
 		doClickFor(ci);
-		if (!c.isMultiMode || c.clickStrategy !== 'sequential') {
+		if (c.clickStrategy !== 'sequential') {
 			c.timerID = setInterval(() => doClickFor(ci), c.clickInterval);
 		}
 		requestWakeLock();
@@ -6679,7 +6678,6 @@
 			btnHeaderStart.innerHTML = '<svg viewBox="0 0 1202.4 1202.4" fill="none" aria-hidden="true" style="width:14px;height:14px;display:block"><path d="M443.7 167.2 L902.7 433.2 Q970.7 471.2 999.2 492.7 Q1027.7 514.2 1040.7 543.2 Q1051.7 571.2 1051.7 602.2 Q1051.7 633.2 1040.7 661.2 Q1027.7 690.2 999.2 711.2 Q970.7 732.2 902.7 770.2 L443.7 1036.2 Q380.7 1073.2 346.2 1087.7 Q311.7 1102.2 279.7 1099.2 Q249.7 1096.2 223.2 1081.2 Q196.7 1066.2 178.7 1041.2 Q159.7 1016.2 155.2 980.7 Q150.7 945.2 150.7 868.2 V337.2 Q150.7 258.2 155.2 223.2 Q159.7 188.2 177.7 161.2 Q196.7 137.2 223.2 121.7 Q249.7 106.2 279.7 104.2 Q311.7 100.2 345.7 114.7 Q379.7 129.2 443.7 167.2 Z M272.7 231.2 Q269.7 236.2 268.7 262.7 Q267.7 289.2 267.7 337.2 V868.2 Q267.7 916.2 268.7 941.7 Q269.7 967.2 272.7 972.2 Q274.7 977.2 280.2 980.2 Q285.7 983.2 291.7 983.2 Q296.7 983.2 320.7 970.7 Q344.7 958.2 384.7 936.2 L845.7 670.2 Q884.7 647.2 906.7 633.2 Q928.7 619.2 932.7 613.2 Q938.7 602.2 933.7 591.2 Q929.7 584.2 912.2 573.2 Q894.7 562.2 845.7 533.2 L384.7 267.2 Q343.7 243.2 321.2 231.7 Q298.7 220.2 292.7 220.2 Q278.7 220.2 272.7 231.2 Z" transform="matrix(1 0 0 -1 0 1202.4)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg>';
 			btnHeaderStart.classList.remove('is-stop');
 			btnPick.disabled = false;
-			multiModeCheckbox.disabled = false;
 			strategySelect.disabled = false;
 			maxClicksInput.disabled = false;
 			clickIntervalInput.disabled = false;
@@ -6689,7 +6687,7 @@
 			statusDiv.classList.remove('running');
 			stateSpan.classList.remove('auto-op-waiting');
 			if (c.targets.length > 0) stateSpan.textContent = '就绪';
-			else stateSpan.textContent = '请选取目标元素';
+			else stateSpan.textContent = '请选取或添加目标';
 			if (!c.autoStartEnabled || c.autoStartIntervalMin <= 0) autoStartCountdownLabel.textContent = '';
 		}
 		savePerConfig(ci);
@@ -6721,7 +6719,7 @@
 				return;
 			}
 			if (ci === activeConfig) {
-				stateSpan.textContent = `${remaining}ms 队列[${idx + 1}/${c.targets.length}] 等待元素中`;
+				stateSpan.textContent = `${remaining}ms 队列[${idx + 1}/${c.targets.length}] 等待目标中`;
 				stateSpan.classList.add('auto-op-waiting');
 			}
 			c.waitTimerID = setTimeout(update, 1);
@@ -6738,8 +6736,7 @@
 				return;
 			}
 			beginQueryCycle();
-			discoverNewTargetsFor(ci);
-			if (!c.doClickLastUIUpdate) c.doClickLastUIUpdate = 0;
+				if (!c.doClickLastUIUpdate) c.doClickLastUIUpdate = 0;
 			const now = Date.now();
 			c.uiThrottled = (now - c.doClickLastUIUpdate) < 100;
 			if (!c.uiThrottled) c.doClickLastUIUpdate = now;
@@ -6773,7 +6770,7 @@
 			const totalCount = c.targets.length;
 			for (let i = 0; i < totalCount; i++) c.targets[i]._isValid = status[i];
 			if (ci === activeConfig && !c.uiThrottled) updateTargetCount(status);
-			if (c.isMultiMode && c.clickStrategy === 'sequential') {
+			if (c.clickStrategy === 'sequential') {
 				let idx = c.currentQueueIndex;
 				if (idx >= totalCount) {
 					idx = 0;
@@ -6838,12 +6835,11 @@
 						}
 						c.timerID = setTimeout(() => doClickFor(ci), nextDelay);
 					}
-					cleanupAutoTargetsFor(ci, status);
-					return;
+								return;
 				} else {
 					if (missingAction === 'stop') {
 						stopClickingFor(ci);
-						updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}] 元素已消失`);
+						updateRunningDisplay(ci, c.clickedCount, `队列[${idx + 1}] 目标已消失`);
 					} else {
 						if (!c.isWaiting) {
 							c.isWaiting = true;
@@ -6859,8 +6855,7 @@
 					}
 					c.timerID = setTimeout(() => doClickFor(ci), nextDelay);
 				}
-				cleanupAutoTargetsFor(ci, status);
-				return;
+						return;
 			}
 			let shouldStop = false,
 				anyClicked = 0;
@@ -6906,47 +6901,22 @@
 			}
 			if (shouldStop) {
 				stopClickingFor(ci);
-				updateRunningDisplay(ci, c.clickedCount, '元素已消失');
+				updateRunningDisplay(ci, c.clickedCount, '目标已消失');
 				return;
 			}
 			if (anyClicked) {
-				updateRunningDisplay(ci, c.clickedCount, c.isMultiMode && c.clickStrategy === 'simultaneous' ? '同时操作运行中' : '运行中');
+				updateRunningDisplay(ci, c.clickedCount, c.clickStrategy === 'simultaneous' ? '同时操作运行中' : '运行中');
 				if (c.clickedCount >= c.maxClicks) {
 					stopClickingFor(ci);
 					if (ci === activeConfig && !isPowerSave) stateSpan.textContent = '已完成';
 				}
 			}
-			cleanupAutoTargetsFor(ci, status);
-		} catch (e) {
+			} catch (e) {
 			console.error('[AUTO_OP] doClickFor 异常:', e);
 		}
 		isProgrammaticClick = false;
 	}
 
-	function cleanupAutoTargetsFor(ci, status) {
-		const c = configs[ci];
-		let changed = false;
-		for (let i = c.targets.length - 1; i >= 0; i--) {
-			if (!c.targets[i].isAuto) continue;
-			if (status[i] !== undefined && status[i]) c.targets[i].missCount = 0;
-			else if (status[i] === false) {
-				c.targets[i].missCount = (c.targets[i].missCount || 0) + 1;
-				if (c.targets[i].missCount >= 5) {
-					c.targets[i].element && c.targets[i].element.classList && c.targets[i].element.classList.remove('auto-op-selected-highlight');
-					c.discoveredElements.delete(c.targets[i].element);
-					c.targets.splice(i, 1);
-					changed = true;
-				}
-			}
-		}
-		if (c.targets.length > 0 && c.currentQueueIndex >= c.targets.length) c.currentQueueIndex = 0;
-		if (ci === activeConfig && (!c.uiThrottled || changed)) {
-			refreshParentHighlights();
-			updateTargetUI();
-			updateTargetCount();
-			if (changed) c.doClickLastUIUpdate = Date.now();
-		}
-	}
 	panel.addEventListener('click', (e) => {
 		if (e.target === configBtnEl || configBtnEl.contains(e.target)) return;
 		closeConfigMenu();
