@@ -12,7 +12,7 @@
 // ==/UserScript==
 
 (function() {
-	'use strict';
+	
 	if (!location.protocol.startsWith('http')) return;
 	if (!document.body) {
 		console.error('[AUTO_OP] body 跳过:');
@@ -38,7 +38,6 @@
 	const SHARED_KEY = 'AUTO_OP_SHARED_' + window.location.hostname;
 	const REFRESH_STATE_KEY = 'AUTO_OP_REFRESH_STATE_' + window.location.hostname;
 	const NETWORK_MONITOR_KEY = 'AUTO_OP_NETMON_' + window.location.hostname;
-	const NETWORK_REQUESTS_KEY = 'AUTO_OP_NETREQ_' + window.location.hostname;
 	const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
 	let isAutoRefresh = false,
 		refreshIntervalSec = 60,
@@ -3370,23 +3369,6 @@
 		}
 	}
 
-	function migrateOldData() {
-		const oldKey = 'AUTO_OP_CONFIG_' + window.location.hostname;
-		try {
-			const saved = localStorage.getItem(oldKey);
-			if (!saved) return;
-			localStorage.setItem(PER_CONFIG_KEY + '0', saved);
-			const cfg = JSON.parse(saved),
-				shared = {};
-			if (cfg.isAutoRefresh !== undefined) shared.isAutoRefresh = cfg.isAutoRefresh;
-			if (cfg.refreshIntervalSec !== undefined) shared.refreshIntervalSec = cfg.refreshIntervalSec;
-			if (cfg.refreshLogs) shared.refreshLogs = cfg.refreshLogs;
-			if (cfg.currentPage !== undefined) shared.currentPage = cfg.currentPage;
-			if (Object.keys(shared).length > 0) localStorage.setItem(SHARED_KEY, JSON.stringify(shared));
-			localStorage.removeItem(oldKey);
-		} catch (e) {}
-	}
-
 	function saveShared() {
 		try {
 			localStorage.setItem(SHARED_KEY, JSON.stringify({
@@ -3452,7 +3434,6 @@
 	}
 
 	function loadData() {
-		migrateOldData();
 		loadShared();
 		for (let i = 0; i < CONFIG_COUNT; i++) loadPerConfig(i);
 		const c = cv();
@@ -3484,24 +3465,14 @@
 		return sel;
 	}
 
-	function buildSelectors(el) {
+	function buildAncestorSelector(el) {
 		const base = buildBaseSelector(el);
-		if (el.id) {
-			return {
-				strict: base,
-				loose: base
-			};
-		}
-		let strict = base;
+		if (el.id) return base;
 		const idx = getNthOfType(el);
-		if (idx > 1) strict += ':nth-of-type(' + idx + ')';
-		return {
-			strict,
-			loose: base
-		};
+		if (idx > 1) return base + ':nth-of-type(' + idx + ')';
+		return base;
 	}
 
-	// 计算元素在其父级同标签兄弟中的位置（1-based），即 CSS :nth-of-type 的值
 	function getNthOfType(el) {
 		const parent = el.parentElement;
 		if (!parent) return 1;
@@ -3626,7 +3597,6 @@
 					if (!found) return false;
 				}
 			} else if (t.parentSelector) {
-				// 兼容旧配置
 				let parent;
 				try {
 					parent = document.querySelector(t.parentSelector);
@@ -3696,12 +3666,9 @@
 		return result;
 	}
 
-	// 把 parentChain（最近→最远）反转拼成一根 CSS 选择器（最远 ancestor ... target）
-	// parentChain 已有 :nth-of-type/:nth-child，整根选择器全局唯一
 	function buildCompoundSelector(t) {
 		const fp = t.fingerprint;
 		if (!fp || !fp.tagName) return '';
-		// 目标自身选择器
 		let targetSel;
 		if (fp.id) {
 			targetSel = '#' + CSS.escape(fp.id);
@@ -3713,7 +3680,6 @@
 		}
 		const chain = t.parentChain;
 		if (!chain || chain.length === 0) return targetSel;
-		// 反转：最远祖先在前
 		const parts = [];
 		for (let i = chain.length - 1; i >= 0; i--) {
 			parts.push(chain[i].selector);
@@ -3737,15 +3703,12 @@
 		const compoundSel = buildCompoundSelector(targetObj);
 		const cssSel = fp.id ? '#' + CSS.escape(fp.id) : fp.tagName + (fp.className ? '.' + fp.className.split(/\s+/).filter(Boolean).map(c => CSS.escape(c)).join('.') : '');
 		try {
-			// 优先：parentChain 拼成的全局唯一选择器，一步定位
 			if (compoundSel && compoundSel !== cssSel) {
 				const found = verifyList(cachedQuery(document, compoundSel));
 				if (found) return found;
 			}
-			// 其次：目标自身选择器
 			const found = verifyList(cachedQuery(document, cssSel));
 			if (found) return found;
-			// 兜底：标签名
 			if (cssSel !== fp.tagName) {
 				const found2 = verifyList(cachedQuery(document, fp.tagName));
 				if (found2) return found2;
@@ -3771,7 +3734,6 @@
 		return result;
 	}
 
-	// 从元素重建所有父级相关信息，用于 tryFindTarget 重新获取后更新位置索引
 	function rebuildParentInfo(el, t) {
 		if (!el || !t) return;
 		let parentSelector = '';
@@ -3782,7 +3744,7 @@
 			const base = buildBaseSelector(ancestor);
 			let selector;
 			if (base !== ancestor.tagName.toLowerCase()) {
-				selector = buildSelectors(ancestor).strict;
+				selector = buildAncestorSelector(ancestor);
 				if (!parentSelector) parentSelector = selector;
 				if (!blueParent) blueParent = ancestor;
 			} else {
@@ -3951,7 +3913,6 @@
 		_exitTransEndHandler = null;
 	function toggleConfigLoadMode() {
 		if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
-		// Clean up any stale transition listeners
 		if (_collapseEndHandler) {
 			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
 			const bg = panel.querySelector('.auto-op-btn-group');
@@ -3970,16 +3931,13 @@
 		if (isConfigLoadMode) {
 			page0Btn.innerHTML = CONFIG_LOAD_SVG;
 			page0Btn.title = '配置加载';
-			// Reset btnGroup/statusDiv to visible state first (in case of rapid toggle)
 			if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; }
 			statusDiv.classList.remove('config-collapsed');
 			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
 			void statusDiv.offsetHeight;
-			// Now collapse them with transition
 			if (btnGroup) { btnGroup.dataset._prevDisplay = btnGroup.style.display; btnGroup.classList.add('config-collapsed'); }
 			statusDiv.dataset._prevDisplay = statusDiv.style.display;
 			statusDiv.classList.add('config-collapsed');
-			// After collapse animation, hide them
 			_collapseEndHandler = (e) => {
 				if (e.target !== statusDiv && e.target !== btnGroup) return;
 				if (btnGroup) { btnGroup.removeEventListener('transitionend', _collapseEndHandler); btnGroup.style.display = 'none'; }
@@ -3995,12 +3953,10 @@
 				statusDiv.style.display = 'none';
 				_collapseEndHandler = null;
 			}, 350);
-			// Hide normal page 0 content instantly
 			normalChildren.forEach(child => {
 				if (child.dataset._prevDisplay === undefined) child.dataset._prevDisplay = child.style.display;
 				child.style.display = 'none';
 			});
-			// Show configLoadWrap with slide-up animation
 			configLoadWrap.style.display = 'flex';
 			configLoadWrap.style.opacity = '0';
 			configLoadWrap.style.transform = 'translateY(8px)';
@@ -4017,7 +3973,6 @@
 		} else {
 			page0Btn.innerHTML = OPERATION_SVG;
 			page0Btn.title = '操作';
-			// Slide configLoadWrap out
 			configLoadWrap.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
 			configLoadWrap.style.opacity = '0';
 			configLoadWrap.style.transform = 'translateY(8px)';
@@ -4032,12 +3987,10 @@
 				configLoadWrap.style.opacity = '';
 				configLoadWrap.style.transform = '';
 				configLoadWrap.style.transition = '';
-				// Restore normal content
 				normalChildren.forEach(child => {
 					child.style.display = child.dataset._prevDisplay || '';
 					delete child.dataset._prevDisplay;
 				});
-				// Expand btnGroup + statusDiv: restore display, reset collapsed state, reflow, then expand
 				if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
 				statusDiv.classList.remove('config-collapsed');
 				statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
@@ -4065,7 +4018,6 @@
 	function exitConfigLoadMode() {
 		if (!isConfigLoadMode) return;
 		isConfigLoadMode = false;
-		// Clean up stale listeners
 		if (_collapseEndHandler) {
 			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
 			const bg = panel.querySelector('.auto-op-btn-group');
@@ -4083,7 +4035,6 @@
 		const normalChildren = Array.from(page0.children).filter(child => child !== configLoadWrap);
 		page0Btn.innerHTML = OPERATION_SVG;
 		page0Btn.title = '操作';
-		// Slide configLoadWrap out
 		configLoadWrap.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
 		configLoadWrap.style.opacity = '0';
 		configLoadWrap.style.transform = 'translateY(8px)';
@@ -4102,7 +4053,6 @@
 				child.style.display = child.dataset._prevDisplay || '';
 				delete child.dataset._prevDisplay;
 			});
-			// Expand btnGroup + statusDiv
 			if (btnGroup) { btnGroup.classList.remove('config-collapsed'); btnGroup.style.display = btnGroup.dataset._prevDisplay || ''; delete btnGroup.dataset._prevDisplay; }
 			statusDiv.classList.remove('config-collapsed');
 			statusDiv.style.display = statusDiv.dataset._prevDisplay || '';
@@ -4942,7 +4892,7 @@
 		if (attrKeys.length > 0) {
 			html += '<div class="auto-op-info-attrs-list">';
 			attrKeys.forEach(k => {
-				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
 			});
 			html += '</div>';
 		} else {
@@ -4956,7 +4906,7 @@
 		if (dataAttrKeys.length > 0) {
 			html += '<div class="auto-op-info-attrs-list">';
 			dataAttrKeys.forEach(k => {
-				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="dataAttrs"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="dataAttrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
 			});
 			html += '</div>';
 		} else {
@@ -5256,8 +5206,11 @@
 			}
 		}
 
-		function setCount(criterion, count) {
-			const els = infoContentEl.querySelectorAll(`.auto-op-test-count[data-test-criterion="${criterion}"]`);
+		function setCount(criterion, count, key) {
+			const sel = key
+				? `.auto-op-test-count[data-test-criterion="${criterion}"][data-attr-key="${key}"]`
+				: `.auto-op-test-count[data-test-criterion="${criterion}"]`;
+			const els = infoContentEl.querySelectorAll(sel);
 			els.forEach(el => {
 				el.textContent = count > 0 ? count : '';
 				el.className = `auto-op-test-count${count === 0 ? ' zero' : ''}`;
@@ -5332,14 +5285,26 @@
 			try {
 				const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e));
 				setResult('attrs', els.length > 0, els.length);
-				setCount('attrs', els.length);
 				els.forEach(el => {
 					el.classList.add('auto-op-test-highlight');
 					_testHighlightedElements.push(el);
 				});
+				for (const [k, v] of Object.entries(fp.attrs)) {
+					if (v) {
+						try {
+							const singleSel = `${fp.tagName || '*'}[${k}="${v.replace(/"/g, '\\"')}"]`;
+							const singleEls = Array.from(document.querySelectorAll(singleSel)).filter(e => !panel.contains(e));
+							setCount('attrs', singleEls.length, k);
+						} catch (e) {
+							setCount('attrs', 0, k);
+						}
+					}
+				}
 			} catch (e) {
 				setResult('attrs', false, 0);
-				setCount('attrs', 0);
+				for (const [k, v] of Object.entries(fp.attrs)) {
+					if (v) setCount('attrs', 0, k);
+				}
 			}
 		}
 		if (t.matchDataAttrs !== false && Object.keys(fp.dataAttrs || {}).some(k => fp.dataAttrs[k])) {
@@ -5350,14 +5315,26 @@
 			try {
 				const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e));
 				setResult('dataAttrs', els.length > 0, els.length);
-				setCount('dataAttrs', els.length);
 				els.forEach(el => {
 					el.classList.add('auto-op-test-highlight');
 					_testHighlightedElements.push(el);
 				});
+				for (const [k, v] of Object.entries(fp.dataAttrs)) {
+					if (v) {
+						try {
+							const singleSel = `${fp.tagName || '*'}[${k}="${v.replace(/"/g, '\\"')}"]`;
+							const singleEls = Array.from(document.querySelectorAll(singleSel)).filter(e => !panel.contains(e));
+							setCount('dataAttrs', singleEls.length, k);
+						} catch (e) {
+							setCount('dataAttrs', 0, k);
+						}
+					}
+				}
 			} catch (e) {
 				setResult('dataAttrs', false, 0);
-				setCount('dataAttrs', 0);
+				for (const [k, v] of Object.entries(fp.dataAttrs)) {
+					if (v) setCount('dataAttrs', 0, k);
+				}
 			}
 		}
 		if (t.matchOnclick !== false && fp.onclickParam) {
@@ -5836,12 +5813,10 @@
 			const base = buildBaseSelector(ancestor);
 			let selector;
 			if (base !== ancestor.tagName.toLowerCase()) {
-				// 有 class/id：使用 strict 选择器，含 :nth-of-type
-				selector = buildSelectors(ancestor).strict;
+				selector = buildAncestorSelector(ancestor);
 				if (!parentSelector) parentSelector = selector;
 				if (!blueParent) blueParent = ancestor;
 			} else {
-				// 裸标签祖先：使用 :nth-of-type() 确保位置唯一（只算同标签，不受 script/style 插入影响）
 				const idx = getNthOfType(ancestor);
 				selector = ancestor.tagName.toLowerCase() + ':nth-of-type(' + idx + ')';
 			}
