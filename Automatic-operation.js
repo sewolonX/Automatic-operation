@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.1
+// @version      5.2.2
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -12,7 +12,6 @@
 // ==/UserScript==
 
 (function() {
-	
 	if (!location.protocol.startsWith('http')) return;
 	if (!document.body) {
 		console.error('[AUTO_OP] body 跳过:');
@@ -2795,7 +2794,7 @@
       </div>
       <div class="auto-op-status" id="auto-op-status">
         <span>已操作：<span class="auto-op-count" id="auto-op-count">0</span>次<span class="auto-op-elapsed" id="auto-op-elapsed">00:00:00</span></span>
-        <span id="auto-op-state">请选取目标元素</span>
+        <span id="auto-op-state">请选取或添加目标</span>
       </div>
     </div>
     <div id="auto-op-modal" style="display:none;">
@@ -3825,7 +3824,6 @@
 		}
 	}
 
-
 	function updatePageHeight() {
 		if (isPowerSave || collapseAnimPhase === 'collapsed') return;
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
@@ -4087,7 +4085,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.1',
+				version: '5.2.2',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -5260,105 +5258,57 @@
 			_testHighlightedElements.push(el);
 		});
 
+		const candidateElements = cssElements.length > 0 ? cssElements
+			: Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
+
 		if (t.matchTag !== false && fp.tagName) {
-			const els = Array.from(document.querySelectorAll(fp.tagName)).filter(e => !panel.contains(e));
+			const els = candidateElements.filter(e => e.tagName.toLowerCase() === fp.tagName);
 			setResult('tag', els.length > 0, els.length);
 			setCount('tag', els.length);
-			els.forEach(el => {
-				el.classList.add('auto-op-test-highlight');
-				_testHighlightedElements.push(el);
-			});
 		}
 		if (t.matchId !== false && fp.id) {
-			const el = document.getElementById(fp.id);
-			const found = el && !panel.contains(el);
-			setResult('id', found, found ? 1 : 0);
-			setCount('id', found ? 1 : 0);
-			if (found) {
-				el.classList.add('auto-op-test-highlight');
-				_testHighlightedElements.push(el);
-			}
+			const els = candidateElements.filter(e => e.id === fp.id);
+			setResult('id', els.length > 0, els.length);
+			setCount('id', els.length);
 		}
 		if (t.matchClass !== false && fp.className) {
 			const fpClasses = fp.className.split(/\s+/).filter(Boolean);
 			if (fpClasses.length > 0) {
-				const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e) && typeof e.className === 'string' && fpClasses.every(c => e.className.split(/\s+/).includes(c)));
+				const els = candidateElements.filter(e => typeof e.className === 'string' && fpClasses.every(c => e.className.split(/\s+/).includes(c)));
 				setResult('class', els.length > 0, els.length);
 				setCount('class', els.length);
-				els.forEach(el => {
-					el.classList.add('auto-op-test-highlight');
-					_testHighlightedElements.push(el);
-				});
 			}
 		}
 		if (t.matchAttrs !== false && Object.keys(fp.attrs || {}).some(k => fp.attrs[k])) {
-			let sel = fp.tagName || '*';
-			for (const [k, v] of Object.entries(fp.attrs)) {
-				if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`;
-			}
-			try {
-				const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e));
+			const activeAttrs = Object.entries(fp.attrs).filter(([k, v]) => v);
+			if (activeAttrs.length > 0) {
+				const els = candidateElements.filter(e => activeAttrs.every(([k, v]) => e.getAttribute(k) === v));
 				setResult('attrs', els.length > 0, els.length);
-				els.forEach(el => {
-					el.classList.add('auto-op-test-highlight');
-					_testHighlightedElements.push(el);
-				});
 				for (const [k, v] of Object.entries(fp.attrs)) {
 					if (v) {
-						try {
-							const singleSel = `${fp.tagName || '*'}[${k}="${v.replace(/"/g, '\\"')}"]`;
-							const singleEls = Array.from(document.querySelectorAll(singleSel)).filter(e => !panel.contains(e));
-							setCount('attrs', singleEls.length, k);
-						} catch (e) {
-							setCount('attrs', 0, k);
-						}
+						const singleEls = candidateElements.filter(e => e.getAttribute(k) === v);
+						setCount('attrs', singleEls.length, k);
 					}
-				}
-			} catch (e) {
-				setResult('attrs', false, 0);
-				for (const [k, v] of Object.entries(fp.attrs)) {
-					if (v) setCount('attrs', 0, k);
 				}
 			}
 		}
 		if (t.matchDataAttrs !== false && Object.keys(fp.dataAttrs || {}).some(k => fp.dataAttrs[k])) {
-			let sel = fp.tagName || '*';
-			for (const [k, v] of Object.entries(fp.dataAttrs)) {
-				if (v) sel += `[${k}="${v.replace(/"/g, '\\"')}"]`;
-			}
-			try {
-				const els = Array.from(document.querySelectorAll(sel)).filter(e => !panel.contains(e));
+			const activeDataAttrs = Object.entries(fp.dataAttrs).filter(([k, v]) => v);
+			if (activeDataAttrs.length > 0) {
+				const els = candidateElements.filter(e => activeDataAttrs.every(([k, v]) => e.getAttribute(k) === v));
 				setResult('dataAttrs', els.length > 0, els.length);
-				els.forEach(el => {
-					el.classList.add('auto-op-test-highlight');
-					_testHighlightedElements.push(el);
-				});
 				for (const [k, v] of Object.entries(fp.dataAttrs)) {
 					if (v) {
-						try {
-							const singleSel = `${fp.tagName || '*'}[${k}="${v.replace(/"/g, '\\"')}"]`;
-							const singleEls = Array.from(document.querySelectorAll(singleSel)).filter(e => !panel.contains(e));
-							setCount('dataAttrs', singleEls.length, k);
-						} catch (e) {
-							setCount('dataAttrs', 0, k);
-						}
+						const singleEls = candidateElements.filter(e => e.getAttribute(k) === v);
+						setCount('dataAttrs', singleEls.length, k);
 					}
-				}
-			} catch (e) {
-				setResult('dataAttrs', false, 0);
-				for (const [k, v] of Object.entries(fp.dataAttrs)) {
-					if (v) setCount('dataAttrs', 0, k);
 				}
 			}
 		}
 		if (t.matchOnclick !== false && fp.onclickParam) {
-			const els = Array.from(document.querySelectorAll('[onclick]')).filter(e => !panel.contains(e) && (e.getAttribute('onclick') || '').includes(fp.onclickParam));
+			const els = candidateElements.filter(e => (e.getAttribute('onclick') || '').includes(fp.onclickParam));
 			setResult('onclick', els.length > 0, els.length);
 			setCount('onclick', els.length);
-			els.forEach(el => {
-				el.classList.add('auto-op-test-highlight');
-				_testHighlightedElements.push(el);
-			});
 		}
 		if (t.matchParent !== false && t.parentSelector) {
 			try {
@@ -5371,7 +5321,7 @@
 			}
 		}
 		if (t.matchText !== false && fp.text) {
-			const els = Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
+			const els = candidateElements;
 			let matched;
 			const textMode = t.matchTextMode || 'exact';
 			if (textMode === 'fuzzy') {
@@ -5387,10 +5337,6 @@
 			}
 			setResult('text', matched.length > 0, matched.length);
 			setCount('text', matched.length);
-			matched.forEach(el => {
-				el.classList.add('auto-op-test-highlight');
-				_testHighlightedElements.push(el);
-			});
 		}
 		refreshInfoHeight();
 	}
