@@ -2615,6 +2615,7 @@
 	}
 
 	function applyTheme() {
+		if (isPowerSave) return;
 		const theme = resolveTheme();
 		isDarkMode = (theme === 'dark');
 		document.documentElement.setAttribute('data-theme', theme);
@@ -3062,6 +3063,7 @@
 		updatePowerSaveOverlay();
 		if (powerSaveTimerID) clearInterval(powerSaveTimerID);
 		powerSaveTimerID = setInterval(updatePowerSaveOverlay, 10000);
+		stopElapsedTimer();
 		try {
 			const p = document.documentElement.requestFullscreen();
 			if (p && p.catch) {
@@ -3076,6 +3078,7 @@
 
 	function disablePowerSave() {
 		isPowerSave = false;
+		applyTheme();
 		powerSaveOverlay.classList.remove('active');
 		if (powerSaveTimerID) {
 			clearInterval(powerSaveTimerID);
@@ -3230,11 +3233,13 @@
 		if (c.isRunning && c.operationStartTimestamp) {
 			elapsedSpan.textContent = formatElapsedTime(Date.now() - c.operationStartTimestamp);
 			if (elapsedTimerID_global) clearInterval(elapsedTimerID_global);
+			if (!isPowerSave) {
 			elapsedTimerID_global = setInterval(() => {
 				const cc = cv();
 				if (!cc.isRunning || !cc.operationStartTimestamp) return;
 				elapsedSpan.textContent = formatElapsedTime(Date.now() - cc.operationStartTimestamp);
 			}, 1000);
+			}
 		} else {
 			elapsedSpan.textContent = '00:00:00';
 			if (elapsedTimerID_global) {
@@ -3822,6 +3827,7 @@
 
 
 	function updatePageHeight() {
+		if (isPowerSave || collapseAnimPhase === 'collapsed') return;
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
 			el = pages[currentPage];
 		if (!el) return;
@@ -4410,6 +4416,7 @@
 			void panel.offsetWidth;
 			panel.style.width = collapsedWidth + 'px';
 			collapseAnimPhase = 'collapsed';
+			stopElapsedTimer();
 			schedulePanelTransparent(1000);
 		}, 200);
 	}
@@ -4428,6 +4435,13 @@
 			setTimeout(() => {
 				body.style.overflow = 'auto';
 				collapseAnimPhase = 'expanded';
+				updateTargetUI();
+				updateTargetCount();
+				refreshParentHighlights();
+				const _c = cv();
+				if (_c.isRunning && _c.operationStartTimestamp) {
+					startElapsedTimer(_c.operationStartTimestamp);
+				}
 			}, 150);
 		}, 120);
 		restorePanelOpacity();
@@ -5471,7 +5485,7 @@
 	});
 
 	function updateTargetUI() {
-		if (isPowerSave) return;
+		if (isPowerSave || collapseAnimPhase === 'collapsed') return;
 		const c = cv();
 		if (c.targets.length === 0) {
 			targetListContainer.innerHTML = '<div class="auto-op-target-info">未选取，请点击下方按钮选取</div>';
@@ -5500,7 +5514,7 @@
 		updateCmdTargetBtn();
 		}
 	function updateTargetCount(status) {
-		if (isPowerSave) return;
+		if (isPowerSave || collapseAnimPhase === 'collapsed') return;
 		const c = cv();
 		if (!status) {
 			let existCount = 0,
@@ -5517,7 +5531,7 @@
 	}
 
 	function updateTargetItemStyle(index, state) {
-		if (isPowerSave) return;
+		if (isPowerSave || collapseAnimPhase === 'collapsed') return;
 		const c = cv();
 		if (c.uiThrottled) return;
 		const item = targetListContainer.querySelector(`.auto-op-target-item[data-index="${index}"]`);
@@ -5533,7 +5547,7 @@
 	}
 
 	function updateRunningDisplay(ci, countText, stateText) {
-		if (isPowerSave || ci !== activeConfig) return;
+		if (isPowerSave || ci !== activeConfig || collapseAnimPhase === 'collapsed') return;
 		countSpan.textContent = countText;
 		stateSpan.textContent = stateText;
 		stateSpan.classList.remove('auto-op-waiting');
@@ -6816,7 +6830,7 @@
 					}
 					const t = c.targets[idx],
 						el = t.element;
-					if (t.scrollIntoView) {
+					if (t.scrollIntoView && !isPowerSave) {
 						el.scrollIntoView({
 							behavior: 'smooth',
 							block: 'center'
@@ -6893,7 +6907,7 @@
 					anyClicked++;
 					c.clickedCount++;
 					const el = t.element;
-					if (t.scrollIntoView) {
+					if (t.scrollIntoView && !isPowerSave) {
 						el.scrollIntoView({
 							behavior: 'smooth',
 							block: 'center'
