@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.2
+// @version      5.2.3
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -42,6 +42,7 @@
 		refreshIntervalSec = 60,
 		refreshTimerID = null,
 		refreshStartTimestamp = 0,
+		_refreshIntervalAtStart = 60,
 		refreshProgressTimerID = null,
 		refreshLogs = [];
 	let currentPage = 0;
@@ -54,7 +55,8 @@
 	let isPicking = false,
 		isDarkMode = false;
 	let originalFocus = HTMLElement.prototype.focus,
-		focusinHandler = null;
+		focusinHandler = null,
+		_suppressFocusCount = 0;
 	let elapsedTimerID_global = null;
 	let isProgrammaticClick = false;
 	let pickPassThrough = false;
@@ -152,19 +154,23 @@
 
 	function suppressFocus() {
 		if (!suppressFocusCheckbox.checked) return;
-		HTMLElement.prototype.focus = function() {
-			if (!panel.contains(this)) return;
-			originalFocus.apply(this, arguments);
-		};
-		focusinHandler = function(e) {
-			if (!panel.contains(e.target)) e.target.blur();
-		};
-		document.addEventListener('focusin', focusinHandler, true);
+		if (_suppressFocusCount === 0) {
+			HTMLElement.prototype.focus = function() {
+				if (!panel.contains(this)) return;
+				originalFocus.apply(this, arguments);
+			};
+			focusinHandler = function(e) {
+				if (!panel.contains(e.target)) e.target.blur();
+			};
+			document.addEventListener('focusin', focusinHandler, true);
+		}
+		_suppressFocusCount++;
 	}
 
 	function restoreFocus() {
 		HTMLElement.prototype.focus = originalFocus;
-		if (focusinHandler) {
+		if (_suppressFocusCount > 0) _suppressFocusCount--;
+		if (_suppressFocusCount === 0 && focusinHandler) {
 			document.removeEventListener('focusin', focusinHandler, true);
 			focusinHandler = null;
 		}
@@ -548,7 +554,8 @@
 			overflow: hidden auto;
 			max-height: 65vh;
 			transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, opacity 0.3s ease;
-			opacity: 1
+			opacity: 1;
+			contain: layout style
 		}
 
 		.auto-op-body::-webkit-scrollbar {
@@ -729,7 +736,8 @@
 		}
 
 		.auto-op-target-list-container {
-			min-height: 0
+			min-height: 0;
+			contain: layout style
 		}
 
 		.auto-op-target-info {
@@ -752,7 +760,8 @@
 			flex-direction: column;
 			gap: 8px;
 			scrollbar-width: none;
-			-ms-overflow-style: none
+			-ms-overflow-style: none;
+			contain: layout style
 		}
 
 		.auto-op-target-list::-webkit-scrollbar {
@@ -776,7 +785,8 @@
 			box-sizing: border-box;
 			transition: border-color 0s, color 0s;
 			scrollbar-width: none;
-			-ms-overflow-style: none
+			-ms-overflow-style: none;
+			contain: layout style
 		}
 
 		.auto-op-target-item::-webkit-scrollbar {
@@ -1030,7 +1040,8 @@
 			max-height: 80px;
 			opacity: 1;
 			overflow: hidden;
-			transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease
+			transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+			contain: layout style
 		}
 
 		.auto-op-btn {
@@ -1372,15 +1383,17 @@
 			border: 1px solid var(--panel-input-border);
 			border-radius: 4px;
 			overflow: hidden;
-			margin-bottom: 12px
+			margin-bottom: 12px;
+			contain: layout style
 		}
 
 		.auto-op-progress-fill {
 			height: 100%;
 			width: 0%;
 			background: var(--panel-highlight-border);
-			border-radius: 3px;
-			transition: width 0.3s ease, background-color 0.5s ease
+			border-radius: 4px;
+			transition: width 0.3s ease, background-color 0.5s ease;
+			will-change: width
 		}
 
 		.auto-op-log-header {
@@ -1501,7 +1514,8 @@
 			position: relative;
 			width: 100%;
 			overflow: hidden;
-			transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1)
+			transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+			contain: layout style
 		}
 
 		.auto-op-page {
@@ -1987,13 +2001,16 @@
 
 		.ps-element {
 			position: absolute;
+			left: 0;
+			top: 0;
 			color: #333;
 			font-family: var(--auto-op-font);
 			font-variant-numeric: tabular-nums;
 			font-weight: 700;
-			transition: left 5s ease, top 5s ease;
+			transition: transform 5s ease;
 			user-select: none;
-			pointer-events: none
+			pointer-events: none;
+			will-change: transform
 		}
 
 		.ps-element.ps-time {
@@ -2010,10 +2027,13 @@
 
 		.ps-switch-area {
 			position: absolute;
-			transition: left 1s ease, top 1s ease;
+			left: 0;
+			top: 0;
+			transition: transform 1s ease;
 			pointer-events: auto;
 			width: 36px;
-			height: 20px
+			height: 20px;
+			will-change: transform
 		}
 
 		.ps-switch-area .auto-op-switch {
@@ -2435,6 +2455,18 @@
 			text-overflow: ellipsis
 		}
 
+		.auto-op-parent-chain-key {
+			font-size: 11px;
+			font-weight: 600;
+			font-family: var(--auto-op-font);
+			color: var(--panel-label-text);
+			flex-shrink: 0;
+			max-width: none !important;
+			word-break: break-all;
+			overflow: hidden;
+			text-overflow: ellipsis
+		}
+
 		.auto-op-info-attr-row input[type="text"] {
 			flex: 0 1 65%;
 			min-width: 0;
@@ -2664,6 +2696,7 @@
 	}
 
 	function stopThemeWatchers() {
+		if (_themeTimer) { clearTimeout(_themeTimer); _themeTimer = null; }
 		if (_sysThemeListener) {
 			_sysThemeListener.mq.removeEventListener('change', _sysThemeListener.fn);
 			_sysThemeListener = null;
@@ -2996,7 +3029,7 @@
 	configMenuEl.addEventListener('click', e => {
 		const item = e.target.closest('.auto-op-config-item');
 		if (!item) return;
-		const ci = parseInt(item.dataset.ci);
+		const ci = parseInt(item.dataset.ci, 10);
 		if (!isNaN(ci) && ci !== activeConfig) switchConfig(ci);
 		closeConfigMenu();
 	});
@@ -3027,8 +3060,7 @@
 		}
 		items.forEach((item, i) => {
 			if (item) {
-				item.style.left = Math.round(positions[i].x) + 'px';
-				item.style.top = Math.round(positions[i].y) + 'px';
+				item.style.transform = 'translate(' + Math.round(positions[i].x) + 'px, ' + Math.round(positions[i].y) + 'px)';
 			}
 		});
 	}
@@ -3152,8 +3184,8 @@
 		hideSettingsPanel(false);
 		if (isConfigLoadMode) exitConfigLoadMode();
 		const old = cv();
-		old.clickInterval = parseInt(clickIntervalInput.value) || 1000;
-		old.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
+		old.clickInterval = parseFloat(clickIntervalInput.value) || 1000;
+		old.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value, 10) || Infinity);
 		old.maxDurationMin = parseFloat(maxDurationInput.value) || 0;
 		old.clickStrategy = strategySelect.value;
 		old.missingAction = missingActionSelect.value;
@@ -3269,7 +3301,6 @@
 					fingerprint: t.fingerprint,
 					desc: t.desc,
 					isInput: t.isInput,
-					matchMode: t.matchMode,
 					parentSelector: t.parentSelector,
 					parentChain: t.parentChain || [],
 					enabled: t.enabled !== false,
@@ -3282,8 +3313,6 @@
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
-					isCommand: !!t.isCommand,
-					customCommand: t.customCommand || '',
 					customFill: t.customFill || '',
 					customInterval: t.customInterval != null ? t.customInterval : '',
 					scrollIntoView: !!t.scrollIntoView,
@@ -3306,7 +3335,7 @@
 				c = configs[ci];
 			c.clickStrategy = cfg.clickStrategy || 'simultaneous';
 			c.clickInterval = cfg.clickInterval || 1000;
-			c.maxClicks = (cfg.maxClicks === '' || cfg.maxClicks === undefined) ? Infinity : (parseInt(cfg.maxClicks) || Infinity);
+			c.maxClicks = (cfg.maxClicks === '' || cfg.maxClicks === undefined) ? Infinity : (parseInt(cfg.maxClicks, 10) || Infinity);
 			c.missingAction = cfg.missingAction || 'wait';
 			if (cfg.autoStartIntervalMin !== undefined && cfg.autoStartIntervalMin !== '' && parseFloat(cfg.autoStartIntervalMin) > 0) {
 				c.autoStartEnabled = true;
@@ -3328,7 +3357,6 @@
 					customCommand: t.customCommand || '',
 					parentSelector: t.parentSelector || '',
 					parentChain: t.parentChain || [],
-					missCount: 0,
 					nearestParent: null,
 					blueParent: null,
 					_blueParent: null,
@@ -3411,7 +3439,7 @@
 				updateLogUI();
 			}
 			if (typeof cfg.currentPage === 'number') currentPage = cfg.currentPage;
-			if (typeof cfg.activeConfig === 'number' && cfg.activeConfig >= 0 && cfg.activeConfig < CONFIG_COUNT) activeConfig = cfg.activeConfig;
+			if (Number.isInteger(cfg.activeConfig) && cfg.activeConfig >= 0 && cfg.activeConfig < CONFIG_COUNT) activeConfig = cfg.activeConfig;
 			if (cfg.wakeLock !== undefined) wakeLockCheckbox.checked = cfg.wakeLock;
 			if (cfg.suppressFocus !== undefined) suppressFocusCheckbox.checked = cfg.suppressFocus;
 			if (cfg.pickPassThrough !== undefined) {
@@ -3473,8 +3501,7 @@
 		const base = buildBaseSelector(el);
 		if (el.id) return base;
 		const idx = getNthOfType(el);
-		if (idx > 1) return base + ':nth-of-type(' + idx + ')';
-		return base;
+		return base + ':nth-of-type(' + idx + ')';
 	}
 
 	function getNthOfType(el) {
@@ -3501,7 +3528,7 @@
 		if (!text) {
 			for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) {
 				const val = el.getAttribute(attr);
-				if (val && val.trim() && val.trim().length < 50) {
+				if (val && val.trim()) {
 					text = val.trim();
 					break;
 				}
@@ -3552,7 +3579,7 @@
 		});
 		let onclickParam = '';
 		if (attrs.onclick) {
-			const match = attrs.onclick.match(/useItem\((\d+)\)/);
+			const match = attrs.onclick.match(/\(([^)]*)\)/);
 			if (match) onclickParam = match[1];
 		}
 		let text = getElText(el);
@@ -3625,8 +3652,8 @@
 				if (v && el.getAttribute(k) !== v) return false;
 			}
 		}
-		if (matchOnclick && fp.onclickParam) {
-			const m = (el.getAttribute('onclick') || '').match(/useItem\((\d+)\)/);
+		if (matchOnclick && fp.onclickParam !== undefined && fp.onclickParam !== null) {
+			const m = (el.getAttribute('onclick') || '').match(/\(([^)]*)\)/);
 			if (m && m[1] !== fp.onclickParam) return false;
 		}
 		if (matchText && fp.text) {
@@ -3686,7 +3713,7 @@
 		if (!chain || chain.length === 0) return targetSel;
 		const parts = [];
 		for (let i = chain.length - 1; i >= 0; i--) {
-			parts.push(chain[i].selector);
+			if (chain[i] && chain[i].selector) parts.push(chain[i].selector);
 		}
 		parts.push(targetSel);
 		return parts.join(' ');
@@ -3755,13 +3782,7 @@
 				const idx = getNthOfType(ancestor);
 				selector = ancestor.tagName.toLowerCase() + ':nth-of-type(' + idx + ')';
 			}
-			let pdesc = ancestor.tagName.toLowerCase();
-			if (ancestor.id) pdesc += '#' + ancestor.id;
-			if (ancestor.className && typeof ancestor.className === 'string') {
-				const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.');
-				if (cls) pdesc += '.' + cls;
-			}
-			parentChain.push({ selector, desc: pdesc });
+			parentChain.push({ selector });
 			ancestor = ancestor.parentElement;
 		}
 		t.parentSelector = parentSelector;
@@ -3859,7 +3880,7 @@
 			newPage = pages[clamped];
 		currentPage = clamped;
 		pageButtons.forEach(btn => {
-			btn.classList.toggle('active', parseInt(btn.dataset.page) === clamped);
+			btn.classList.toggle('active', parseInt(btn.dataset.page, 10) === clamped);
 		});
 		if (animated === false) {
 			pages.forEach(p => {
@@ -3882,7 +3903,7 @@
 	pageButtons.forEach(btn => {
 		btn.addEventListener('click', e => {
 			e.stopPropagation();
-			const page = parseInt(btn.dataset.page);
+			const page = parseInt(btn.dataset.page, 10);
 			if (page === 0 && currentPage === 0) {
 				toggleConfigLoadMode();
 				return;
@@ -3919,8 +3940,6 @@
 		if (_configLoadAnimTimer) { clearTimeout(_configLoadAnimTimer); _configLoadAnimTimer = null; }
 		if (_collapseEndHandler) {
 			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
-			const bg = panel.querySelector('.auto-op-btn-group');
-			if (bg) bg.removeEventListener('transitionend', _collapseEndHandler);
 			_collapseEndHandler = null;
 		}
 		if (_exitTransEndHandler) {
@@ -3943,8 +3962,7 @@
 			statusDiv.dataset._prevDisplay = statusDiv.style.display;
 			statusDiv.classList.add('config-collapsed');
 			_collapseEndHandler = (e) => {
-				if (e.target !== statusDiv && e.target !== btnGroup) return;
-				if (btnGroup) { btnGroup.removeEventListener('transitionend', _collapseEndHandler); btnGroup.style.display = 'none'; }
+				if (e.target !== statusDiv) return;
 				statusDiv.removeEventListener('transitionend', _collapseEndHandler);
 				statusDiv.style.display = 'none';
 				_collapseEndHandler = null;
@@ -3953,7 +3971,6 @@
 			_configLoadAnimTimer = setTimeout(() => {
 				if (!_collapseEndHandler) return;
 				statusDiv.removeEventListener('transitionend', _collapseEndHandler);
-				if (btnGroup) { btnGroup.removeEventListener('transitionend', _collapseEndHandler); btnGroup.style.display = 'none'; }
 				statusDiv.style.display = 'none';
 				_collapseEndHandler = null;
 			}, 350);
@@ -4024,8 +4041,6 @@
 		isConfigLoadMode = false;
 		if (_collapseEndHandler) {
 			statusDiv.removeEventListener('transitionend', _collapseEndHandler);
-			const bg = panel.querySelector('.auto-op-btn-group');
-			if (bg) bg.removeEventListener('transitionend', _collapseEndHandler);
 			_collapseEndHandler = null;
 		}
 		if (_exitTransEndHandler) {
@@ -4085,7 +4100,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.2',
+				version: '5.2.3',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -4098,7 +4113,6 @@
 					fingerprint: t.fingerprint,
 					desc: t.desc,
 					isInput: t.isInput,
-					matchMode: t.matchMode,
 					parentSelector: t.parentSelector,
 					parentChain: t.parentChain || [],
 					enabled: t.enabled !== false,
@@ -4206,7 +4220,6 @@
 										fingerprint: t.fingerprint,
 										desc: t.desc,
 										isInput: t.isInput,
-										matchMode: t.matchMode,
 										parentSelector: t.parentSelector,
 										parentChain: t.parentChain ? [...t.parentChain] : [],
 															enabled: t.enabled !== false,
@@ -4232,8 +4245,7 @@
 										_blueParent: t._blueParent,
 										_nearestEl: t._nearestEl,
 										_isValid: t._isValid,
-										missCount: t.missCount
-									}))
+								}))
 								};
 								try {
 									c.targets.forEach(t => {
@@ -4246,8 +4258,8 @@
 									});
 									c.targets = [];
 									if (data.clickStrategy !== undefined) c.clickStrategy = data.clickStrategy;
-									if (data.clickInterval !== undefined) c.clickInterval = parseInt(data.clickInterval) || 1000;
-									if (data.maxClicks !== undefined) c.maxClicks = (data.maxClicks === '' || data.maxClicks === undefined) ? Infinity : (parseInt(data.maxClicks) || Infinity);
+									if (data.clickInterval !== undefined) c.clickInterval = parseFloat(data.clickInterval) || 1000;
+									if (data.maxClicks !== undefined) c.maxClicks = (data.maxClicks === '' || data.maxClicks === undefined) ? Infinity : (parseInt(data.maxClicks, 10) || Infinity);
 									if (data.missingAction !== undefined) c.missingAction = data.missingAction;
 									if (data.autoStartIntervalMin !== undefined && data.autoStartIntervalMin !== '' && parseFloat(data.autoStartIntervalMin) > 0) {
 										c.autoStartEnabled = true;
@@ -4275,9 +4287,8 @@
 											customCommand: t.customCommand || '',
 											parentSelector: t.parentSelector || '',
 											parentChain: t.parentChain || [],
-																	missCount: 0,
 											nearestParent: null,
-											blueParent: null,
+															blueParent: null,
 											_blueParent: null,
 											_nearestEl: null,
 											enabled: t.enabled !== false,
@@ -4333,8 +4344,6 @@
 									c.autoStartIntervalMin = backup.autoStartIntervalMin;
 									c.maxDurationMin = backup.maxDurationMin;
 									c.targets = backup.targets;
-									backup.targets.forEach(t => {
-									});
 									strategyRow.style.display = 'block';
 									updateCmdTargetBtn();
 									strategySelect.value = c.clickStrategy;
@@ -4392,7 +4401,7 @@
 		panel.style.transition = 'none';
 		panel.style.width = '300px';
 		void panel.offsetWidth;
-		collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3.offsetWidth + 12 + 30 + 14 + 2;
+		collapsedWidth = 14 + 30 + 12 + 30 + 12 + (h3?.offsetWidth || 0) + 12 + 30 + 14 + 2;
 		panel.style.width = savedWidth || '';
 		panel.style.transition = savedTransition;
 		if (!wasCollapsed) panel.classList.remove('collapsed');
@@ -4408,7 +4417,7 @@
 		setTimeout(() => {
 			panel.classList.remove('body-hidden');
 			panel.classList.add('collapsed');
-			const h3W = dragHandle.querySelector('h3').scrollWidth;
+			const h3W = dragHandle.querySelector('h3')?.scrollWidth || 0;
 			collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2;
 			panel.style.width = '300px';
 			void panel.offsetWidth;
@@ -4485,7 +4494,9 @@
 		}, 2000);
 	}
 
+	let _confirmCleanup = null;
 	function showConfirm(text) {
+		if (_confirmCleanup) { _confirmCleanup(); _confirmCleanup = null; }
 		return new Promise(resolve => {
 			const modal = document.getElementById('auto-op-modal'),
 				modalText = document.getElementById('auto-op-modal-text'),
@@ -4504,7 +4515,9 @@
 				btnCancel.removeEventListener('click', onCancel);
 				overlay.removeEventListener('click', onOverlay);
 				box.removeEventListener('click', onBoxClick);
+				if (_confirmCleanup === cleanup) _confirmCleanup = null;
 			}
+			_confirmCleanup = cleanup;
 
 			function onOk() {
 				cleanup();
@@ -4566,7 +4579,7 @@
 	function saveRefreshState() {
 		try {
 			const now = Date.now();
-			const totalMs = refreshIntervalSec * 1000;
+			const totalMs = _refreshIntervalAtStart * 1000;
 			const elapsed = now - refreshStartTimestamp;
 			const remaining = Math.max(0, totalMs - elapsed);
 			const running = {};
@@ -4627,7 +4640,10 @@
 		if (remaining <= 0) triggerRefresh();
 	}
 
+	let _isRefreshing = false;
 	function triggerRefresh() {
+		if (_isRefreshing) return;
+		_isRefreshing = true;
 		const runningConfigs = [];
 		for (let i = 0; i < CONFIG_COUNT; i++) {
 			if (configs[i].isRunning) runningConfigs.push(CONFIG_NAMES[i]);
@@ -4652,7 +4668,7 @@
 		isAutoRefresh = true;
 		autoRefreshCheckbox.checked = true;
 		refreshProgressDiv.style.display = 'block';
-		if (initial) refreshStartTimestamp = Date.now();
+		if (initial) { refreshStartTimestamp = Date.now(); _refreshIntervalAtStart = refreshIntervalSec; }
 		if (refreshProgressTimerID) clearInterval(refreshProgressTimerID);
 		refreshProgressTimerID = setInterval(updateRefreshProgressUI, 100);
 		const remaining = Math.max(0, refreshIntervalSec * 1000 - (Date.now() - refreshStartTimestamp));
@@ -4794,7 +4810,7 @@
 		const target = e.target.closest('[data-action]');
 		if (!target) return;
 		const action = target.dataset.action;
-		const index = parseInt(target.dataset.index),
+		const index = parseInt(target.dataset.index, 10),
 			c = cv();
 		if (isNaN(index) || !c.targets[index]) {
 			updateTargetUI();
@@ -4899,19 +4915,22 @@
 		let html = '';
 		const textMode = t.matchTextMode || 'exact';
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>元素CSS匹配</label><span class="auto-op-test-css-result" id="auto-op-test-css-result"></span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="auto-op-test-btn" id="auto-op-test-btn">测试</button><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></span></div></div>`;
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标准属性匹配</label><span class="auto-op-test-result" data-test-criterion="attrs"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
-		if (attrKeys.length > 0) {
-			html += '<div class="auto-op-info-attrs-list">';
-			attrKeys.forEach(k => {
-				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
-			});
-			html += '</div>';
-		} else {
-			html += '<div class="auto-op-info-field"><span class="auto-op-test-count" data-test-criterion="attrs"></span><span class="auto-op-info-field-value">无特殊属性</span></div>';
-		}
-		html += '</div>';
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>元素引用</label><span class="auto-op-test-result" id="auto-op-test-elref-result"></span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="auto-op-test-btn" id="auto-op-elref-update-btn">更新</button></span></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标签匹配</label><span class="auto-op-test-result" data-test-criterion="tag"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchTag" ${t.matchTag !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">标签名</span><span class="auto-op-test-count" data-test-criterion="tag"></span><span class="auto-op-info-field-value">${fp.tagName || '-'}</span></div></div>`;
+		if (t.parentSelector) {
+			const chain = t.parentChain;
+			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><span class="auto-op-test-result" data-test-criterion="parent"></span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="auto-op-test-btn" id="auto-op-parent-update-btn">更新</button><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+			if (chain && chain.length > 0) {
+				html += '<div class="auto-op-info-attrs-list">';
+				chain.forEach((link, idx) => {
+					html += `<div class="auto-op-info-attr-row"><span class="auto-op-parent-chain-key" title="${link.selector}">└> ${link.selector}</span><span class="auto-op-test-result" data-test-criterion="parent" data-parent-index="${idx}"></span></div>`;
+				});
+				html += '</div>';
+			} else {
+				html += `<div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div>`;
+			}
+			html += '</div>';
+		}
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>id 匹配</label><span class="auto-op-test-result" data-test-criterion="id"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchId" ${t.matchId !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">id</span><span class="auto-op-test-count" data-test-criterion="id"></span><span class="auto-op-info-field-value">${fp.id ? '#' + fp.id : '-'}</span></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>class 匹配</label><span class="auto-op-test-result" data-test-criterion="class"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchClass" ${t.matchClass !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">class</span><span class="auto-op-test-count" data-test-criterion="class"></span><span class="auto-op-info-field-value">${fp.className || '-'}</span></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>data-* 属性匹配</label><span class="auto-op-test-result" data-test-criterion="dataAttrs"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchDataAttrs" ${t.matchDataAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
@@ -4925,12 +4944,21 @@
 			html += '<div class="auto-op-info-field"><span class="auto-op-test-count" data-test-criterion="dataAttrs"></span><span class="auto-op-info-field-value">无 data-* 属性</span></div>';
 		}
 		html += '</div>';
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>标准属性匹配</label><span class="auto-op-test-result" data-test-criterion="attrs"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchAttrs" ${t.matchAttrs !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+		if (attrKeys.length > 0) {
+			html += '<div class="auto-op-info-attrs-list">';
+			attrKeys.forEach(k => {
+				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+			});
+			html += '</div>';
+		} else {
+			html += '<div class="auto-op-info-field"><span class="auto-op-test-count" data-test-criterion="attrs"></span><span class="auto-op-info-field-value">无特殊属性</span></div>';
+		}
+		html += '</div>';
 		if (fp.onclickParam) {
 			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>onclick 匹配</label><span class="auto-op-test-result" data-test-criterion="onclick"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchOnclick" ${t.matchOnclick !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">参数</span><span class="auto-op-test-count" data-test-criterion="onclick"></span><span class="auto-op-info-field-value">${fp.onclickParam}</span></div></div>`;
 		}
-		if (t.parentSelector) {
-			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><span class="auto-op-test-result" data-test-criterion="parent"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div></div>`;
-		}
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
 		html += ``;
 		infoContentEl.innerHTML = html;
 		infoOverlayEl.classList.remove('open');
@@ -5144,7 +5172,7 @@
 				t.showParent = target.checked;
 				break;
 		}
-		t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+		t._isValid = t.isCommand || (!!t.element && document.contains(t.element) && matchesFingerprint(t.element, t));
 		updateTargetUI();
 		updateTargetCount();
 		savePerConfig(activeConfig);
@@ -5187,6 +5215,45 @@
 			c.textContent = '';
 			c.className = c.className.replace(/\s*zero/g, '');
 		});
+	}
+
+	function updateElementRef() {
+		if (infoCurrentIndex < 0) return;
+		const c = cv(), t = c.targets[infoCurrentIndex];
+		if (!t) return;
+		clearTestHighlights();
+		beginQueryCycle();
+		const found = tryFindTarget(t);
+		if (found && found.length > 0) {
+			t.element = found[0];
+			rebuildParentInfo(found[0], t);
+			found[0].classList.add('auto-op-test-highlight');
+			_testHighlightedElements.push(found[0]);
+			const elRefResult = document.getElementById('auto-op-test-elref-result');
+			if (elRefResult) {
+				elRefResult.textContent = '✓';
+				elRefResult.className = 'auto-op-test-result pass';
+			}
+			savePerConfig(activeConfig);
+			updateTargetUI();
+		} else {
+			const elRefResult = document.getElementById('auto-op-test-elref-result');
+			if (elRefResult) {
+				elRefResult.textContent = '✕';
+				elRefResult.className = 'auto-op-test-result fail';
+			}
+		}
+	}
+
+	function updateParentChain() {
+		if (infoCurrentIndex < 0) return;
+		const c = cv(), t = c.targets[infoCurrentIndex];
+		if (!t || !t.element || !document.contains(t.element)) return;
+		clearTestHighlights();
+		rebuildParentInfo(t.element, t);
+		savePerConfig(activeConfig);
+		updateTargetUI();
+		showInfoPanel(infoCurrentIndex);
 	}
 
 	function runElementTest() {
@@ -5258,6 +5325,17 @@
 			_testHighlightedElements.push(el);
 		});
 
+		const elRefResult = document.getElementById('auto-op-test-elref-result');
+		if (elRefResult) {
+			const elAlive = t.element && document.contains(t.element);
+			elRefResult.textContent = elAlive ? '✓' : '✕';
+			elRefResult.className = 'auto-op-test-result ' + (elAlive ? 'pass' : 'fail');
+			if (elAlive && cssElements.length > 0) {
+				const isIncluded = cssElements.includes(t.element);
+				elRefResult.textContent = isIncluded ? '✓' : '⚠ (非当前匹配)';
+			}
+		}
+
 		const candidateElements = cssElements.length > 0 ? cssElements
 			: Array.from(document.querySelectorAll(fp.tagName || '*')).filter(e => !panel.contains(e));
 
@@ -5311,27 +5389,74 @@
 			setCount('onclick', els.length);
 		}
 		if (t.matchParent !== false && t.parentSelector) {
-			try {
-				const els = Array.from(document.querySelectorAll(t.parentSelector)).filter(e => !panel.contains(e));
-				setResult('parent', els.length > 0, els.length);
-				setCount('parent', els.length);
-			} catch (e) {
-				setResult('parent', false, 0);
-				setCount('parent', 0);
+			const chain = t.parentChain;
+			if (chain && chain.length > 0) {
+				let cumulative = candidateElements;
+				let anyPassed = false;
+				chain.forEach((link, idx) => {
+					cumulative = cumulative.filter(el => {
+						let ancestor = el.parentElement;
+						for (let j = 0; j <= idx; j++) {
+							let found = false;
+							while (ancestor && ancestor !== document.body) {
+								try {
+									if (ancestor.matches(chain[j].selector)) {
+										found = true;
+										ancestor = ancestor.parentElement;
+										break;
+									}
+								} catch (e) {}
+								ancestor = ancestor.parentElement;
+							}
+							if (!found) return false;
+						}
+						return true;
+					});
+					const linkEl = infoContentEl.querySelector('.auto-op-test-result[data-test-criterion="parent"][data-parent-index="' + idx + '"]');
+					if (linkEl) {
+						linkEl.textContent = cumulative.length > 0 ? '✓ ' + cumulative.length : '✕';
+						linkEl.className = 'auto-op-test-result ' + (cumulative.length > 0 ? 'pass' : 'fail');
+					}
+					if (cumulative.length > 0) anyPassed = true;
+				});
+				setResult('parent', anyPassed, cumulative.length);
+			} else {
+				try {
+					const parent = document.querySelector(t.parentSelector);
+					const passed = parent ? candidateElements.filter(el => parent.contains(el)) : [];
+					setResult('parent', passed.length > 0, passed.length);
+					setCount('parent', passed.length);
+				} catch (e) {
+					setResult('parent', false, 0);
+					setCount('parent', 0);
+				}
 			}
 		}
 		if (t.matchText !== false && fp.text) {
 			const els = candidateElements;
 			let matched;
 			const textMode = t.matchTextMode || 'exact';
+			const extractText = fp.hasStrong
+				? (el) => {
+					let txt = (el.textContent || '').trim();
+					if (!txt) {
+						for (const attr of ['alt', 'title', 'placeholder', 'aria-label', 'value']) {
+							const val = el.getAttribute(attr);
+							if (val && val.trim()) { txt = val.trim(); break; }
+						}
+					}
+					if (!txt && isInputField(el) && el.value != null && String(el.value).trim()) txt = String(el.value).trim();
+					return txt;
+				}
+				: getElText;
 			if (textMode === 'fuzzy') {
 				matched = els.filter(e => {
-					const txt = getElText(e);
+					const txt = extractText(e);
 					return txt && txt.includes(fp.text);
 				});
 			} else {
 				matched = els.filter(e => {
-					const txt = getElText(e);
+					const txt = extractText(e);
 					return txt === fp.text;
 				});
 			}
@@ -5341,10 +5466,12 @@
 		refreshInfoHeight();
 	}
 	infoContentEl.addEventListener('click', e => {
-		const btn = e.target.closest('#auto-op-test-btn');
-		if (!btn) return;
-		e.stopPropagation();
-		runElementTest();
+		const testBtn = e.target.closest('#auto-op-test-btn');
+		if (testBtn) { e.stopPropagation(); runElementTest(); return; }
+		const elrefBtn = e.target.closest('#auto-op-elref-update-btn');
+		if (elrefBtn) { e.stopPropagation(); updateElementRef(); return; }
+		const parentBtn = e.target.closest('#auto-op-parent-update-btn');
+		if (parentBtn) { e.stopPropagation(); updateParentChain(); return; }
 	});
 	infoContentEl.addEventListener('change', e => {
 		if (infoCurrentIndex < 0) return;
@@ -5387,7 +5514,7 @@
 				break;
 		}
 		clearTestHighlights();
-		t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+		t._isValid = t.isCommand || (!!t.element && document.contains(t.element) && matchesFingerprint(t.element, t));
 		updateTargetUI();
 		updateTargetCount();
 		savePerConfig(activeConfig);
@@ -5414,7 +5541,7 @@
 				}
 			}
 		}
-		t._isValid = !!t.element && document.contains(t.element) && matchesFingerprint(t.element, t);
+		t._isValid = t.isCommand || (!!t.element && document.contains(t.element) && matchesFingerprint(t.element, t));
 		if (action === 'change-text') {
 			updateTargetUI();
 		}
@@ -5453,7 +5580,7 @@
 			if (isCmd) { stateClass += ' cmd-target'; if (t.commandError) stateClass += ' cmd-error'; }
 			if (isDisabled) stateClass = 'disabled';
 			else if (!isValid) stateClass = 'missing';
-			html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span>${t.showParent && t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.desc + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up"data-action="move-up"data-index="${i}"title="上移"><svg viewBox="0 0 1375.2 1375.2"fill="none"aria-hidden="true"style="width:10px;height:10px;display:block;transform:rotate(90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z"transform="matrix(1 0 0 -1 0 1375.2)"fill="currentColor"fill-rule="nonzero"clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-move auto-op-btn-move-down"data-action="move-down"data-index="${i}"title="下移"><svg viewBox="0 0 1375.2 1375.2"fill="none"aria-hidden="true"style="width:10px;height:10px;display:block;transform:rotate(-90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z"transform="matrix(1 0 0 -1 0 1375.2)"fill="currentColor"fill-rule="nonzero"clip-rule="nonzero"></path></svg></button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}"><svg viewBox="0 0 1306.8 1306.8" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block"><path d="M920.9 123.9 Q964.9 144.9 987.9 185.9 Q999.9 206.9 1004.4 236.4 Q1008.9 265.9 1012.9 330.9 L1054.9 913.9 H1114.9 Q1130.9 913.9 1141.9 925.4 Q1152.9 936.9 1152.9 953.9 V982.9 Q1152.9 999.9 1141.4 1011.4 Q1129.9 1022.9 1114.9 1022.9 H935.9 Q915.9 1022.9 908.9 1026.9 Q901.9 1030.9 893.9 1047.9 L871.9 1095.9 L861.9 1115.9 Q854.9 1130.9 847.9 1143.4 Q840.9 1155.9 832.9 1163.9 Q813.9 1182.9 788.9 1191.9 Q775.9 1195.9 755.9 1196.9 Q735.9 1197.9 709.9 1197.9 H596.9 Q570.9 1197.9 551.4 1196.9 Q531.9 1195.9 518.9 1191.9 Q492.9 1182.9 473.9 1163.9 Q464.9 1153.9 455.4 1136.4 Q445.9 1118.9 434.9 1095.9 L409.9 1042.9 Q402.9 1028.9 396.9 1025.9 Q390.9 1022.9 369.9 1022.9 H193.9 Q178.9 1022.9 166.4 1011.9 Q153.9 1000.9 153.9 979.9 V955.9 Q153.9 935.9 166.4 924.9 Q178.9 913.9 193.9 913.9 H242.9 L282.9 331.9 Q286.9 266.9 291.4 236.9 Q295.9 206.9 307.9 185.9 Q332.9 143.9 374.9 123.9 Q396.9 113.9 426.9 111.4 Q456.9 108.9 522.9 108.9 H773.9 Q839.9 108.9 869.4 111.4 Q898.9 113.9 920.9 123.9 Z M429.9 225.9 Q413.9 232.9 404.9 249.9 Q399.9 257.9 397.9 274.4 Q395.9 290.9 393.9 314.9 L351.9 913.9 H945.9 L903.9 323.9 Q901.9 294.9 899.9 276.4 Q897.9 257.9 892.9 249.9 Q883.9 232.9 867.9 225.9 Q858.9 221.9 842.4 220.9 Q825.9 219.9 801.9 219.9 H495.9 Q470.9 219.9 454.9 220.9 Q438.9 221.9 429.9 225.9 Z M609.9 374.9 L594.9 784.9 Q593.9 798.9 584.9 807.4 Q575.9 815.9 561.9 815.9 H518.9 Q503.9 815.9 494.4 806.9 Q484.9 797.9 485.9 782.9 L501.9 372.9 Q502.9 357.9 511.4 349.4 Q519.9 340.9 534.9 340.9 H576.9 Q591.9 340.9 601.4 349.9 Q610.9 358.9 609.9 374.9 Z M795.9 372.9 L811.9 782.9 Q812.9 797.9 803.4 806.9 Q793.9 815.9 778.9 815.9 H735.9 Q721.9 815.9 712.9 807.4 Q703.9 798.9 702.9 784.9 L687.9 374.9 Q686.9 358.9 696.4 349.9 Q705.9 340.9 720.9 340.9 H762.9 Q777.9 340.9 786.4 349.4 Q794.9 357.9 795.9 372.9 Z M526.9 1031.9 L540.9 1059.9 Q549.9 1077.9 559.4 1082.9 Q568.9 1087.9 590.9 1087.9 H715.9 Q738.9 1087.9 747.9 1082.9 Q756.9 1077.9 764.9 1060.9 L779.9 1030.9 Q781.9 1027.9 780.4 1025.4 Q778.9 1022.9 774.9 1022.9 H531.9 Q527.9 1022.9 526.4 1025.4 Q524.9 1027.9 526.9 1031.9 Z" transform="matrix(1 0 0 -1 0 1306.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="匹配规则"><svg viewBox="0 0 1186.2 1186.2" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M363.2 1047.8 L246.5 929.5 Q240.9 924.5 237.0 924.3 Q233.1 924.1 227.1 930.1 L184.0 973.8 Q174.2 984.1 159.9 985.6 Q145.6 987.1 133.2 974.8 L112.2 953.8 Q98.8 940.4 99.8 927.2 Q100.8 913.9 111.2 903.0 L194.2 820.0 Q215.6 799.2 237.6 799.4 Q259.6 799.6 284.0 823.0 L437.0 976.0 Q449.3 988.9 449.8 1004.2 Q450.3 1019.4 438.0 1030.8 L418.0 1050.8 Q404.6 1063.1 390.1 1061.6 Q375.6 1060.1 363.2 1047.8 Z M1087.3 561.9 V591.9 Q1087.3 610.4 1076.2 619.3 Q1065.0 628.1 1048.1 628.1 H549.6 Q533.0 628.1 522.0 618.8 Q510.9 609.4 510.9 592.9 V562.9 Q510.9 544.3 521.8 535.0 Q532.6 525.6 549.6 525.6 H1048.1 Q1065.0 525.6 1076.2 534.5 Q1087.3 543.3 1087.3 561.9 Z M1087.3 898.9 V928.9 Q1087.3 947.4 1076.2 956.3 Q1065.0 965.1 1048.1 965.1 H549.6 Q533.0 965.1 522.0 955.8 Q510.9 946.4 510.9 929.9 V899.9 Q510.9 881.3 521.8 872.0 Q532.6 862.6 549.6 862.6 H1048.1 Q1065.0 862.6 1076.2 871.5 Q1087.3 880.3 1087.3 898.9 Z M1087.3 223.9 V253.9 Q1087.3 272.4 1076.2 281.3 Q1065.0 290.1 1048.1 290.1 H549.6 Q533.0 290.1 522.0 280.8 Q510.9 271.4 510.9 254.9 V224.9 Q510.9 206.3 521.8 197.0 Q532.6 187.6 549.6 187.6 H1048.1 Q1065.0 187.6 1076.2 196.5 Q1087.3 205.3 1087.3 223.9 Z M363.2 710.6 L246.5 592.9 Q241.5 587.9 237.3 587.4 Q233.1 586.9 227.1 592.9 L184.0 636.6 Q174.2 646.9 159.9 648.4 Q145.6 649.9 133.2 637.6 L112.2 616.6 Q98.8 603.2 99.8 590.0 Q100.8 576.8 111.2 566.4 L194.2 483.4 Q215.0 462.1 237.3 462.3 Q259.6 462.5 284.0 486.4 L437.0 639.4 Q449.3 651.8 449.8 667.0 Q450.3 682.2 438.0 693.6 L418.0 713.6 Q404.6 725.9 390.1 724.4 Q375.6 722.9 363.2 710.6 Z M363.2 372.2 L246.5 253.9 Q240.9 248.9 237.0 248.7 Q233.1 248.5 227.1 254.5 L184.0 298.2 Q174.2 308.5 159.9 310.0 Q145.6 311.5 133.2 299.2 L112.2 278.2 Q98.8 264.8 99.8 251.6 Q100.8 238.3 111.2 227.4 L194.2 144.4 Q215.6 123.1 237.6 123.3 Q259.6 123.5 284.0 147.4 L437.0 300.4 Q449.3 313.3 449.8 328.6 Q450.3 343.8 438.0 355.2 L418.0 375.2 Q404.6 387.5 390.1 386.0 Q375.6 384.5 363.2 372.2 Z" transform="matrix(1 0 0 -1 0 1186.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-settings" data-action="settings" data-index="${i}" title="元素设置"><svg viewBox="0 0 1224 1224" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M875.0 670.5 V697.5 Q875.0 722.5 864.0 734.0 Q853.0 745.5 830.0 745.5 H395.0 Q373.0 745.5 362.0 733.5 Q351.0 721.5 351.0 697.5 V670.5 Q351.0 646.5 362.0 635.0 Q373.0 623.5 395.0 623.5 H830.0 Q853.0 623.5 864.0 635.0 Q875.0 646.5 875.0 670.5 Z M668.0 452.5 V479.5 Q668.0 503.5 657.0 515.5 Q646.0 527.5 623.0 527.5 H395.0 Q373.0 527.5 362.0 515.5 Q351.0 503.5 351.0 479.5 V452.5 Q351.0 428.5 362.0 417.0 Q373.0 405.5 395.0 405.5 H623.0 Q646.0 405.5 657.0 417.0 Q668.0 428.5 668.0 452.5 Z M1024.0 154.5 Q1077.0 183.5 1102.0 233.5 Q1116.0 260.5 1119.0 297.0 Q1122.0 333.5 1122.0 414.5 V809.5 Q1122.0 890.5 1119.0 927.0 Q1116.0 963.5 1102.0 990.5 Q1089.0 1015.5 1069.0 1036.0 Q1049.0 1056.5 1024.0 1069.5 Q997.0 1082.5 960.5 1085.5 Q924.0 1088.5 843.0 1088.5 H381.0 Q300.0 1088.5 263.5 1085.5 Q227.0 1082.5 200.0 1069.5 Q175.0 1056.5 155.0 1036.0 Q135.0 1015.5 122.0 990.5 Q108.0 963.5 105.0 927.0 Q102.0 890.5 102.0 809.5 V414.5 Q102.0 333.5 105.0 297.0 Q108.0 260.5 122.0 233.5 Q147.0 183.5 200.0 154.5 Q227.0 141.5 263.5 138.5 Q300.0 135.5 381.0 135.5 H843.0 Q924.0 135.5 960.5 138.5 Q997.0 141.5 1024.0 154.5 Z M261.0 266.5 Q244.0 274.5 234.0 293.5 Q230.0 302.5 228.5 317.0 Q227.0 331.5 227.0 365.5 V728.5 Q227.0 762.5 228.5 777.0 Q230.0 791.5 234.0 800.5 Q243.0 817.5 261.0 826.5 Q269.0 831.5 282.5 832.5 Q296.0 833.5 333.0 833.5 H891.0 Q928.0 833.5 941.5 832.5 Q955.0 831.5 963.0 826.5 Q981.0 817.5 990.0 800.5 Q994.0 791.5 995.5 776.5 Q997.0 761.5 997.0 728.5 V364.5 Q997.0 330.5 995.5 316.5 Q994.0 302.5 990.0 293.5 Q980.0 274.5 963.0 266.5 Q955.0 262.5 937.0 261.5 Q919.0 260.5 891.0 260.5 H333.0 Q305.0 260.5 287.0 261.5 Q269.0 262.5 261.0 266.5 Z" transform="matrix(1 0 0 -1 0 1224)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button></div>`;
+			html += `<div class="auto-op-target-item ${stateClass}" data-index="${i}"><span>${c.isMultiMode ? (i + 1) + '. ' : ''}${t.desc}</span>${t.showParent && t.parentChain ? t.parentChain.map(p => '<span class="auto-op-target-parent">└> ' + p.selector + '</span>').join('') : ''}${c.targets.length > 1 ? `<button class="auto-op-btn-move auto-op-btn-move-up"data-action="move-up"data-index="${i}"title="上移"><svg viewBox="0 0 1375.2 1375.2"fill="none"aria-hidden="true"style="width:10px;height:10px;display:block;transform:rotate(90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z"transform="matrix(1 0 0 -1 0 1375.2)"fill="currentColor"fill-rule="nonzero"clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-move auto-op-btn-move-down"data-action="move-down"data-index="${i}"title="下移"><svg viewBox="0 0 1375.2 1375.2"fill="none"aria-hidden="true"style="width:10px;height:10px;display:block;transform:rotate(-90deg)"><path d="M321.6 626.1 H1210.6 Q1233.6 626.1 1247.1 639.1 Q1260.6 652.1 1260.6 675.1 V702.1 Q1260.6 723.1 1247.1 735.6 Q1233.6 748.1 1210.6 748.1 H321.6 L574.6 1001.1 Q590.6 1016.1 590.6 1033.6 Q590.6 1051.1 572.6 1069.1 L556.6 1086.1 Q539.6 1104.1 521.6 1103.6 Q503.6 1103.1 486.6 1086.1 L139.6 738.1 Q115.6 714.1 115.1 687.1 Q114.6 660.1 140.6 635.1 L486.6 289.1 Q503.6 272.1 520.6 271.6 Q537.6 271.1 555.6 289.1 L574.6 308.1 Q591.6 324.1 591.6 340.6 Q591.6 357.1 573.6 374.1 Z"transform="matrix(1 0 0 -1 0 1375.2)"fill="currentColor"fill-rule="nonzero"clip-rule="nonzero"></path></svg></button>` : ''}<button class="auto-op-btn-item-del" data-action="delete" data-index="${i}"><svg viewBox="0 0 1306.8 1306.8" fill="none" aria-hidden="true" style="width:10px;height:10px;display:block"><path d="M920.9 123.9 Q964.9 144.9 987.9 185.9 Q999.9 206.9 1004.4 236.4 Q1008.9 265.9 1012.9 330.9 L1054.9 913.9 H1114.9 Q1130.9 913.9 1141.9 925.4 Q1152.9 936.9 1152.9 953.9 V982.9 Q1152.9 999.9 1141.4 1011.4 Q1129.9 1022.9 1114.9 1022.9 H935.9 Q915.9 1022.9 908.9 1026.9 Q901.9 1030.9 893.9 1047.9 L871.9 1095.9 L861.9 1115.9 Q854.9 1130.9 847.9 1143.4 Q840.9 1155.9 832.9 1163.9 Q813.9 1182.9 788.9 1191.9 Q775.9 1195.9 755.9 1196.9 Q735.9 1197.9 709.9 1197.9 H596.9 Q570.9 1197.9 551.4 1196.9 Q531.9 1195.9 518.9 1191.9 Q492.9 1182.9 473.9 1163.9 Q464.9 1153.9 455.4 1136.4 Q445.9 1118.9 434.9 1095.9 L409.9 1042.9 Q402.9 1028.9 396.9 1025.9 Q390.9 1022.9 369.9 1022.9 H193.9 Q178.9 1022.9 166.4 1011.9 Q153.9 1000.9 153.9 979.9 V955.9 Q153.9 935.9 166.4 924.9 Q178.9 913.9 193.9 913.9 H242.9 L282.9 331.9 Q286.9 266.9 291.4 236.9 Q295.9 206.9 307.9 185.9 Q332.9 143.9 374.9 123.9 Q396.9 113.9 426.9 111.4 Q456.9 108.9 522.9 108.9 H773.9 Q839.9 108.9 869.4 111.4 Q898.9 113.9 920.9 123.9 Z M429.9 225.9 Q413.9 232.9 404.9 249.9 Q399.9 257.9 397.9 274.4 Q395.9 290.9 393.9 314.9 L351.9 913.9 H945.9 L903.9 323.9 Q901.9 294.9 899.9 276.4 Q897.9 257.9 892.9 249.9 Q883.9 232.9 867.9 225.9 Q858.9 221.9 842.4 220.9 Q825.9 219.9 801.9 219.9 H495.9 Q470.9 219.9 454.9 220.9 Q438.9 221.9 429.9 225.9 Z M609.9 374.9 L594.9 784.9 Q593.9 798.9 584.9 807.4 Q575.9 815.9 561.9 815.9 H518.9 Q503.9 815.9 494.4 806.9 Q484.9 797.9 485.9 782.9 L501.9 372.9 Q502.9 357.9 511.4 349.4 Q519.9 340.9 534.9 340.9 H576.9 Q591.9 340.9 601.4 349.9 Q610.9 358.9 609.9 374.9 Z M795.9 372.9 L811.9 782.9 Q812.9 797.9 803.4 806.9 Q793.9 815.9 778.9 815.9 H735.9 Q721.9 815.9 712.9 807.4 Q703.9 798.9 702.9 784.9 L687.9 374.9 Q686.9 358.9 696.4 349.9 Q705.9 340.9 720.9 340.9 H762.9 Q777.9 340.9 786.4 349.4 Q794.9 357.9 795.9 372.9 Z M526.9 1031.9 L540.9 1059.9 Q549.9 1077.9 559.4 1082.9 Q568.9 1087.9 590.9 1087.9 H715.9 Q738.9 1087.9 747.9 1082.9 Q756.9 1077.9 764.9 1060.9 L779.9 1030.9 Q781.9 1027.9 780.4 1025.4 Q778.9 1022.9 774.9 1022.9 H531.9 Q527.9 1022.9 526.4 1025.4 Q524.9 1027.9 526.9 1031.9 Z" transform="matrix(1 0 0 -1 0 1306.8)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-info" data-action="info" data-index="${i}" title="匹配规则"><svg viewBox="0 0 1186.2 1186.2" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M363.2 1047.8 L246.5 929.5 Q240.9 924.5 237.0 924.3 Q233.1 924.1 227.1 930.1 L184.0 973.8 Q174.2 984.1 159.9 985.6 Q145.6 987.1 133.2 974.8 L112.2 953.8 Q98.8 940.4 99.8 927.2 Q100.8 913.9 111.2 903.0 L194.2 820.0 Q215.6 799.2 237.6 799.4 Q259.6 799.6 284.0 823.0 L437.0 976.0 Q449.3 988.9 449.8 1004.2 Q450.3 1019.4 438.0 1030.8 L418.0 1050.8 Q404.6 1063.1 390.1 1061.6 Q375.6 1060.1 363.2 1047.8 Z M1087.3 561.9 V591.9 Q1087.3 610.4 1076.2 619.3 Q1065.0 628.1 1048.1 628.1 H549.6 Q533.0 628.1 522.0 618.8 Q510.9 609.4 510.9 592.9 V562.9 Q510.9 544.3 521.8 535.0 Q532.6 525.6 549.6 525.6 H1048.1 Q1065.0 525.6 1076.2 534.5 Q1087.3 543.3 1087.3 561.9 Z M1087.3 898.9 V928.9 Q1087.3 947.4 1076.2 956.3 Q1065.0 965.1 1048.1 965.1 H549.6 Q533.0 965.1 522.0 955.8 Q510.9 946.4 510.9 929.9 V899.9 Q510.9 881.3 521.8 872.0 Q532.6 862.6 549.6 862.6 H1048.1 Q1065.0 862.6 1076.2 871.5 Q1087.3 880.3 1087.3 898.9 Z M1087.3 223.9 V253.9 Q1087.3 272.4 1076.2 281.3 Q1065.0 290.1 1048.1 290.1 H549.6 Q533.0 290.1 522.0 280.8 Q510.9 271.4 510.9 254.9 V224.9 Q510.9 206.3 521.8 197.0 Q532.6 187.6 549.6 187.6 H1048.1 Q1065.0 187.6 1076.2 196.5 Q1087.3 205.3 1087.3 223.9 Z M363.2 710.6 L246.5 592.9 Q241.5 587.9 237.3 587.4 Q233.1 586.9 227.1 592.9 L184.0 636.6 Q174.2 646.9 159.9 648.4 Q145.6 649.9 133.2 637.6 L112.2 616.6 Q98.8 603.2 99.8 590.0 Q100.8 576.8 111.2 566.4 L194.2 483.4 Q215.0 462.1 237.3 462.3 Q259.6 462.5 284.0 486.4 L437.0 639.4 Q449.3 651.8 449.8 667.0 Q450.3 682.2 438.0 693.6 L418.0 713.6 Q404.6 725.9 390.1 724.4 Q375.6 722.9 363.2 710.6 Z M363.2 372.2 L246.5 253.9 Q240.9 248.9 237.0 248.7 Q233.1 248.5 227.1 254.5 L184.0 298.2 Q174.2 308.5 159.9 310.0 Q145.6 311.5 133.2 299.2 L112.2 278.2 Q98.8 264.8 99.8 251.6 Q100.8 238.3 111.2 227.4 L194.2 144.4 Q215.6 123.1 237.6 123.3 Q259.6 123.5 284.0 147.4 L437.0 300.4 Q449.3 313.3 449.8 328.6 Q450.3 343.8 438.0 355.2 L418.0 375.2 Q404.6 387.5 390.1 386.0 Q375.6 384.5 363.2 372.2 Z" transform="matrix(1 0 0 -1 0 1186.2)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button><button class="auto-op-btn-settings" data-action="settings" data-index="${i}" title="元素设置"><svg viewBox="0 0 1224 1224" fill="none" aria-hidden="true" style="width:12px;height:12px;display:block"><path d="M875.0 670.5 V697.5 Q875.0 722.5 864.0 734.0 Q853.0 745.5 830.0 745.5 H395.0 Q373.0 745.5 362.0 733.5 Q351.0 721.5 351.0 697.5 V670.5 Q351.0 646.5 362.0 635.0 Q373.0 623.5 395.0 623.5 H830.0 Q853.0 623.5 864.0 635.0 Q875.0 646.5 875.0 670.5 Z M668.0 452.5 V479.5 Q668.0 503.5 657.0 515.5 Q646.0 527.5 623.0 527.5 H395.0 Q373.0 527.5 362.0 515.5 Q351.0 503.5 351.0 479.5 V452.5 Q351.0 428.5 362.0 417.0 Q373.0 405.5 395.0 405.5 H623.0 Q646.0 405.5 657.0 417.0 Q668.0 428.5 668.0 452.5 Z M1024.0 154.5 Q1077.0 183.5 1102.0 233.5 Q1116.0 260.5 1119.0 297.0 Q1122.0 333.5 1122.0 414.5 V809.5 Q1122.0 890.5 1119.0 927.0 Q1116.0 963.5 1102.0 990.5 Q1089.0 1015.5 1069.0 1036.0 Q1049.0 1056.5 1024.0 1069.5 Q997.0 1082.5 960.5 1085.5 Q924.0 1088.5 843.0 1088.5 H381.0 Q300.0 1088.5 263.5 1085.5 Q227.0 1082.5 200.0 1069.5 Q175.0 1056.5 155.0 1036.0 Q135.0 1015.5 122.0 990.5 Q108.0 963.5 105.0 927.0 Q102.0 890.5 102.0 809.5 V414.5 Q102.0 333.5 105.0 297.0 Q108.0 260.5 122.0 233.5 Q147.0 183.5 200.0 154.5 Q227.0 141.5 263.5 138.5 Q300.0 135.5 381.0 135.5 H843.0 Q924.0 135.5 960.5 138.5 Q997.0 141.5 1024.0 154.5 Z M261.0 266.5 Q244.0 274.5 234.0 293.5 Q230.0 302.5 228.5 317.0 Q227.0 331.5 227.0 365.5 V728.5 Q227.0 762.5 228.5 777.0 Q230.0 791.5 234.0 800.5 Q243.0 817.5 261.0 826.5 Q269.0 831.5 282.5 832.5 Q296.0 833.5 333.0 833.5 H891.0 Q928.0 833.5 941.5 832.5 Q955.0 831.5 963.0 826.5 Q981.0 817.5 990.0 800.5 Q994.0 791.5 995.5 776.5 Q997.0 761.5 997.0 728.5 V364.5 Q997.0 330.5 995.5 316.5 Q994.0 302.5 990.0 293.5 Q980.0 274.5 963.0 266.5 Q955.0 262.5 937.0 261.5 Q919.0 260.5 891.0 260.5 H333.0 Q305.0 260.5 287.0 261.5 Q269.0 262.5 261.0 266.5 Z" transform="matrix(1 0 0 -1 0 1224)" fill="currentColor" fill-rule="nonzero" clip-rule="nonzero"></path></svg></button></div>`;
 		});
 		targetListContainer.innerHTML = '<div class="auto-op-target-list">' + html + '</div>';
 		updateTargetCount();
@@ -5500,7 +5627,8 @@
 	}
 	let isDragging = false,
 		dragOffX = 0,
-		dragOffY = 0;
+		dragOffY = 0,
+		lastPickTime = 0;
 
 	function getEventPos(e) {
 		return e.touches && e.touches.length > 0 ? {
@@ -5715,12 +5843,12 @@
 	function onPickHover(e) {
 		if (!isPicking) return;
 		const el = e.target;
-		if (panel.contains(el) || configMenuEl.contains(el)) return;
+		if (!el.classList || panel.contains(el) || configMenuEl.contains(el)) return;
 		el.classList.add('auto-op-highlight');
 	}
 
 	function onPickHoverOut(e) {
-		e.target.classList.remove('auto-op-highlight');
+		if (e.target.classList) e.target.classList.remove('auto-op-highlight');
 	}
 
 	function onPickTouch(e) {
@@ -5732,11 +5860,13 @@
 			e.preventDefault();
 			e.stopPropagation();
 		}
+		lastPickTime = Date.now();
 		selectTarget(el);
 	}
 
 	function onPickClick(e) {
 		if (!isPicking || !e.isTrusted) return;
+		if (Date.now() - lastPickTime < 500) return;
 		const el = e.target;
 		if (panel.contains(el) || configMenuEl.contains(el)) return;
 		if (!pickPassThrough) {
@@ -5780,16 +5910,7 @@
 				const idx = getNthOfType(ancestor);
 				selector = ancestor.tagName.toLowerCase() + ':nth-of-type(' + idx + ')';
 			}
-			let pdesc = ancestor.tagName.toLowerCase();
-			if (ancestor.id) pdesc += '#' + ancestor.id;
-			if (ancestor.className && typeof ancestor.className === 'string') {
-				const cls = ancestor.className.trim().split(/\s+/).filter(ch => ch && !ch.startsWith('auto-op-')).slice(0, 5).join('.');
-				if (cls) pdesc += '.' + cls;
-			}
-			parentChain.push({
-				selector: selector,
-				desc: pdesc
-			});
+			parentChain.push({ selector });
 			ancestor = ancestor.parentElement;
 		}
 		const targetObj = {
@@ -5801,7 +5922,6 @@
 			parentChain,
 			nearestParent,
 			blueParent,
-			missCount: 0,
 			_isValid: true,
 			enabled: true,
 			enableHighlight: true,
@@ -5842,7 +5962,7 @@
 				stateTimerID = null;
 			}
 			stateTimerID = setTimeout(() => {
-				if (stateSpan.textContent === '无目标') stateSpan.textContent = '请选取或添加目标';
+				if (stateSpan.textContent === '未选取目标元素') stateSpan.textContent = '请选取或添加目标';
 				stateTimerID = null;
 			}, 1500);
 		}
@@ -5977,12 +6097,21 @@
 		}
 
 		if (result && typeof result.then === 'function') {
+			let settled = false;
+			const settle = (ok, msg, val) => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(guard);
+				flushLogs();
+				finalize(ok, msg, val);
+			};
+			const guard = setTimeout(() => {
+				settle(false, '超时(15s)：Promise 未解决', undefined);
+			}, 15000);
 			result.then(val => {
-				flushLogs();
-				finalize(true, "", val);
+				settle(true, "", val);
 			}).catch(e => {
-				flushLogs();
-				finalize(false, e.message || String(e), undefined);
+				settle(false, e.message || String(e), undefined);
 			});
 			return { success: true, pending: true, logs };
 		}
@@ -6059,7 +6188,7 @@
 		if (!logSpan) return;
 		const entryDiv = logSpan.closest('.auto-op-cmd-output-entry');
 		if (!entryDiv) return;
-		const idx = parseInt(entryDiv.dataset.idx);
+		const idx = parseInt(entryDiv.dataset.idx, 10);
 		if (isNaN(idx) || idx < 0 || idx >= cmdOutputLogs.length) return;
 		const entry = cmdOutputLogs[idx];
 		const fullText = entry.message;
@@ -6116,9 +6245,21 @@
 		window.fetch = function(url, options) {
 			const id = ++_networkReqId;
 			const startTime = Date.now();
-			const method = (options && options.method) || 'GET';
-			const reqHeaders = options && options.headers ? Object.assign({}, options.headers) : {};
-			const reqBody = options && options.body ? String(options.body).slice(0, 4000) : '';
+			let method, reqHeaders, reqBody;
+			if (url instanceof Request) {
+				method = url.method || 'GET';
+				reqHeaders = {};
+				url.headers.forEach((v, k) => { reqHeaders[k] = v; });
+				reqBody = '';
+			} else if (options) {
+				method = options.method || 'GET';
+				reqHeaders = options.headers ? Object.assign({}, options.headers) : {};
+				reqBody = options.body ? String(options.body).slice(0, 10000) : '';
+			} else {
+				method = 'GET';
+				reqHeaders = {};
+				reqBody = '';
+			}
 			const urlStr = typeof url === 'string' ? url : (url.url || String(url));
 			addNetworkRequest({ id, method: method.toUpperCase(), url: urlStr, reqHeaders, reqBody, status: 'pending', startTime });
 			const promise = _origFetch.apply(this, arguments);
@@ -6134,7 +6275,7 @@
 					req.duration = endTime - startTime;
 					updateNetworkItemUI(req);
 					clone.text().then(body => {
-						req.resBody = body.slice(0, 4000);
+						req.resBody = body.slice(0, 10000);
 						updateNetworkItemUI(req);
 						updateNetworkCount();
 					}).catch(() => {
@@ -6164,7 +6305,7 @@
 		XMLHttpRequest.prototype.send = function(body) {
 			const reqData = this._autoOpReq;
 			if (reqData) {
-				reqData.reqBody = body ? String(body).slice(0, 4000) : '';
+				reqData.reqBody = body ? String(body).slice(0, 10000) : '';
 				reqData._xhr = this;
 				addNetworkRequest(reqData);
 				this.addEventListener('load', function() {
@@ -6177,7 +6318,7 @@
 						const idx = line.indexOf(': ');
 						if (idx > 0) reqData.resHeaders[line.slice(0, idx)] = line.slice(idx + 2);
 					});
-					reqData.resBody = String(this.responseText).slice(0, 4000);
+					reqData.resBody = String(this.responseText).slice(0, 10000);
 					reqData.duration = endTime - reqData.startTime;
 					updateNetworkItemUI(reqData);
 					updateNetworkCount();
@@ -6195,6 +6336,9 @@
 					reqData.reqHeaders[name] = value;
 					return _setRequestHeader.apply(self, arguments);
 				};
+				const _restore = () => { self.setRequestHeader = _setRequestHeader; };
+				this.addEventListener('load', _restore, { once: true });
+				this.addEventListener('error', _restore, { once: true });
 			}
 			return _origXHRSend.apply(this, arguments);
 		};
@@ -6233,10 +6377,7 @@
 				}
 				return o;
 			});
-			localStorage.setItem(NETWORK_MONITOR_KEY, JSON.stringify({
-				active: isNetworkMonitoring,
-				requests: clean
-			}));
+			localStorage.setItem(NETWORK_MONITOR_KEY, JSON.stringify({ active: isNetworkMonitoring, requests: clean }));
 		} catch (e) {
 			console.error('[AUTO_OP] saveNetworkMonitorState 异常:', e);
 		}
@@ -6500,7 +6641,7 @@
 		const delBtn = e.target.closest('.auto-op-network-del-btn');
 		if (delBtn) {
 			e.stopPropagation();
-			const delId = parseInt(delBtn.dataset.delId);
+			const delId = parseInt(delBtn.dataset.delId, 10);
 			const idx = networkRequests.findIndex(r => r.id === delId);
 			if (idx !== -1) {
 				networkRequests.splice(idx, 1);
@@ -6514,7 +6655,7 @@
 			const item = itemTop.closest('.auto-op-network-item');
 			if (item) {
 				item.classList.toggle('expanded');
-				const reqId = parseInt(item.id.replace('auto-op-net-item-', ''));
+				const reqId = parseInt(item.id.replace('auto-op-net-item-', ''), 10);
 				const req = networkRequests.find(r => r.id === reqId);
 				if (req && req.status !== 'pending') {
 					const detailDiv = item.querySelector('.auto-op-network-item-detail');
@@ -6529,7 +6670,7 @@
 		}
 		const copyBtn = e.target.closest('.auto-op-network-detail-copy');
 		if (copyBtn) {
-			const copyId = parseInt(copyBtn.dataset.copyId);
+			const copyId = parseInt(copyBtn.dataset.copyId, 10);
 			const req = networkRequests.find(r => r.id === copyId);
 			if (req) copyRequestAsJS(req);
 			return;
@@ -6567,8 +6708,8 @@
 			}
 		}
 		if (ci === activeConfig) {
-			c.clickInterval = parseInt(clickIntervalInput.value) || 1000;
-			c.maxClicks = maxClicksInput.value.trim() === '' ? Infinity : (parseInt(maxClicksInput.value) || Infinity);
+			c.clickInterval = parseFloat(clickIntervalInput.value) || 1000;
+			c.maxClicks = maxClicksInput.value.trim() === '' ? Infinity : (parseInt(maxClicksInput.value, 10) || Infinity);
 			c.missingAction = missingActionSelect.value;
 		}
 		c.isRunning = true;
@@ -6704,7 +6845,7 @@
 				stateSpan.textContent = `${remaining}ms 队列[${idx + 1}/${c.targets.length}] 等待目标中`;
 				stateSpan.classList.add('auto-op-waiting');
 			}
-			c.waitTimerID = setTimeout(update, 1);
+			c.waitTimerID = setTimeout(update, 5);
 		}
 		update();
 	}
@@ -6893,8 +7034,9 @@
 			}
 			} catch (e) {
 			console.error('[AUTO_OP] doClickFor 异常:', e);
+		} finally {
+			isProgrammaticClick = false;
 		}
-		isProgrammaticClick = false;
 	}
 
 	panel.addEventListener('click', (e) => {
@@ -6928,9 +7070,6 @@
 	new ResizeObserver(() => {
 		updatePageHeight();
 	}).observe(cmdInput);
-	new MutationObserver(() => {
-		updatePageHeight();
-	}).observe(cmdInput, { attributes: true, attributeFilter: ['style'] });
 	(function restoreAutoRefreshState() {
 		const rs = loadRefreshState();
 		if (rs && rs.active) {
@@ -6959,8 +7098,8 @@
 				if (entries.length > 0) {
 					setTimeout(() => {
 						for (const [ci, rState] of entries) {
-							const ciNum = parseInt(ci);
-							if (configs[ciNum].targets.length > 0) {
+							const ciNum = parseInt(ci, 10);
+							if (configs[ciNum] && configs[ciNum].targets.length > 0) {
 								startClickingFor(ciNum, rState.opStart);
 								configs[ciNum].clickedCount = rState.count || 0;
 							}
