@@ -140,6 +140,10 @@
 	async function requestWakeLock() {
 		if (!wakeLockCheckbox.checked) return;
 		try {
+			if (wakeLock) {
+				try { await wakeLock.release(); } catch (e) {}
+				wakeLock = null;
+			}
 			wakeLock = await navigator.wakeLock.request('screen');
 		} catch (e) {
 			console.error('[AUTO_OP] WakeLock 异常:', e);
@@ -2970,8 +2974,8 @@
 	const btnNetworkMonitor = document.getElementById('auto-op-btn-network-monitor');
 	const btnClearNetwork = document.getElementById('auto-op-btn-clear-network');
 	const btnCopyAllNetwork = document.getElementById('auto-op-btn-copy-all-network');
-	let page3ClickCount = 0,
-		page3ClickTimer = null,
+	let page4ClickCount = 0,
+		page4ClickTimer = null,
 		resetConfirm = false;
 
 	function closeConfigMenu() {
@@ -3871,8 +3875,8 @@
 			resetBtn.textContent = '恢复默认设置';
 			resetBtn.classList.remove('confirm');
 			if (resetConfirmTimer) { clearTimeout(resetConfirmTimer); resetConfirmTimer = null; }
-			page3ClickCount = 0;
-			if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+			page4ClickCount = 0;
+			if (page4ClickTimer) { clearTimeout(page4ClickTimer); page4ClickTimer = null; }
 			updatePageHeight();
 		}
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
@@ -3909,12 +3913,12 @@
 				return;
 			}
 			if (page === 4 && currentPage === 4) {
-				page3ClickCount++;
-				if (page3ClickTimer) clearTimeout(page3ClickTimer);
-				page3ClickTimer = setTimeout(() => { page3ClickCount = 0; }, 2000);
-				if (page3ClickCount >= 4) {
-					page3ClickCount = 0;
-					if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+				page4ClickCount++;
+				if (page4ClickTimer) clearTimeout(page4ClickTimer);
+				page4ClickTimer = setTimeout(() => { page4ClickCount = 0; }, 2000);
+				if (page4ClickCount >= 4) {
+					page4ClickCount = 0;
+					if (page4ClickTimer) { clearTimeout(page4ClickTimer); page4ClickTimer = null; }
 					resetBtn.style.display = 'block';
 					resetConfirm = false;
 					resetBtn.textContent = '恢复默认设置';
@@ -3922,8 +3926,8 @@
 					updatePageHeight();
 				}
 			} else {
-				page3ClickCount = 0;
-				if (page3ClickTimer) { clearTimeout(page3ClickTimer); page3ClickTimer = null; }
+				page4ClickCount = 0;
+				if (page4ClickTimer) { clearTimeout(page4ClickTimer); page4ClickTimer = null; }
 			}
 			if (isConfigLoadMode) exitConfigLoadMode();
 			goToPage(page);
@@ -4144,7 +4148,7 @@
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
 		} catch (e) {
 			console.error('[AUTO_OP] exportConfig 异常:', e);
 			alert('导出配置失败: ' + e.message);
@@ -4377,6 +4381,10 @@
 				}
 			});
 			input.click();
+			window.addEventListener("focus", function onCancelCleanup() {
+				window.removeEventListener("focus", onCancelCleanup);
+				setTimeout(function() { if (input.parentNode) document.body.removeChild(input); }, 300);
+			});
 		} catch (e) {
 			console.error('[AUTO_OP] importConfig 异常:', e);
 			showConfirm('导入配置失败: ' + e.message).then(() => {});
@@ -4937,7 +4945,7 @@
 		if (dataAttrKeys.length > 0) {
 			html += '<div class="auto-op-info-attrs-list">';
 			dataAttrKeys.forEach(k => {
-				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="dataAttrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.dataAttrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="dataAttrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${escapeHtml(fp.dataAttrs[k] || '')}" placeholder="留空不匹配"></div>`;
 			});
 			html += '</div>';
 		} else {
@@ -4948,7 +4956,7 @@
 		if (attrKeys.length > 0) {
 			html += '<div class="auto-op-info-attrs-list">';
 			attrKeys.forEach(k => {
-				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${(fp.attrs[k] || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div>`;
+				html += `<div class="auto-op-info-attr-row"><span class="auto-op-info-attr-key" title="${k}">${k}</span><span class="auto-op-test-count" data-test-criterion="attrs" data-attr-key="${k}"></span><input type="text" data-info-action="change-attr" data-attr-key="${k}" value="${escapeHtml(fp.attrs[k] || '')}" placeholder="留空不匹配"></div>`;
 			});
 			html += '</div>';
 		} else {
@@ -4958,7 +4966,7 @@
 		if (fp.onclickParam) {
 			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>onclick 匹配</label><span class="auto-op-test-result" data-test-criterion="onclick"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchOnclick" ${t.matchOnclick !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">参数</span><span class="auto-op-test-count" data-test-criterion="onclick"></span><span class="auto-op-info-field-value">${fp.onclickParam}</span></div></div>`;
 		}
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${(fp.text || '').replace(/"/g, '&quot;')}" placeholder="留空不匹配"></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${escapeHtml(fp.text || '')}" placeholder="留空不匹配"></div></div>`;
 		html += ``;
 		infoContentEl.innerHTML = html;
 		infoOverlayEl.classList.remove('open');
@@ -5068,9 +5076,9 @@
 		const customFill = t.customFill || '';
 		let html = '';
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此目标</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
-		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">目标描述</span><input type="text" data-settings-action="change-desc" value="${(t.desc || '').replace(/"/g, '&quot;')}" placeholder="目标描述"></div></div>`;
-		if (isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">JS 指令</span><textarea data-settings-action="change-customCommand" placeholder="输入 JS 代码，$el 为当前目标" style="width:100%;box-sizing:border-box;background:var(--panel-input-bg)!important;border:1px solid var(--panel-input-border)!important;border-radius:4px;color:var(--panel-input-text)!important;font-family:Cascadia Code,Fira Code,Consolas,monospace;font-size:11px;padding:5px 8px;resize:vertical;min-height:60px;outline:none;line-height:1.4">${(t.customCommand || '').replace(/"/g, '&quot;')}</textarea></div></div>`;
-			if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${customFill.replace(/"/g, '&quot;')}" placeholder="留空为清空"></div></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">目标描述</span><input type="text" data-settings-action="change-desc" value="${escapeHtml(t.desc || '')}" placeholder="目标描述"></div></div>`;
+		if (isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">JS 指令</span><textarea data-settings-action="change-customCommand" placeholder="输入 JS 代码，$el 为当前目标" style="width:100%;box-sizing:border-box;background:var(--panel-input-bg)!important;border:1px solid var(--panel-input-border)!important;border-radius:4px;color:var(--panel-input-text)!important;font-family:Cascadia Code,Fira Code,Consolas,monospace;font-size:11px;padding:5px 8px;resize:vertical;min-height:60px;outline:none;line-height:1.4">${escapeHtml(t.customCommand || '')}</textarea></div></div>`;
+			if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${escapeHtml(customFill)}" placeholder="留空为清空"></div></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">独立间隔 (ms)</span><input type="number" data-settings-action="change-customInterval" value="${t.customInterval != null ? t.customInterval : ''}" min="0" placeholder="使用全局"></div></div>`;
 		if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用高亮</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enableHighlight" ${t.enableHighlight !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
 		if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>滚动到可视区</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-scrollIntoView" ${t.scrollIntoView ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
@@ -5395,8 +5403,8 @@
 				let anyPassed = false;
 				chain.forEach((link, idx) => {
 					cumulative = cumulative.filter(el => {
-						let ancestor = el.parentElement;
 						for (let j = 0; j <= idx; j++) {
+							let ancestor = el.parentElement;
 							let found = false;
 							while (ancestor && ancestor !== document.body) {
 								try {
@@ -5853,6 +5861,7 @@
 
 	function onPickTouch(e) {
 		if (!isPicking || isDragging) return;
+		if (!e.changedTouches || e.changedTouches.length === 0) return;
 		const touch = e.changedTouches[0],
 			el = document.elementFromPoint(touch.clientX, touch.clientY);
 		if (!el || panel.contains(el) || configMenuEl.contains(el)) return;
@@ -6042,8 +6051,8 @@
 			else if (entry.type === 'debug') cls = 'auto-op-cmd-output-debug';
 			else if (entry.type === 'error') cls = 'auto-op-cmd-output-error';
 			else if (entry.type === 'result') cls = 'auto-op-cmd-output-result';
-			var fullMsg = entry.message, shouldTruncate = fullMsg.length > 150;
-			var displayMsg = shouldTruncate ? fullMsg.slice(0, 150) : fullMsg;
+			const fullMsg = entry.message, shouldTruncate = fullMsg.length > 150;
+			const displayMsg = shouldTruncate ? fullMsg.slice(0, 150) : fullMsg;
 			html += '<div class="auto-op-cmd-output-entry" data-idx="' + i + '"><span class="auto-op-cmd-output-time">[' + entry.time + ']</span><span class="' + cls + '">[' + entry.type + ']</span> <span class="auto-op-cmd-output-log' + (shouldTruncate ? ' auto-op-cmd-truncated' : '') + '">' + escapeHtml(displayMsg) + (shouldTruncate ? '<span class="auto-op-cmd-expand-hint"> …点击展开</span>' : '') + '</span></div>';
 		}
 		cmdOutput.innerHTML = html;
@@ -6054,7 +6063,7 @@
 		return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 	}
 
-	function runUserCommand(code, el, t, ci, idx) {
+	function runUserCommand(code, el, t, ci, idx, onSettle) {
 		const c = configs[ci];
 		const targetList = c.targets;
 		const logs = [];
@@ -6078,7 +6087,7 @@
 		}
 
 		function finalize(success, errorMsg, result) {
-			flushLogs();
+			try { flushLogs(); } catch (e) {}
 			restoreConsole();
 			if (!success) appendCmdOutput('error', errorMsg);
 			else appendCmdOutput('result', '↳ ' + (result === undefined ? 'undefined' : (typeof result === 'object' ? JSON.stringify(result, null, 0) : String(result))));
@@ -6104,6 +6113,7 @@
 				clearTimeout(guard);
 				flushLogs();
 				finalize(ok, msg, val);
+					if (onSettle) onSettle(ok, msg, val);
 			};
 			const guard = setTimeout(() => {
 				settle(false, '超时(15s)：Promise 未解决', undefined);
@@ -6172,13 +6182,13 @@
 		cmdOutputLogs = [];
 		updateCmdOutputUI();
 	});
-		cmdCopyOutputBtn.addEventListener('click', () => {
+		cmdCopyOutputBtn.addEventListener('click', async () => {
 			if (cmdOutputLogs.length === 0) return;
 			let text = '';
 			for (const entry of cmdOutputLogs) {
 				text += '[' + entry.time + '] [' + entry.type + '] ' + entry.message + '\n';
 			}
-			const ok = copyToClipboard(text.trimEnd());
+			const ok = await copyToClipboard(text.trimEnd());
 			if (ok) appendCmdOutput('log', '已复制全部 ' + cmdOutputLogs.length + ' 条输出');
 			else appendCmdOutput('error', '复制失败，请手动复制');
 		});
@@ -6262,8 +6272,7 @@
 			}
 			const urlStr = typeof url === 'string' ? url : (url.url || String(url));
 			addNetworkRequest({ id, method: method.toUpperCase(), url: urlStr, reqHeaders, reqBody, status: 'pending', startTime });
-			const promise = _origFetch.apply(this, arguments);
-			promise.then(response => {
+			return _origFetch.apply(this, arguments).then(response => {
 				const endTime = Date.now();
 				const clone = response.clone();
 				const req = networkRequests.find(r => r.id === id);
@@ -6296,7 +6305,6 @@
 				}
 				throw err;
 			});
-			return promise;
 		};
 		XMLHttpRequest.prototype.open = function(method, url) {
 			this._autoOpReq = { id: ++_networkReqId, method: method.toUpperCase(), url: String(url), status: 'pending', startTime: Date.now(), reqHeaders: {} };
@@ -6521,7 +6529,8 @@
 		refreshNetworkHeight();
 	}
 
-	function copyToClipboard(text) {
+	async function copyToClipboard(text) {
+		try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
 		try {
 			const ta = document.createElement('textarea');
 			ta.value = text;
@@ -6552,21 +6561,21 @@
 		}
 	}
 
-	function copyRequestAsJS(req) {
+	async function copyRequestAsJS(req) {
 		const code = buildFetchCode(req);
-		const ok = copyToClipboard(code);
+		const ok = await copyToClipboard(code);
 		if (ok) appendCmdOutput('log', '已复制: ' + code.slice(0, 100) + (code.length > 100 ? '...' : ''));
 		else appendCmdOutput('error', '复制失败，请手动复制');
 	}
 
-	function copyAllRequestsAsJS() {
+	async function copyAllRequestsAsJS() {
 		if (networkRequests.length === 0) { appendCmdOutput('error', '无请求可复制'); return; }
 		const codes = [];
 		for (let i = 0; i < networkRequests.length; i++) {
 			codes.push(buildFetchCode(networkRequests[i]));
 		}
 		const allCode = codes.join(';\n');
-		const ok = copyToClipboard(allCode);
+		const ok = await copyToClipboard(allCode);
 		if (ok) appendCmdOutput('log', '已复制全部 ' + networkRequests.length + ' 条请求');
 		else appendCmdOutput('error', '复制失败，请手动复制');
 	}
@@ -6924,7 +6933,7 @@
 						});
 					}
 					if (t.isCommand) {
-							var cmdRes = runUserCommand(t.customCommand, el, t, ci, idx); if (cmdRes && !cmdRes.success) t.commandError = true; else t.commandError = false;
+							const cmdRes = runUserCommand(t.customCommand, el, t, ci, idx, function(ok) { t.commandError = !ok; }); if (cmdRes && !cmdRes.pending && !cmdRes.success) t.commandError = true; else if (!cmdRes || !cmdRes.pending) t.commandError = false;
 						} else if (t.isInput) {
 							const fill = t.customFill || '';
 							if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
@@ -6985,6 +6994,7 @@
 				if (status[i] === 'disabled') {
 					continue;
 				}
+				if (!c.isRunning) break;
 				if (status[i]) {
 					if (c.clickedCount >= c.maxClicks) {
 						stopClickingFor(ci);
@@ -7001,7 +7011,7 @@
 						});
 					}
 					if (t.isCommand) {
-							var cmdRes2 = runUserCommand(t.customCommand, el, t, ci, i); if (cmdRes2 && !cmdRes2.success) t.commandError = true; else t.commandError = false;
+							const cmdRes2 = runUserCommand(t.customCommand, el, t, ci, i, function(ok) { t.commandError = !ok; }); if (cmdRes2 && !cmdRes2.pending && !cmdRes2.success) t.commandError = true; else if (!cmdRes2 || !cmdRes2.pending) t.commandError = false;
 						} else if (t.isInput) {
 							const fill = t.customFill || '';
 							if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
