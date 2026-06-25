@@ -2526,7 +2526,7 @@
 		}
 
 		.auto-op-test-btn:active {
-			transform: scale(0.92)
+			transform: scale(0.85)
 		}
 
 		.auto-op-test-result {
@@ -4928,6 +4928,7 @@
 		if (t.parentSelector) {
 			const chain = t.parentChain;
 			html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>父级容器匹配</label><span class="auto-op-test-result" data-test-criterion="parent"></span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="auto-op-test-btn" id="auto-op-parent-update-btn">更新</button><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchParent" ${t.matchParent !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>`;
+			html += '<div id="auto-op-parent-chain-detail">';
 			if (chain && chain.length > 0) {
 				html += '<div class="auto-op-info-attrs-list">';
 				chain.forEach((link, idx) => {
@@ -4937,6 +4938,7 @@
 			} else {
 				html += `<div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div>`;
 			}
+			html += '</div>';
 			html += '</div>';
 		}
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>id 匹配</label><span class="auto-op-test-result" data-test-criterion="id"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchId" ${t.matchId !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">id</span><span class="auto-op-test-count" data-test-criterion="id"></span><span class="auto-op-info-field-value">${fp.id ? '#' + fp.id : '-'}</span></div></div>`;
@@ -5261,7 +5263,22 @@
 		rebuildParentInfo(t.element, t);
 		savePerConfig(activeConfig);
 		updateTargetUI();
-		showInfoPanel(infoCurrentIndex);
+		// Update only the chain detail DOM — keep the button/switch row intact for :active animation
+		const detail = document.getElementById('auto-op-parent-chain-detail');
+		if (detail) {
+			let h = '';
+			const chain = t.parentChain;
+			if (chain && chain.length > 0) {
+				h += '<div class="auto-op-info-attrs-list">';
+				chain.forEach((link, idx) => {
+					h += `<div class="auto-op-info-attr-row"><span class="auto-op-parent-chain-key" title="${link.selector}">└> ${link.selector}</span><span class="auto-op-test-result" data-test-criterion="parent" data-parent-index="${idx}"></span></div>`;
+				});
+				h += '</div>';
+			} else if (t.parentSelector) {
+				h += `<div class="auto-op-info-field"><span class="auto-op-info-field-label">选择器</span><span class="auto-op-test-count" data-test-criterion="parent"></span><span class="auto-op-info-field-value">${t.parentSelector}</span></div>`;
+			}
+			detail.innerHTML = h;
+		}
 	}
 
 	function runElementTest() {
