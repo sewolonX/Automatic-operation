@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.3
+// @version      5.2.4
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -212,7 +212,8 @@
 			--panel-highlight: #f59e0b;
 			--panel-missing-border: #dc2626;
 			--panel-missing-text: #dc2626;
-			--auto-op-font: "MiSans VF", system-ui
+			--auto-op-font: "MiSans VF", system-ui;
+			color-scheme: dark
 		}
 
 		[data-theme="light"] {
@@ -234,7 +235,8 @@
 			--panel-waiting-text: #d97706;
 			--panel-highlight: #d97706;
 			--panel-missing-border: #dc2626;
-			--panel-missing-text: #dc2626
+			--panel-missing-text: #dc2626;
+			color-scheme: light
 		}
 
 		[data-theme="light"] .auto-op-status {
@@ -1615,6 +1617,9 @@
 		.auto-op-btn-cmd-target:hover:not(:disabled) {
 			background: var(--panel-button-hover-bg)
 		}
+		.auto-op-btn-cmd-target:active:not(:disabled) {
+			transform: scale(0.96)
+		}
 		.auto-op-btn-cmd-target:disabled {
 			opacity: 0.4;
 			cursor: not-allowed
@@ -1627,6 +1632,9 @@
 
 		.auto-op-btn-cmd-test:hover {
 			opacity: 0.85
+		}
+		.auto-op-btn-cmd-test:active {
+			transform: scale(0.96)
 		}
 
 		.auto-op-cmd-output {
@@ -1716,12 +1724,13 @@
 			justify-content: center;
 			padding: 0;
 			flex-shrink: 0;
-			transition: opacity 0.2s;
+			transition: color 0.15s, background 0.15s;
 			-webkit-tap-highlight-color: transparent
 		}
 
 		.auto-op-network-btn:hover {
-			opacity: 0.65
+			color: var(--panel-highlight-border);
+			background: rgba(39,122,247,0.1)
 		}
 
 		.auto-op-network-btn.active {
@@ -1859,11 +1868,11 @@
 		}
 
 		.auto-op-network-item:hover {
-			background: var(--panel-button-hover-bg)
+			background: var(--panel-input-bg)
 		}
 
 		.auto-op-network-item.expanded {
-			background: var(--panel-button-hover-bg)
+			background: var(--panel-input-bg)
 		}
 
 		.auto-op-network-item-top {
@@ -1963,7 +1972,7 @@
 			word-break: break-all;
 			font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", "Consolas", monospace;
 			font-size: 9px;
-			background: var(--panel-input-bg);
+			background: var(--panel-button-hover-bg);
 			padding: 4px 6px;
 			border-radius: 4px;
 			margin-top: 2px;
@@ -1982,12 +1991,22 @@
 			border: 1px solid var(--panel-button-border);
 			border-radius: 4px;
 			padding: 3px 8px;
-			font-family: var(--auto-op-font)
+			font-family: var(--auto-op-font);
+			transition: all 0.3s;
+			-webkit-tap-highlight-color: transparent
 		}
 
 		.auto-op-network-detail-copy:hover {
-			background: var(--panel-button-hover-bg);
-			color: var(--panel-button-hover-text)
+			background: var(--panel-highlight-border);
+			color: #fff;
+			border-color: var(--panel-highlight-border)
+		}
+
+		.auto-op-network-detail-copy:active {
+			background: var(--panel-highlight-border);
+			color: #fff;
+			border-color: var(--panel-highlight-border);
+			transform: scale(0.85) !important
 		}
 
 		#auto-op-power-save-overlay {
@@ -2977,6 +2996,8 @@
 	let page4ClickCount = 0,
 		page4ClickTimer = null,
 		resetConfirm = false;
+	let page2ClickCount = 0,
+		page2ClickTimer = null;
 
 	function closeConfigMenu() {
 		if (!configMenuEl.classList.contains('open')) return;
@@ -3879,6 +3900,10 @@
 			if (page4ClickTimer) { clearTimeout(page4ClickTimer); page4ClickTimer = null; }
 			updatePageHeight();
 		}
+		if (clamped !== 2) {
+			page2ClickCount = 0;
+			if (page2ClickTimer) { clearTimeout(page2ClickTimer); page2ClickTimer = null; }
+		}
 		const pages = pageContainer.querySelectorAll('.auto-op-page'),
 			oldPage = pages[currentPage],
 			newPage = pages[clamped];
@@ -3925,9 +3950,20 @@
 					resetBtn.classList.remove('confirm');
 					updatePageHeight();
 				}
+			} else if (page === 2 && currentPage === 2) {
+				page2ClickCount++;
+				if (page2ClickTimer) clearTimeout(page2ClickTimer);
+				page2ClickTimer = setTimeout(() => { page2ClickCount = 0; }, 2000);
+				if (page2ClickCount >= 4) {
+					page2ClickCount = 0;
+					if (page2ClickTimer) { clearTimeout(page2ClickTimer); page2ClickTimer = null; }
+					clearAllAutoStart();
+				}
 			} else {
 				page4ClickCount = 0;
 				if (page4ClickTimer) { clearTimeout(page4ClickTimer); page4ClickTimer = null; }
+				page2ClickCount = 0;
+				if (page2ClickTimer) { clearTimeout(page2ClickTimer); page2ClickTimer = null; }
 			}
 			if (isConfigLoadMode) exitConfigLoadMode();
 			goToPage(page);
@@ -4104,7 +4140,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.3',
+				version: '5.2.4',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -4786,6 +4822,22 @@
 		savePerConfig(activeConfig);
 	}
 
+	function clearAllAutoStart() {
+		for (let i = 0; i < CONFIG_COUNT; i++) {
+			const c = configs[i];
+			c.autoStartEnabled = false;
+			c.autoStartIntervalMin = 0;
+			c.autoStartNextTime = 0;
+			stopAutoStartCountdownTimerFor(i);
+			if (c.isRunning) stopClickingFor(i);
+			savePerConfig(i);
+		}
+		if (activeConfig < CONFIG_COUNT) {
+			autoStartIntervalInput.value = '';
+			autoStartCountdownLabel.textContent = '';
+		}
+	}
+
 	function formatElapsedTime(ms) {
 		const totalSec = Math.floor(ms / 1000),
 			h = Math.floor(totalSec / 3600),
@@ -5263,7 +5315,6 @@
 		rebuildParentInfo(t.element, t);
 		savePerConfig(activeConfig);
 		updateTargetUI();
-		// Update only the chain detail DOM — keep the button/switch row intact for :active animation
 		const detail = document.getElementById('auto-op-parent-chain-detail');
 		if (detail) {
 			let h = '';
@@ -6062,7 +6113,7 @@
 		let html = '';
 		for (let i = 0; i < cmdOutputLogs.length; i++) {
 			const entry = cmdOutputLogs[i];
-			let cls = 'auto-op-cmd-output-log';
+			let cls = 'auto-op-cmd-output-default';
 			if (entry.type === 'warn') cls = 'auto-op-cmd-output-warn';
 			else if (entry.type === 'info') cls = 'auto-op-cmd-output-info';
 			else if (entry.type === 'debug') cls = 'auto-op-cmd-output-debug';
