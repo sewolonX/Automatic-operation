@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.4
+// @version      5.2.5
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -191,6 +191,19 @@
 	};
 	document.head.appendChild(fontLink);
 	style.textContent = `
+		#auto-op-panel {
+			line-height: normal;
+			letter-spacing: normal;
+			word-spacing: normal;
+			text-transform: none;
+			text-indent: 0;
+			text-shadow: none;
+			white-space: normal;
+			word-break: normal;
+			overflow-wrap: normal;
+			hyphens: manual;
+			tab-size: 8;
+		}
 
 		:root {
 			--panel-bg: #18181b;
@@ -2838,6 +2851,7 @@
           <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="auto">跟随网页</option><option value="system">跟随系统</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
           <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
           <button class="auto-op-reset-btn" id="auto-op-reset-btn" style="display:none;">恢复默认设置</button>
+          <div style="text-align:center;margin: 0 !important; padding: 0 !important;"><span style="color:var(--panel-label-text);font-size:10px;font-weight:500;">&gt;///&lt; : </span><a href="https://github.com/sewolonX/Automatic-operation" target="_blank" style="color:var(--panel-highlight-border);text-decoration:none;font-size:10px;font-weight:500;">Automatic-operation</a></div>
         </div>
       </div>
       <div id="auto-op-refresh-progress" style="display: none;">
@@ -3396,8 +3410,6 @@
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
-					isCommand: !!t.isCommand,
-					customCommand: t.customCommand || ''
 				};
 				const found = base.isCommand ? [] : tryFindTarget({
 					...base,
@@ -4140,7 +4152,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.4',
+				version: '5.2.5',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -4494,7 +4506,7 @@
 					startElapsedTimer(_c.operationStartTimestamp);
 				}
 			}, 150);
-		}, 120);
+		}, 70);
 		restorePanelOpacity();
 		if (isPicking) setPanelTransparent();
 	}
@@ -4886,6 +4898,8 @@
 		}
 		if (action === 'delete') {
 			const t = c.targets[index];
+			const listDel = targetListContainer.querySelector('.auto-op-target-list');
+			const scrollDel = listDel ? listDel.scrollTop : 0;
 			if (IS_MOBILE && !await showConfirm('确定删除该目标元素？\n\n' + t.desc)) return;
 			if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
 			if (t._blueParent && t._blueParent.classList) {
@@ -4897,6 +4911,8 @@
 			if (c.currentQueueIndex >= c.targets.length) c.currentQueueIndex = 0;
 			updateTargetUI();
 			updateTargetCount();
+			const newListDel = targetListContainer.querySelector('.auto-op-target-list');
+			if (newListDel) newListDel.scrollTop = scrollDel;
 			if (c.targets.length === 0) {
 				stateSpan.textContent = '目标列表已清空';
 				if (stateTimerID) {
@@ -5942,7 +5958,7 @@
 	}
 
 	function onPickClick(e) {
-		if (!isPicking || !e.isTrusted) return;
+		if (!isPicking || isDragging || !e.isTrusted) return;
 		if (Date.now() - lastPickTime < 500) return;
 		const el = e.target;
 		if (panel.contains(el) || configMenuEl.contains(el)) return;
@@ -6309,6 +6325,34 @@
 		}
 	});
 
+		function normalizeHeaders(headers) {
+			if (!headers) return {};
+			if (headers.constructor === Object) return Object.assign({}, headers);
+			if (typeof headers.forEach === 'function') {
+				const obj = {};
+				headers.forEach((v, k) => { obj[k] = v; });
+				return obj;
+			}
+			if (Array.isArray(headers)) {
+				const obj = {};
+				headers.forEach(([k, v]) => { obj[k] = v; });
+				return obj;
+			}
+			return {};
+		}
+
+		function normalizeBody(body) {
+			if (!body) return '';
+			if (typeof body === 'string') return body.slice(0, 10000);
+			if (body instanceof URLSearchParams) return body.toString();
+			if (body instanceof FormData) {
+				try { return JSON.stringify(Object.fromEntries(body)); } catch (e) { return '[FormData]'; }
+			}
+			if (body instanceof Blob) return '[Blob ' + body.size + 'B type=' + (body.type || '?') + ']';
+			if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return '[Binary ' + body.byteLength + 'B]';
+			return String(body).slice(0, 10000);
+		}
+
 	function startNetworkMonitor() {
 		if (isNetworkMonitoring) return;
 		isNetworkMonitoring = true;
@@ -6326,13 +6370,12 @@
 			let method, reqHeaders, reqBody;
 			if (url instanceof Request) {
 				method = url.method || 'GET';
-				reqHeaders = {};
-				url.headers.forEach((v, k) => { reqHeaders[k] = v; });
+				reqHeaders = normalizeHeaders(url.headers);
 				reqBody = '';
 			} else if (options) {
 				method = options.method || 'GET';
-				reqHeaders = options.headers ? Object.assign({}, options.headers) : {};
-				reqBody = options.body ? String(options.body).slice(0, 10000) : '';
+				reqHeaders = normalizeHeaders(options.headers);
+				reqBody = normalizeBody(options.body);
 			} else {
 				method = 'GET';
 				reqHeaders = {};
@@ -6355,7 +6398,8 @@
 						req.resBody = body.slice(0, 10000);
 						updateNetworkItemUI(req);
 						updateNetworkCount();
-					}).catch(() => {
+					}).catch(err => {
+						console.error('[AUTO_OP] 读取响应体失败:', req.url, err);
 						updateNetworkItemUI(req);
 						updateNetworkCount();
 					});
@@ -6510,9 +6554,13 @@
 			}
 		}
 		const detailDiv = item.querySelector('.auto-op-network-item-detail');
-		if (detailDiv && !detailDiv.dataset.built && req.status !== 'pending') {
-			detailDiv.dataset.built = '1';
-			detailDiv.innerHTML = buildRequestDetail(req);
+		if (detailDiv && req.status !== 'pending') {
+			const needRebuild = !detailDiv.dataset.built || (req.resBody && !detailDiv.dataset.builtWithBody);
+			if (needRebuild) {
+				detailDiv.dataset.built = '1';
+				if (req.resBody) detailDiv.dataset.builtWithBody = '1';
+				detailDiv.innerHTML = buildRequestDetail(req);
+			}
 		}
 		saveNetworkMonitorState();
 	}
@@ -7122,7 +7170,7 @@
 		closeConfigMenu();
 	}, true);
 	panel.addEventListener('mousedown', (e) => {
-		if (isPanelTransparent) onPanelClickRestore();
+		if (isPanelTransparent && !e.target.closest('.auto-op-header')) onPanelClickRestore();
 	});
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'visible' && (configs.some(c => c.isRunning) || isAutoRefresh)) requestWakeLock();
