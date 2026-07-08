@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.6-71
+// @version      5.2.7-72
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -1189,19 +1189,16 @@
 
 		.auto-op-parent-highlight {
 			box-shadow: 0 0 0 4px var(--panel-highlight-border) !important;
-			outline-offset: -2px !important;
-			position: relative !important
+			outline-offset: -2px !important
 		}
 
 		.auto-op-parent-highlight-Overlap {
-			box-shadow: 0 0 0 2px var(--panel-highlight-border) !important;
-			position: relative !important
+			box-shadow: 0 0 0 2px var(--panel-highlight-border) !important
 		}
 
 		.auto-op-nearest-parent-highlight {
 			outline: 2px dashed var(--panel-missing-border) !important;
-			outline-offset: -2px !important;
-			position: relative !important
+			outline-offset: -2px !important
 		}
 
 		.auto-op-btn-clear {
@@ -4153,7 +4150,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.6-71',
+				version: '5.2.7-72',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
