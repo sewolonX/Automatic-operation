@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.5
+// @version      5.2.6-71
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -778,6 +778,7 @@
 			display: flex;
 			flex-direction: column;
 			gap: 8px;
+			padding-bottom: 2px;
 			scrollbar-width: none;
 			-ms-overflow-style: none;
 			contain: layout style
@@ -3888,7 +3889,7 @@
 			el = pages[currentPage];
 		if (!el) return;
 		const h = el.offsetHeight;
-		if (h > 0) pageContainer.style.height = (h + 2) + 'px';
+		if (h > 0) pageContainer.style.height = h + 'px';
 
 		if (!panelBody.style.maxHeight) panelBody.style.minHeight = '';
 	}
@@ -4152,7 +4153,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.5',
+				version: '5.2.6-71',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
