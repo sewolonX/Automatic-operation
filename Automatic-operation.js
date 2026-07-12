@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.7-72
+// @version      5.2.7-73
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -4150,7 +4150,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.7-72',
+				version: '5.2.7-73',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -6341,14 +6341,14 @@
 
 		function normalizeBody(body) {
 			if (!body) return '';
-			if (typeof body === 'string') return body.slice(0, 10000);
+			if (typeof body === 'string') return body.slice(0, 50000);
 			if (body instanceof URLSearchParams) return body.toString();
 			if (body instanceof FormData) {
 				try { return JSON.stringify(Object.fromEntries(body)); } catch (e) { return '[FormData]'; }
 			}
 			if (body instanceof Blob) return '[Blob ' + body.size + 'B type=' + (body.type || '?') + ']';
 			if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return '[Binary ' + body.byteLength + 'B]';
-			return String(body).slice(0, 10000);
+			return String(body).slice(0, 50000);
 		}
 
 	function startNetworkMonitor() {
@@ -6393,7 +6393,7 @@
 					req.duration = endTime - startTime;
 					updateNetworkItemUI(req);
 					clone.text().then(body => {
-						req.resBody = body.slice(0, 10000);
+						req.resBody = body.slice(0, 50000);
 						updateNetworkItemUI(req);
 						updateNetworkCount();
 					}).catch(err => {
@@ -6423,7 +6423,7 @@
 		XMLHttpRequest.prototype.send = function(body) {
 			const reqData = this._autoOpReq;
 			if (reqData) {
-				reqData.reqBody = body ? String(body).slice(0, 10000) : '';
+				reqData.reqBody = body ? String(body).slice(0, 50000) : '';
 				reqData._xhr = this;
 				addNetworkRequest(reqData);
 				this.addEventListener('load', function() {
@@ -6436,7 +6436,7 @@
 						const idx = line.indexOf(': ');
 						if (idx > 0) reqData.resHeaders[line.slice(0, idx)] = line.slice(idx + 2);
 					});
-					reqData.resBody = String(this.responseText).slice(0, 10000);
+					reqData.resBody = String(this.responseText).slice(0, 50000);
 					reqData.duration = endTime - reqData.startTime;
 					updateNetworkItemUI(reqData);
 					updateNetworkCount();
@@ -6565,11 +6565,77 @@
 
 	function formatReqTime(ts) {
 		const d = new Date(ts);
-		const h = String(d.getHours()).padStart(2, '0');
-		const m = String(d.getMinutes()).padStart(2, '0');
-		const s = String(d.getSeconds()).padStart(2, '0');
-		const ms = String(d.getMilliseconds()).padStart(3, '0');
-		return h + ':' + m + ':' + s + '.' + ms;
+		const y = d.getFullYear();
+		const mo = String(d.getMonth() + 1).padStart(2, "0");
+		const day = String(d.getDate()).padStart(2, "0");
+		const h = String(d.getHours()).padStart(2, "0");
+		const mi = String(d.getMinutes()).padStart(2, "0");
+		const s = String(d.getSeconds()).padStart(2, "0");
+		const ms = String(d.getMilliseconds()).padStart(3, "0");
+		return y + "/" + mo + "/" + day + " " + h + ":" + mi + ":" + s + "." + ms;
+	}
+
+
+	function completeJSON(text) {
+		var stack = [];
+		var inString = false;
+		var esc = false;
+		for (var i = 0; i < text.length; i++) {
+			var c = text[i];
+			if (esc) { esc = false; continue; }
+			if (c === '\\') { esc = true; continue; }
+			if (c === '"' && !inString) { inString = true; continue; }
+			if (c === '"' && inString) { inString = false; continue; }
+			if (inString) continue;
+			if (c === '{') stack.push('}');
+			else if (c === '[') stack.push(']');
+			else if (c === '}' || c === ']') {
+				if (stack.length > 0 && stack[stack.length - 1] === c) stack.pop();
+			}
+		}
+		if (inString) text += '"';
+		while (stack.length > 0) text += stack.pop();
+		return text;
+	}
+
+	function buildBodyDetail(bodyText) {
+		if (!bodyText) return '';
+		var trimmed = bodyText.trim();
+		if (!trimmed) return escapeHtml(bodyText);
+		// JSON: pretty-print（含截断补全）
+		if (trimmed.charAt(0) === '{' || trimmed.charAt(0) === '[') {
+			try {
+				return escapeHtml(JSON.stringify(JSON.parse(trimmed), null, 2));
+			} catch (_) {
+				// 可能被截断，尝试补全
+				try {
+					var completed = completeJSON(trimmed);
+					return escapeHtml(JSON.stringify(JSON.parse(completed), null, 2)) + '\n[...截断补全]';
+				} catch (_) {}
+			}
+		}
+		// URL 编码: 逐行 key=value
+		if (trimmed.indexOf('=') !== -1 && trimmed.indexOf('&') !== -1) {
+			try {
+				var pairs = trimmed.split('&');
+				var lines = [];
+				for (var i = 0; i < pairs.length; i++) {
+					var pair = pairs[i];
+					var eqIdx = pair.indexOf('=');
+					if (eqIdx === -1) {
+						lines.push(decodeURIComponent(pair));
+					} else {
+						var key = pair.slice(0, eqIdx);
+						var val = pair.slice(eqIdx + 1);
+						try { key = decodeURIComponent(key); } catch (_) {}
+						try { val = decodeURIComponent(val); } catch (_) {}
+						lines.push(key + ' = ' + val);
+					}
+				}
+				return escapeHtml(lines.join('\n'));
+			} catch (_) {}
+		}
+		return escapeHtml(bodyText);
 	}
 
 	function buildRequestDetail(req) {
@@ -6579,9 +6645,9 @@
 		if (req.duration !== undefined) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">耗时:</span>' + req.duration + 'ms</div>';
 		if (req.error) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">错误:</span><span style="color:var(--panel-missing-border)">' + escapeHtml(req.error) + '</span></div>';
 		if (req.reqHeaders && Object.keys(req.reqHeaders).length > 0) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">请求头:</span><div class="auto-op-network-detail-value">' + escapeHtml(JSON.stringify(req.reqHeaders, null, 2)) + '</div></div>';
-		if (req.reqBody) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">请求体:</span><div class="auto-op-network-detail-value">' + escapeHtml(req.reqBody) + '</div></div>';
+		if (req.reqBody) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">请求体:</span><div class="auto-op-network-detail-value">' + buildBodyDetail(req.reqBody) + '</div></div>';
 		if (req.resHeaders && Object.keys(req.resHeaders).length > 0) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">响应头:</span><div class="auto-op-network-detail-value">' + escapeHtml(JSON.stringify(req.resHeaders, null, 2)) + '</div></div>';
-		if (req.resBody) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">响应体:</span><div class="auto-op-network-detail-value">' + escapeHtml(req.resBody) + '</div></div>';
+		if (req.resBody) html += '<div class="auto-op-network-detail-row"><span class="auto-op-network-detail-label">响应体:</span><div class="auto-op-network-detail-value">' + buildBodyDetail(req.resBody) + '</div></div>';
 		html += '<div class="auto-op-network-detail-row"><button class="auto-op-network-detail-copy" data-copy-id="' + req.id + '">复制 JS 指令</button></div>';
 		return html;
 	}
