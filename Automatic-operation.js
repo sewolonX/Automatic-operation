@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.7-73
+// @version      5.2.8-74
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -687,6 +687,109 @@
 		.auto-op-row select option {
 			background: var(--panel-input-bg);
 			color: var(--panel-input-text)
+		}
+
+		.auto-op-custom-select {
+			position: relative;
+			width: 100%
+		}
+
+		.auto-op-custom-select-btn {
+			width: 100%;
+			background: var(--panel-input-bg);
+			border: 1px solid var(--panel-input-border);
+			border-radius: 6px;
+			color: var(--panel-input-text);
+			padding: 7px 28px 7px 10px;
+			font-size: 13px;
+			font-family: var(--auto-op-font);
+			cursor: pointer;
+			text-align: left;
+			position: relative;
+			box-sizing: border-box;
+			outline: none;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			line-height: 1.4;
+			-webkit-tap-highlight-color: transparent
+		}
+
+		.auto-op-custom-select-btn::after {
+			content: '';
+			position: absolute;
+			right: 10px;
+			top: 50%;
+			transform: translateY(-50%) rotate(45deg);
+			width: 6px;
+			height: 6px;
+			border-right: 2px solid var(--panel-label-text);
+			border-bottom: 2px solid var(--panel-label-text);
+			transition: transform 0.2s;
+			pointer-events: none
+		}
+
+		.auto-op-custom-select.open .auto-op-custom-select-btn::after {
+			transform: translateY(-30%) rotate(-135deg)
+		}
+
+		.auto-op-custom-select-btn:focus-visible {
+			border-color: var(--panel-highlight-border)
+		}
+
+		.auto-op-custom-select-btn.disabled {
+			opacity: 0.5;
+			cursor: not-allowed
+		}
+
+		.auto-op-custom-select-list {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: var(--panel-input-bg);
+			border: 1px solid var(--panel-highlight-border);
+			border-radius: 6px;
+			margin-top: 2px;
+			z-index: 100000;
+			max-height: 200px;
+			overflow-y: auto;
+			display: none;
+			box-shadow: 0 4px 16px rgba(0,0,0,0.35)
+		}
+
+		.auto-op-custom-select.open .auto-op-custom-select-list {
+			display: block
+		}
+
+		.auto-op-custom-select-list::-webkit-scrollbar {
+			width: 4px
+		}
+
+		.auto-op-custom-select-list::-webkit-scrollbar-thumb {
+			background: var(--panel-label-text);
+			border-radius: 2px
+		}
+
+		.auto-op-custom-select-option {
+			padding: 7px 10px;
+			color: var(--panel-input-text);
+			font-size: 13px;
+			font-family: var(--auto-op-font);
+			cursor: pointer;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			transition: background 0.1s
+		}
+
+		.auto-op-custom-select-option:hover {
+			background: var(--panel-highlight-border)
+		}
+
+		.auto-op-custom-select-option.selected {
+			background: var(--panel-highlight-border);
+			font-weight: 600
 		}
 
 		.auto-op-row-switch {
@@ -1605,6 +1708,16 @@
 			outline: none
 		}
 
+		.auto-op-cmd-presets .auto-op-custom-select-btn {
+			font-size: 11px;
+			padding: 6px 28px 6px 8px
+		}
+
+		.auto-op-cmd-presets .auto-op-custom-select-option {
+			font-size: 11px;
+			padding: 6px 8px
+		}
+
 		.auto-op-cmd-btns {
 			display: flex;
 			gap: 6px
@@ -2462,6 +2575,24 @@
 			color: var(--panel-input-text) !important
 		}
 
+		.auto-op-info-field .auto-op-custom-select {
+			flex: 0 1 65%;
+			min-width: 0;
+			max-width: 65%;
+			margin-left: auto
+		}
+
+		.auto-op-info-field .auto-op-custom-select-btn {
+			font-size: 11px;
+			padding: 4px 24px 4px 6px;
+			border-radius: 4px
+		}
+
+		.auto-op-info-field .auto-op-custom-select-option {
+			font-size: 11px;
+			padding: 4px 6px
+		}
+
 		.auto-op-info-attrs-list {
 			display: flex;
 			flex-direction: column;
@@ -3010,6 +3141,119 @@
 		resetConfirm = false;
 	let page2ClickCount = 0,
 		page2ClickTimer = null;
+
+	function createCustomSelect(nativeSelect) {
+		if (!nativeSelect || nativeSelect._customSelect) return;
+		nativeSelect._customSelect = true;
+		const wrapper = document.createElement('div');
+		wrapper.className = 'auto-op-custom-select';
+		nativeSelect.parentNode.insertBefore(wrapper, nativeSelect);
+		wrapper.appendChild(nativeSelect);
+		nativeSelect.style.display = 'none';
+		const btn = document.createElement('div');
+		btn.className = 'auto-op-custom-select-btn';
+		btn.tabIndex = 0;
+		wrapper.appendChild(btn);
+		const list = document.createElement('div');
+		list.className = 'auto-op-custom-select-list';
+		wrapper.appendChild(list);
+
+		function getSelectedText() {
+			const opt = nativeSelect.options[nativeSelect.selectedIndex];
+			return opt ? opt.textContent : '';
+		}
+
+		function buildOptions() {
+			list.innerHTML = '';
+			for (let i = 0; i < nativeSelect.options.length; i++) {
+				const opt = nativeSelect.options[i];
+				const item = document.createElement('div');
+				item.className = 'auto-op-custom-select-option';
+				if (i === nativeSelect.selectedIndex) item.classList.add('selected');
+				item.textContent = opt.textContent;
+				item.dataset.value = opt.value;
+				item.addEventListener('mousedown', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					nativeSelect.value = opt.value;
+					nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+					closeDropdown();
+				});
+				list.appendChild(item);
+			}
+		}
+
+		function syncDisplay() {
+			btn.textContent = getSelectedText();
+			if (nativeSelect.disabled) {
+				btn.classList.add('disabled');
+			} else {
+				btn.classList.remove('disabled');
+			}
+		}
+
+		let savedOverflow = '', savedContain = '', overflowTarget = null;
+
+		function closeDropdown() {
+			list.classList.remove('open');
+			wrapper.classList.remove('open');
+			document.removeEventListener('mousedown', onDocClick);
+			if (overflowTarget) {
+				overflowTarget.style.overflow = savedOverflow;
+				overflowTarget.style.contain = savedContain;
+				overflowTarget = null;
+			}
+		}
+
+		function onDocClick(e) {
+			if (!wrapper.contains(e.target)) closeDropdown();
+		}
+
+		function openDropdown() {
+			if (nativeSelect.disabled) return;
+			buildOptions();
+			const container = wrapper.closest('.auto-op-page-container');
+			if (container) {
+				savedOverflow = container.style.overflow;
+				savedContain = container.style.contain;
+				container.style.overflow = 'visible';
+				container.style.contain = 'none';
+				overflowTarget = container;
+			}
+			list.classList.add('open');
+			wrapper.classList.add('open');
+			setTimeout(() => document.addEventListener('mousedown', onDocClick), 0);
+		}
+
+		btn.addEventListener('mousedown', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (list.classList.contains('open')) closeDropdown();
+			else openDropdown();
+		});
+
+		btn.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				if (list.classList.contains('open')) closeDropdown();
+				else openDropdown();
+			} else if (e.key === 'Escape') {
+				closeDropdown();
+			}
+		});
+
+		nativeSelect.addEventListener('change', syncDisplay);
+		syncDisplay();
+		nativeSelect._customSelectSync = syncDisplay;
+		const observer = new MutationObserver(syncDisplay);
+		observer.observe(nativeSelect, { attributes: true, attributeFilter: ['disabled'] });
+	}
+
+	createCustomSelect(strategySelect);
+	createCustomSelect(missingActionSelect);
+	createCustomSelect(cmdPresetSelect);
+	createCustomSelect(panelFontSelect);
+	createCustomSelect(themeModeSelect);
 
 	function closeConfigMenu() {
 		if (!configMenuEl.classList.contains('open')) return;
@@ -4150,7 +4394,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.7-73',
+				version: '5.2.8-74',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -5037,6 +5281,8 @@
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>文字匹配</label><span class="auto-op-test-result" data-test-criterion="text"></span><label class="auto-op-switch"><input type="checkbox" data-info-action="toggle-matchText" ${t.matchText !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字模式</span><select data-info-action="change-matchTextMode"><option value="exact" ${textMode === 'exact' ? 'selected' : ''}>完全匹配</option><option value="fuzzy" ${textMode === 'fuzzy' ? 'selected' : ''}>模糊匹配</option></select></div><div class="auto-op-info-field"><span class="auto-op-info-field-label">文字内容</span><span class="auto-op-test-count" data-test-criterion="text"></span><input type="text" data-info-action="change-text" value="${escapeHtml(fp.text || '')}" placeholder="留空不匹配"></div></div>`;
 		html += ``;
 		infoContentEl.innerHTML = html;
+		const dynamicSelect = infoContentEl.querySelector('select[data-info-action="change-matchTextMode"]');
+		if (dynamicSelect) createCustomSelect(dynamicSelect);
 		infoOverlayEl.classList.remove('open');
 		infoOverlayEl.style.display = 'flex';
 		requestAnimationFrame(() => {
@@ -6602,19 +6848,16 @@
 		if (!bodyText) return '';
 		var trimmed = bodyText.trim();
 		if (!trimmed) return escapeHtml(bodyText);
-		// JSON: pretty-print（含截断补全）
 		if (trimmed.charAt(0) === '{' || trimmed.charAt(0) === '[') {
 			try {
 				return escapeHtml(JSON.stringify(JSON.parse(trimmed), null, 2));
 			} catch (_) {
-				// 可能被截断，尝试补全
 				try {
 					var completed = completeJSON(trimmed);
 					return escapeHtml(JSON.stringify(JSON.parse(completed), null, 2)) + '\n[...截断补全]';
 				} catch (_) {}
 			}
 		}
-		// URL 编码: 逐行 key=value
 		if (trimmed.indexOf('=') !== -1 && trimmed.indexOf('&') !== -1) {
 			try {
 				var pairs = trimmed.split('&');
