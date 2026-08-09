@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.9-75
+// @version      5.3.0-76
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -9,6 +9,7 @@
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @grant        GM_listValues
+// @grant        unsafeWindow
 // @run-at       document-idle
 // @downloadURL  https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js
 // @updateURL    https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js
@@ -4506,7 +4507,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.9-75',
+				version: '5.3.0-76',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -7023,10 +7024,10 @@
 			if (r.id > maxId) maxId = r.id;
 		}
 		_networkReqId = maxId;
-		_origFetch = window.fetch;
-		_origXHROpen = XMLHttpRequest.prototype.open;
-		_origXHRSend = XMLHttpRequest.prototype.send;
-		window.fetch = function(url, options) {
+		_origFetch = unsafeWindow.fetch;
+		_origXHROpen = unsafeWindow.XMLHttpRequest.prototype.open;
+		_origXHRSend = unsafeWindow.XMLHttpRequest.prototype.send;
+		unsafeWindow.fetch = function(url, options) {
 			const id = ++_networkReqId;
 			const startTime = Date.now();
 			let method, reqHeaders, reqBody;
@@ -7132,9 +7133,9 @@
 	function stopNetworkMonitor() {
 		if (!isNetworkMonitoring) return;
 		isNetworkMonitoring = false;
-		if (_origFetch) window.fetch = _origFetch;
-		if (_origXHROpen) XMLHttpRequest.prototype.open = _origXHROpen;
-		if (_origXHRSend) XMLHttpRequest.prototype.send = _origXHRSend;
+		if (_origFetch) unsafeWindow.fetch = _origFetch;
+		if (_origXHROpen) unsafeWindow.XMLHttpRequest.prototype.open = _origXHROpen;
+		if (_origXHRSend) unsafeWindow.XMLHttpRequest.prototype.send = _origXHRSend;
 		_origFetch = null;
 		saveNetworkMonitorState();
 		_origXHROpen = null;
