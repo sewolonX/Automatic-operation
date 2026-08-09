@@ -1,11 +1,14 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.2.8-74
+// @version      5.2.9-75
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @grant        GM_listValues
 // @run-at       document-idle
 // @downloadURL  https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js
 // @updateURL    https://sewolon.oss-cn-shanghai.aliyuncs.com/automatic-operation/Automatic-operation.js
@@ -38,6 +41,10 @@
 	const REFRESH_STATE_KEY = 'AUTO_OP_REFRESH_STATE_' + window.location.hostname;
 	const NETWORK_MONITOR_KEY = 'AUTO_OP_NETMON_' + window.location.hostname;
 	const PER_CONFIG_KEY = 'AUTO_OP_CFG_' + window.location.hostname + '_';
+	function storageSet(key, value) { try { GM_setValue(key, value); } catch (e) { console.error('[AUTO_OP] storageSet 异常:', key, e); } }
+	function storageGet(key) { try { return GM_getValue(key, undefined); } catch (e) { console.error('[AUTO_OP] storageGet 异常:', key, e); return undefined; } }
+	function storageRemove(key) { try { GM_deleteValue(key); } catch (e) { console.error('[AUTO_OP] storageRemove 异常:', key, e); } }
+	function storageGetAllKeys() { try { return Object.keys(GM_listValues()); } catch (e) { console.error('[AUTO_OP] storageGetAllKeys 异常:', e); return []; } }
 	let isAutoRefresh = false,
 		refreshIntervalSec = 60,
 		refreshTimerID = null,
@@ -755,7 +762,7 @@
 			max-height: 200px;
 			overflow-y: auto;
 			display: none;
-			box-shadow: 0 4px 16px rgba(0,0,0,0.35)
+			box-shadow: 0 0 8px rgba(0,0,0,0.25)
 		}
 
 		.auto-op-custom-select.open .auto-op-custom-select-list {
@@ -772,7 +779,7 @@
 		}
 
 		.auto-op-custom-select-option {
-			padding: 7px 10px;
+			padding: 7px 30px 7px 10px;
 			color: var(--panel-input-text);
 			font-size: 13px;
 			font-family: var(--auto-op-font);
@@ -780,16 +787,30 @@
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
-			transition: background 0.1s
+			transition: background 0.1s;
+			position: relative
 		}
 
 		.auto-op-custom-select-option:hover {
-			background: var(--panel-highlight-border)
+			background: var(--panel-button-hover-bg)
 		}
 
 		.auto-op-custom-select-option.selected {
-			background: var(--panel-highlight-border);
+			color: var(--panel-highlight-border);
 			font-weight: 600
+		}
+
+		.auto-op-custom-select-option.selected::after {
+			content: '';
+			position: absolute;
+			right: 8px;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 16px;
+			height: 16px;
+			background: var(--panel-highlight-border);
+			-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cpath d='M46.8171 18.1514C48.0496 16.6624 47.8417 14.4561 46.3527 13.2235C44.8636 11.991 42.6573 12.1989 41.4247 13.6879L22.9535 36.0031L13.4007 26.4502C12.0338 25.0833 9.8177 25.0833 8.4509 26.4502C7.0841 27.817 7.0841 30.0331 8.4509 31.3999L20.7077 43.6567C21.7243 44.6733 23.2108 44.9338 24.4682 44.4381C25.0159 44.2302 25.5189 43.8818 25.9192 43.3982L46.8171 18.1514Z' fill-rule='evenodd' clip-rule='evenodd'/%3E%3C/svg%3E") center/contain no-repeat;
+			mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cpath d='M46.8171 18.1514C48.0496 16.6624 47.8417 14.4561 46.3527 13.2235C44.8636 11.991 42.6573 12.1989 41.4247 13.6879L22.9535 36.0031L13.4007 26.4502C12.0338 25.0833 9.8177 25.0833 8.4509 26.4502C7.0841 27.817 7.0841 30.0331 8.4509 31.3999L20.7077 43.6567C21.7243 44.6733 23.2108 44.9338 24.4682 44.4381C25.0159 44.2302 25.5189 43.8818 25.9192 43.3982L46.8171 18.1514Z' fill-rule='evenodd' clip-rule='evenodd'/%3E%3C/svg%3E") center/contain no-repeat
 		}
 
 		.auto-op-row-switch {
@@ -2548,6 +2569,74 @@
 			border-color: var(--panel-highlight-border) !important
 		}
 
+		.auto-op-keybind-input {
+			flex: 0 1 65%;
+			min-width: 0;
+			max-width: 65%;
+			margin-left: auto;
+			background: var(--panel-input-bg) !important;
+			border: 1px solid var(--panel-input-border) !important;
+			border-radius: 4px;
+			color: var(--panel-input-text) !important;
+			padding: 4px 8px;
+			font-size: 11px;
+			font-family: var(--auto-op-font);
+			outline: none;
+			cursor: pointer;
+			user-select: none;
+			text-align: center;
+			transition: border-color 0.2s ease
+		}
+
+		.auto-op-keybind-input:focus {
+			border-color: var(--panel-highlight-border) !important;
+			box-shadow: 0 0 0 2px rgba(99, 144, 255, 0.2)
+		}
+
+		.auto-op-keybind-input.recording {
+			border-color: #ff6b6b !important;
+			animation: keybind-pulse 1.5s ease-in-out infinite
+		}
+
+		@keyframes keybind-pulse {
+			0%, 100% { box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2) }
+			50% { box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3) }
+		}
+
+		.auto-op-keybind-tip {
+			position: fixed;
+			transform: translateY(-8px);
+			background: var(--panel-bg);
+			color: var(--panel-text);
+			border: 1px solid var(--panel-border);
+			border-radius: 8px;
+			padding: 8px 16px;
+			font-size: 12px;
+			font-family: var(--auto-op-font);
+			z-index: 2147483647;
+			pointer-events: none;
+			opacity: 0;
+			transition: opacity 0.25s ease, transform 0.25s ease, top 0.25s ease, left 0.25s ease;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			max-width: 85vh;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap
+		}
+
+		.auto-op-keybind-tip.show {
+			opacity: 0.85;
+			transform: translateY(0)
+		}
+
+		.auto-op-keybind-tip.success {
+			color: var(--panel-active-text)
+		}
+
+		.auto-op-keybind-tip.fail {
+			color: var(--panel-missing-text)
+		}
+
 		.auto-op-info-field select {
 			flex: 0 1 65%;
 			min-width: 0;
@@ -3142,6 +3231,8 @@
 	let page2ClickCount = 0,
 		page2ClickTimer = null;
 
+	let _activeDropdownClose = null;
+
 	function createCustomSelect(nativeSelect) {
 		if (!nativeSelect || nativeSelect._customSelect) return;
 		nativeSelect._customSelect = true;
@@ -3198,6 +3289,7 @@
 			list.classList.remove('open');
 			wrapper.classList.remove('open');
 			document.removeEventListener('mousedown', onDocClick);
+			if (_activeDropdownClose === closeDropdown) _activeDropdownClose = null;
 			if (overflowTarget) {
 				overflowTarget.style.overflow = savedOverflow;
 				overflowTarget.style.contain = savedContain;
@@ -3211,6 +3303,8 @@
 
 		function openDropdown() {
 			if (nativeSelect.disabled) return;
+			if (_activeDropdownClose && _activeDropdownClose !== closeDropdown) _activeDropdownClose();
+			_activeDropdownClose = closeDropdown;
 			buildOptions();
 			const container = wrapper.closest('.auto-op-page-container');
 			if (container) {
@@ -3571,7 +3665,7 @@
 	function savePerConfig(ci) {
 		try {
 			const c = configs[ci];
-			localStorage.setItem(PER_CONFIG_KEY + ci, JSON.stringify({
+			storageSet(PER_CONFIG_KEY + ci, JSON.stringify({
 				clickStrategy: c.clickStrategy,
 				clickInterval: c.clickInterval,
 				maxClicks: c.maxClicks === Infinity ? '' : c.maxClicks,
@@ -3600,7 +3694,8 @@
 					showParent: !!t.showParent,
 					enableHighlight: t.enableHighlight !== false,
 					isCommand: !!t.isCommand,
-					customCommand: t.customCommand || ''
+					customCommand: t.customCommand || '',
+					keybind: t.keybind || ''
 				}))
 			}));
 		} catch (e) {
@@ -3610,8 +3705,11 @@
 
 	function loadPerConfig(ci) {
 		try {
-			const saved = localStorage.getItem(PER_CONFIG_KEY + ci);
-			if (!saved) return;
+			const saved = storageGet(PER_CONFIG_KEY + ci);
+			if (!saved) {
+				console.warn('[AUTO_OP] 配置 ' + ci + ' 存储无数据 (key=' + PER_CONFIG_KEY + ci + ')');
+				return;
+			}
 			const cfg = JSON.parse(saved),
 				c = configs[ci];
 			c.clickStrategy = cfg.clickStrategy || 'simultaneous';
@@ -3652,6 +3750,7 @@
 					matchParent: t.matchParent !== false,
 					matchId: t.matchId !== false,
 					matchClass: t.matchClass !== false,
+					keybind: t.keybind || '',
 				};
 				const found = base.isCommand ? [] : tryFindTarget({
 					...base,
@@ -3682,7 +3781,7 @@
 
 	function saveShared() {
 		try {
-			localStorage.setItem(SHARED_KEY, JSON.stringify({
+			storageSet(SHARED_KEY, JSON.stringify({
 				isAutoRefresh,
 				refreshIntervalSec,
 				refreshLogs,
@@ -3699,7 +3798,7 @@
 
 	function loadShared() {
 		try {
-			const saved = localStorage.getItem(SHARED_KEY);
+			const saved = storageGet(SHARED_KEY);
 			if (!saved) return;
 			const cfg = JSON.parse(saved);
 			if (cfg.isAutoRefresh !== undefined) {
@@ -3746,7 +3845,14 @@
 
 	function loadData() {
 		loadShared();
-		for (let i = 0; i < CONFIG_COUNT; i++) loadPerConfig(i);
+		let loadSuccess = 0, loadMissing = 0;
+		for (let i = 0; i < CONFIG_COUNT; i++) {
+			const before = configs[i].targets.length;
+			loadPerConfig(i);
+			if (configs[i].targets.length > 0 || storageGet(PER_CONFIG_KEY + i)) loadSuccess++;
+			else loadMissing++;
+		}
+		console.log('[AUTO_OP] loadData 完成: 成功=' + loadSuccess + ', 无数据=' + loadMissing);
 		const c = cv();
 		strategyRow.style.display = 'block';
 	updateCmdTargetBtn();
@@ -3765,6 +3871,12 @@
 		if (c.targets.length > 0) stateSpan.textContent = '就绪';
 		updateConfigBtnLabel();
 	}
+	setInterval(() => {
+		try {
+			for (let i = 0; i < CONFIG_COUNT; i++) savePerConfig(i);
+			saveShared();
+		} catch (e) {}
+	}, 30000);
 
 	function buildBaseSelector(el) {
 		if (el.id) return '#' + CSS.escape(el.id);
@@ -4394,7 +4506,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.2.8-74',
+				version: '5.2.9-75',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -4425,7 +4537,8 @@
 					customInterval: t.customInterval != null ? t.customInterval : '',
 					scrollIntoView: !!t.scrollIntoView,
 					showParent: !!t.showParent,
-					enableHighlight: t.enableHighlight !== false
+					enableHighlight: t.enableHighlight !== false,
+					keybind: t.keybind || ''
 				}))
 			};
 			const json = JSON.stringify(data, null, 2);
@@ -4526,6 +4639,7 @@
 															matchParent: t.matchParent !== false,
 										matchId: t.matchId !== false,
 										matchClass: t.matchClass !== false,
+										keybind: t.keybind || '',
 										isCommand: !!t.isCommand,
 										customCommand: t.customCommand || '',
 										customFill: t.customFill || '',
@@ -4594,7 +4708,8 @@
 											matchOnclick: t.matchOnclick !== false,
 																	matchParent: t.matchParent !== false,
 											matchId: t.matchId !== false,
-											matchClass: t.matchClass !== false
+											matchClass: t.matchClass !== false,
+											keybind: t.keybind || ''
 										};
 										const found = base.isCommand ? [] : tryFindTarget({ ...base, element: null });
 										if (found && found.length > 0) {
@@ -4890,7 +5005,7 @@
 					};
 				}
 			}
-			localStorage.setItem(REFRESH_STATE_KEY, JSON.stringify({
+			storageSet(REFRESH_STATE_KEY, JSON.stringify({
 				active: isAutoRefresh,
 				interval: refreshIntervalSec,
 				nextRefreshTime: now + remaining,
@@ -4905,7 +5020,7 @@
 
 	function loadRefreshState() {
 		try {
-			const s = localStorage.getItem(REFRESH_STATE_KEY);
+			const s = storageGet(REFRESH_STATE_KEY);
 			return s ? JSON.parse(s) : null;
 		} catch (e) {
 			return null;
@@ -4914,7 +5029,7 @@
 
 	function clearRefreshState() {
 		try {
-			localStorage.removeItem(REFRESH_STATE_KEY);
+			storageRemove(REFRESH_STATE_KEY);
 		} catch (e) {}
 	}
 
@@ -5391,6 +5506,7 @@
 		let html = '';
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>启用此目标</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-enabled" ${t.enabled !== false ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">目标描述</span><input type="text" data-settings-action="change-desc" value="${escapeHtml(t.desc || '')}" placeholder="目标描述"></div></div>`;
+		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">按键绑定</span><input type="text" class="auto-op-keybind-input" data-settings-action="change-keybind" value="${escapeHtml(t.keybind || '')}" placeholder="点击录制按键" readonly></div></div>`;
 		if (isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">JS 指令</span><textarea data-settings-action="change-customCommand" placeholder="输入 JS 代码，$el 为当前目标" style="width:100%;box-sizing:border-box;background:var(--panel-input-bg)!important;border:1px solid var(--panel-input-border)!important;border-radius:4px;color:var(--panel-input-text)!important;font-family:Cascadia Code,Fira Code,Consolas,monospace;font-size:11px;padding:5px 8px;resize:vertical;min-height:60px;outline:none;line-height:1.4">${escapeHtml(t.customCommand || '')}</textarea></div></div>`;
 			if (!isCmd) html += `<div class="auto-op-info-section"><div class="auto-op-info-row-switch"><label>输入元素</label><label class="auto-op-switch"><input type="checkbox" data-settings-action="toggle-isInput" ${isInput ? 'checked' : ''}><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div><div id="auto-op-settings-fill-section" style="${isInput ? '' : 'display:none'}"><div class="auto-op-info-field"><span class="auto-op-info-field-label">填充文本</span><input type="text" data-settings-action="change-customFill" value="${escapeHtml(customFill)}" placeholder="留空为清空"></div></div></div>`;
 		html += `<div class="auto-op-info-section"><div class="auto-op-info-field"><span class="auto-op-info-field-label">独立间隔 (ms)</span><input type="number" data-settings-action="change-customInterval" value="${t.customInterval != null ? t.customInterval : ''}" min="0" placeholder="使用全局"></div></div>`;
@@ -5521,6 +5637,312 @@
 		updateTargetUI();
 		savePerConfig(activeConfig);
 	});
+
+	let _keybindRecording = false;
+	let _keybindInput = null;
+
+	settingsContentEl.addEventListener('click', e => {
+		const input = e.target.closest('.auto-op-keybind-input');
+		if (!input) return;
+		e.preventDefault();
+		input.focus();
+		input.dataset.lastValue = input.value;
+		input.classList.add('recording');
+		input.value = '请按下按键...';
+		input.placeholder = '请按下按键...';
+		_keybindRecording = true;
+		_keybindInput = input;
+		_keybindHeldKeys.clear();
+		if (_keybindFinalizeTimer) { clearTimeout(_keybindFinalizeTimer); _keybindFinalizeTimer = null; }
+	});
+
+	settingsContentEl.addEventListener('dblclick', e => {
+		const input = e.target.closest('.auto-op-keybind-input');
+		if (!input) return;
+		e.preventDefault();
+		input.value = '';
+		input.placeholder = '点击录制按键';
+		if (settingsCurrentIndex >= 0) {
+			const c = cv(), t = c.targets[settingsCurrentIndex];
+			if (t) {
+				t.keybind = '';
+				savePerConfig(activeConfig);
+			}
+		}
+	});
+
+	let _keybindHeldKeys = new Set();
+	let _keybindReleaseTimers = new Map();
+	const _KEYBIND_RELEASE_TOLERANCE = 150;
+	let _keybindFinalizeTimer = null;
+	const _KEYBIND_FINALIZE_DELAY = 600;
+
+	function normalizeKeyName(key) {
+		if (key === 'Control') return 'Ctrl';
+		if (key === ' ') return 'Space';
+		if (key === 'ArrowUp') return '↑';
+		if (key === 'ArrowDown') return '↓';
+		if (key === 'ArrowLeft') return '←';
+		if (key === 'ArrowRight') return '→';
+		if (key === 'Escape') return 'Esc';
+		if (key === 'Delete') return 'Del';
+		if (key === 'Backspace') return 'Backspace';
+		if (key === 'Enter') return 'Enter';
+		if (key === 'Tab') return 'Tab';
+		if (key === 'Meta') return 'Meta';
+		if (key.length === 1) return key.toUpperCase();
+		return key;
+	}
+
+	function formatKeyCombo(e) {
+		const parts = [];
+		if (e.ctrlKey) parts.push('Ctrl');
+		if (e.altKey) parts.push('Alt');
+		if (e.shiftKey) parts.push('Shift');
+		if (e.metaKey) parts.push('Meta');
+		const key = e.key;
+		if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+			parts.push(normalizeKeyName(key));
+		}
+		return parts.join('+');
+	}
+
+	function formatKeyComboFromSet(heldKeys) {
+		const mods = [];
+		const normals = [];
+		for (const k of heldKeys) {
+			if (['Ctrl', 'Alt', 'Shift', 'Meta'].includes(k)) mods.push(k);
+			else normals.push(k);
+		}
+		return [...mods, ...normals].join('+');
+	}
+
+	function finalizeKeybindRecording() {
+		if (!_keybindRecording || !_keybindInput) return;
+		const combo = formatKeyComboFromSet(_keybindHeldKeys);
+		if (!combo) {
+			_keybindInput.classList.remove('recording');
+			_keybindInput.value = _keybindInput.dataset.lastValue || '';
+			_keybindInput.placeholder = '点击录制按键';
+		} else {
+			_keybindInput.value = combo;
+			_keybindInput.classList.remove('recording');
+			_keybindInput.placeholder = '点击录制按键';
+			if (settingsCurrentIndex >= 0) {
+				const c = cv(), t = c.targets[settingsCurrentIndex];
+				if (t) {
+					t.keybind = combo;
+					savePerConfig(activeConfig);
+				}
+			}
+		}
+		_keybindRecording = false;
+		_keybindInput = null;
+		_keybindHeldKeys.clear();
+		if (_keybindFinalizeTimer) { clearTimeout(_keybindFinalizeTimer); _keybindFinalizeTimer = null; }
+	}
+
+	document.addEventListener('keydown', e => {
+		if (_keybindRecording && _keybindInput) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.key === 'Escape') {
+				if (_keybindFinalizeTimer) { clearTimeout(_keybindFinalizeTimer); _keybindFinalizeTimer = null; }
+				_keybindInput.classList.remove('recording');
+				_keybindInput.value = _keybindInput.dataset.lastValue || '';
+				_keybindInput.placeholder = '点击录制按键';
+				_keybindRecording = false;
+				_keybindInput = null;
+				_keybindHeldKeys.clear();
+				return;
+			}
+			const name = normalizeKeyName(e.key);
+			_keybindHeldKeys.add(name);
+			_keybindInput.value = formatKeyComboFromSet(_keybindHeldKeys);
+			if (_keybindFinalizeTimer) clearTimeout(_keybindFinalizeTimer);
+			_keybindFinalizeTimer = setTimeout(finalizeKeybindRecording, _KEYBIND_FINALIZE_DELAY);
+			return;
+		}
+
+		const active = document.activeElement;
+		if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return;
+
+		const c = cv();
+		if (!c || !c.targets) return;
+
+		const name = normalizeKeyName(e.key);
+		_keybindHeldKeys.add(name);
+		if (_keybindReleaseTimers.has(name)) {
+			clearTimeout(_keybindReleaseTimers.get(name).timer);
+			_keybindReleaseTimers.delete(name);
+		}
+
+		function isEffectivelyHeld(key) {
+			if (_keybindHeldKeys.has(key)) return true;
+			const rt = _keybindReleaseTimers.get(key);
+			return rt && (Date.now() - rt.time < _KEYBIND_RELEASE_TOLERANCE);
+		}
+
+		let anyMatched = false;
+		for (let i = 0; i < c.targets.length; i++) {
+			const t = c.targets[i];
+			if (!t.keybind || t.enabled === false) continue;
+			const comboKeys = t.keybind.split('+');
+			let match = comboKeys.every(ck => isEffectivelyHeld(ck));
+			if (match) {
+				if (!anyMatched) {
+					anyMatched = true;
+					e.preventDefault();
+					e.stopPropagation();
+				}
+				executeTargetByKeybind(t, i);
+			}
+		}
+	}, true);
+
+	document.addEventListener('keyup', e => {
+		const name = normalizeKeyName(e.key);
+		if (!_keybindRecording) {
+			_keybindHeldKeys.delete(name);
+			if (_keybindReleaseTimers.has(name)) {
+				clearTimeout(_keybindReleaseTimers.get(name).timer);
+			}
+			_keybindReleaseTimers.set(name, {
+				time: Date.now(),
+				timer: setTimeout(() => { _keybindReleaseTimers.delete(name); }, _KEYBIND_RELEASE_TOLERANCE)
+			});
+		}
+	}, true);
+
+	document.addEventListener('mousedown', e => {
+		if (_keybindRecording && _keybindInput) {
+			if (!_keybindInput.contains(e.target)) {
+				if (_keybindFinalizeTimer) { clearTimeout(_keybindFinalizeTimer); _keybindFinalizeTimer = null; }
+				_keybindInput.classList.remove('recording');
+				_keybindInput.value = _keybindInput.dataset.lastValue || '';
+				_keybindInput.placeholder = '点击录制按键';
+				_keybindRecording = false;
+				_keybindInput = null;
+				_keybindHeldKeys.clear();
+			}
+		}
+	}, true);
+
+	let _keybindTipQueue = [];
+	const _KEYBIND_TIP_DURATION = 2000;
+
+	function repositionKeybindTips() {
+		const panel = document.getElementById('auto-op-panel');
+		let baseTop = 20;
+		let baseLeft = 20;
+		if (panel) {
+			const rect = panel.getBoundingClientRect();
+			baseTop = rect.bottom + 8;
+			baseLeft = rect.left;
+		}
+		_keybindTipQueue.forEach((item, i) => {
+			if (item.el.parentNode) {
+				item.el.style.top = (baseTop + i * 36) + 'px';
+				item.el.style.left = baseLeft + 'px';
+			}
+		});
+	}
+
+	function showKeybindTip(desc, combo, success) {
+		_keybindTipQueue = _keybindTipQueue.filter(item => {
+			if (Date.now() - item.time > _KEYBIND_TIP_DURATION) {
+				if (item.el.parentNode) item.el.parentNode.removeChild(item.el);
+				if (item.timer) clearTimeout(item.timer);
+				return false;
+			}
+			return true;
+		});
+
+		const tip = document.createElement('div');
+		tip.className = `auto-op-keybind-tip ${success ? 'success' : 'fail'}`;
+		const icon = success ? '✓' : '✕';
+		tip.textContent = `${icon} ${desc} [${combo}]`;
+
+		const panel = document.getElementById('auto-op-panel');
+		let baseTop = 20;
+		let baseLeft = 20;
+		if (panel) {
+			const rect = panel.getBoundingClientRect();
+			baseTop = rect.bottom + 8;
+			baseLeft = rect.left;
+		}
+
+		const offset = _keybindTipQueue.length * 36;
+		tip.style.top = (baseTop + offset) + 'px';
+		tip.style.left = baseLeft + 'px';
+		document.body.appendChild(tip);
+
+		requestAnimationFrame(() => tip.classList.add('show'));
+
+		const item = { el: tip, time: Date.now(), timer: null };
+		item.timer = setTimeout(() => {
+			tip.classList.remove('show');
+			setTimeout(() => {
+				if (tip.parentNode) tip.parentNode.removeChild(tip);
+				const idx = _keybindTipQueue.indexOf(item);
+				if (idx !== -1) {
+					_keybindTipQueue.splice(idx, 1);
+					repositionKeybindTips();
+				}
+			}, 300);
+		}, _KEYBIND_TIP_DURATION);
+
+		_keybindTipQueue.push(item);
+	}
+
+	function executeTargetByKeybind(t, idx) {
+		const desc = t.desc || `目标 ${idx + 1}`;
+		const combo = t.keybind;
+		try {
+			if (t.isCommand) {
+				const el = t.element;
+				runUserCommand(t.customCommand, el, t, activeConfig, idx, function(ok) {
+					t.commandError = !ok;
+					showKeybindTip(desc, combo, ok);
+				});
+			} else {
+				let el = t.element;
+				let isValid = el && document.contains(el) && matchesFingerprint(el, t);
+				if (!isValid) {
+					const found = tryFindTarget(t);
+					if (found && found.length > 0) {
+						t.element = found[0];
+						rebuildParentInfo(found[0], t);
+						el = found[0];
+						isValid = true;
+					}
+				}
+				if (!isValid) {
+					showKeybindTip(desc, combo, false);
+					return;
+				}
+				if (t.scrollIntoView) {
+					el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+				if (t.isInput) {
+					const fill = t.customFill || '';
+					if (isInputField(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+						el.value = fill;
+						el.dispatchEvent(new Event('input', { bubbles: true }));
+						el.dispatchEvent(new Event('change', { bubbles: true }));
+					} else if (el.isContentEditable) {
+						el.innerHTML = fill;
+					}
+				} else {
+					el.click();
+				}
+				showKeybindTip(desc, combo, true);
+			}
+		} catch (err) {
+			console.error('[AUTO_OP] 按键绑定执行异常:', err);
+			showKeybindTip(desc, combo, false);
+		}
+	}
 
 	function clearTestHighlights() {
 		_testHighlightedElements.forEach(el => {
@@ -6114,12 +6536,8 @@
 		} else {
 			if (resetConfirmTimer) { clearTimeout(resetConfirmTimer); resetConfirmTimer = null; }
 			try {
-				const keys = [];
-				for (let i = 0; i < localStorage.length; i++) {
-					const k = localStorage.key(i);
-					if (k && (k.startsWith('AUTO_OP_') || k.startsWith('AUTO_OP'))) keys.push(k);
-				}
-				keys.forEach(k => localStorage.removeItem(k));
+				const allKeys = storageGetAllKeys();
+				allKeys.filter(k => k.startsWith('AUTO_OP_')).forEach(k => storageRemove(k));
 			} catch (err) {
 				console.error('[AUTO_OP] 重置失败:', err);
 			}
@@ -6741,7 +7159,7 @@
 				}
 				return o;
 			});
-			localStorage.setItem(NETWORK_MONITOR_KEY, JSON.stringify({ active: isNetworkMonitoring, requests: clean }));
+			storageSet(NETWORK_MONITOR_KEY, JSON.stringify({ active: isNetworkMonitoring, requests: clean }));
 		} catch (e) {
 			console.error('[AUTO_OP] saveNetworkMonitorState 异常:', e);
 		}
@@ -6749,7 +7167,7 @@
 
 	function loadNetworkMonitorState() {
 		try {
-			const s = localStorage.getItem(NETWORK_MONITOR_KEY);
+			const s = storageGet(NETWORK_MONITOR_KEY);
 			return s ? JSON.parse(s) : null;
 		} catch (e) {
 			return null;
@@ -6758,7 +7176,7 @@
 
 	function clearNetworkMonitorState() {
 		try {
-			localStorage.removeItem(NETWORK_MONITOR_KEY);
+			storageRemove(NETWORK_MONITOR_KEY);
 		} catch (e) {}
 	}
 
@@ -7482,6 +7900,18 @@
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'visible' && (configs.some(c => c.isRunning) || isAutoRefresh)) requestWakeLock();
 		if (document.visibilityState === 'hidden' && isNetworkMonitoring) saveNetworkMonitorState();
+	});
+	window.addEventListener('beforeunload', () => {
+		try {
+			const c = cv();
+			c.clickInterval = parseFloat(clickIntervalInput.value) || 1000;
+			c.maxClicks = maxClicksInput.value === '' ? Infinity : (parseInt(maxClicksInput.value, 10) || Infinity);
+			c.maxDurationMin = parseFloat(maxDurationInput.value) || 0;
+			c.clickStrategy = strategySelect.value;
+			c.missingAction = missingActionSelect.value;
+			for (let i = 0; i < CONFIG_COUNT; i++) savePerConfig(i);
+			saveShared();
+		} catch (e) {}
 	});
 	detectBrowserTheme();
 	loadData();
