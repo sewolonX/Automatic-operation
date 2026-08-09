@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-76
+// @version      5.3.0-77
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -71,7 +71,7 @@
 	let panelFont = 'MiSans VF';
 	let isPowerSave = false,
 		powerSaveTimerID = null;
-	let themeMode = 'auto';
+	let themeMode = 'system';
 	let _testHighlightedElements = [];
 	let panelTransparentTimer = null,
 		panelClickRestoreTimer = null,
@@ -3067,7 +3067,7 @@
           <div class="auto-op-row-switch"><label>运行状态屏幕常亮</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-wake-lock"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
           <div class="auto-op-row-switch"><label>运行状态禁止聚焦</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-suppress-focus"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
 		  <div class="auto-op-row-switch"><label>省电模式</label><label class="auto-op-switch"><input type="checkbox" id="auto-op-power-save"><span class="auto-op-switch-track"><span class="auto-op-switch-thumb"></span></span></label></div>
-          <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="auto">跟随网页</option><option value="system">跟随系统</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
+          <div class="auto-op-row"><label>亮暗模式</label><select id="auto-op-theme-mode"><option value="system">跟随系统</option><option value="auto">跟随网页</option><option value="light">亮色模式</option><option value="dark">暗色模式</option></select></div>
           <div class="auto-op-row"><label>面板字体</label><select id="auto-op-panel-font"><option value="MiSans VF">MiSans VF</option><option value="system-ui">system-ui</option></select><span class="auto-op-font-failed" id="auto-op-font-failed" style="display:none">MiSans VF 加载失败</span></div>
           <button class="auto-op-reset-btn" id="auto-op-reset-btn" style="display:none;">恢复默认设置</button>
           <div style="text-align:center;margin: 0 !important; padding: 0 !important;"><span style="color:var(--panel-label-text);font-size:10px;font-weight:500;">&gt;///&lt; : </span><a href="https://github.com/sewolonX/Automatic-operation" target="_blank" style="color:var(--panel-highlight-border);text-decoration:none;font-size:10px;font-weight:500;">Automatic-operation</a></div>
@@ -3340,6 +3340,18 @@
 		nativeSelect.addEventListener('change', syncDisplay);
 		syncDisplay();
 		nativeSelect._customSelectSync = syncDisplay;
+		const origDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value') || Object.getOwnPropertyDescriptor(nativeSelect.__proto__, 'value');
+		if (origDescriptor && origDescriptor.set) {
+			Object.defineProperty(nativeSelect, 'value', {
+				get() { return origDescriptor.get.call(this); },
+				set(v) {
+					origDescriptor.set.call(this, v);
+					syncDisplay();
+				},
+				configurable: true,
+				enumerable: true
+			});
+		}
 		const observer = new MutationObserver(syncDisplay);
 		observer.observe(nativeSelect, { attributes: true, attributeFilter: ['disabled'] });
 	}
@@ -4507,7 +4519,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-76',
+				version: '5.3.0-77',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
