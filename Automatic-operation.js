@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-77
+// @version      5.3.0-78
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -3340,7 +3340,7 @@
 		nativeSelect.addEventListener('change', syncDisplay);
 		syncDisplay();
 		nativeSelect._customSelectSync = syncDisplay;
-		const origDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value') || Object.getOwnPropertyDescriptor(nativeSelect.__proto__, 'value');
+		const origDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(nativeSelect), 'value');
 		if (origDescriptor && origDescriptor.set) {
 			Object.defineProperty(nativeSelect, 'value', {
 				get() { return origDescriptor.get.call(this); },
@@ -4519,7 +4519,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-77',
+				version: '5.3.0-78',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -5922,6 +5922,7 @@
 				let el = t.element;
 				let isValid = el && document.contains(el) && matchesFingerprint(el, t);
 				if (!isValid) {
+					beginQueryCycle();
 					const found = tryFindTarget(t);
 					if (found && found.length > 0) {
 						t.element = found[0];
@@ -7558,6 +7559,15 @@
 				const found = tryFindTarget(t);
 				if (found && found.length > 0) {
 					if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
+					if (t._blueParent && t._blueParent.classList) {
+						t._blueParent.classList.remove('auto-op-parent-highlight');
+						t._blueParent.classList.remove('auto-op-parent-highlight-Overlap');
+						t._blueParent = null;
+					}
+					if (t._nearestEl && t._nearestEl.classList) {
+						t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
+						t._nearestEl = null;
+					}
 					t.element = found[0];
 					rebuildParentInfo(found[0], t);
 					if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
@@ -7741,7 +7751,16 @@
 				if (!isValid) {
 					const found = tryFindTarget(t);
 					if (found && found.length > 0) {
-						if (t.element && document.contains(t.element)) t.element.classList.remove('auto-op-selected-highlight');
+						if (t.element && t.element.classList) t.element.classList.remove('auto-op-selected-highlight');
+						if (t._blueParent && t._blueParent.classList) {
+							t._blueParent.classList.remove('auto-op-parent-highlight');
+							t._blueParent.classList.remove('auto-op-parent-highlight-Overlap');
+							t._blueParent = null;
+						}
+						if (t._nearestEl && t._nearestEl.classList) {
+							t._nearestEl.classList.remove('auto-op-nearest-parent-highlight');
+							t._nearestEl = null;
+						}
 						t.element = found[0];
 						rebuildParentInfo(found[0], t);
 						if (ci === activeConfig && t.enableHighlight !== false && t.enabled !== false) found[0].classList.add('auto-op-selected-highlight');
