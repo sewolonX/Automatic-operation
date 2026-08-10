@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-78
+// @version      5.3.0-79
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -903,7 +903,6 @@
 			display: flex;
 			flex-direction: column;
 			gap: 8px;
-			padding-bottom: 2px;
 			scrollbar-width: none;
 			-ms-overflow-style: none;
 			contain: layout style
@@ -1181,7 +1180,7 @@
 		.auto-op-btn-group {
 			display: flex;
 			gap: 8px;
-			margin-top: 14px;
+			margin-top: 12px;
 			max-height: 80px;
 			opacity: 1;
 			overflow: hidden;
@@ -1663,7 +1662,8 @@
 		.auto-op-page {
 			display: none;
 			opacity: 0;
-			transition: opacity 0.2s ease
+			transition: opacity 0.2s ease;
+			padding-bottom: 2px
 		}
 
 		.auto-op-page.active {
@@ -4519,7 +4519,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-78',
+				version: '5.3.0-79',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
