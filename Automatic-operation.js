@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-80
+// @version      5.3.0-81
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -4518,7 +4518,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-80',
+				version: '5.3.0-81',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -5916,6 +5916,8 @@
 				runUserCommand(t.customCommand, el, t, activeConfig, idx, function(ok) {
 					t.commandError = !ok;
 					showKeybindTip(desc, combo, ok);
+					updateTargetUI();
+					updateTargetCount();
 				});
 			} else {
 				let el = t.element;
@@ -5931,7 +5933,10 @@
 					}
 				}
 				if (!isValid) {
+					t._isValid = false;
 					showKeybindTip(desc, combo, false);
+					updateTargetUI();
+					updateTargetCount();
 					return;
 				}
 				if (t.scrollIntoView) {
@@ -5949,6 +5954,13 @@
 				} else {
 					el.click();
 				}
+				if (t.enableHighlight !== false && el.classList) {
+					el.classList.add('auto-op-selected-highlight');
+				}
+				t._isValid = true;
+				refreshParentHighlights();
+				updateTargetUI();
+				updateTargetCount();
 				showKeybindTip(desc, combo, true);
 			}
 		} catch (err) {
