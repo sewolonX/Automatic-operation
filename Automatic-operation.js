@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-79
+// @version      5.3.0-80
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -2618,7 +2618,6 @@
 			pointer-events: none;
 			opacity: 0;
 			transition: opacity 0.25s ease, transform 0.25s ease, top 0.25s ease, left 0.25s ease;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 			max-width: 85vh;
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -4519,7 +4518,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-79',
+				version: '5.3.0-80',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
