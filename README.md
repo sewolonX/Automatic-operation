@@ -1,8 +1,8 @@
 # Automatic-operation 🎯
 
-> **当前版本**：v5.3.0-78 · **代码行数**：8032 行（CSS ~2654 + JS ~5378）· **许可**：GPL-3.0
+> **当前版本**：v5.3.0-81 · **代码行数**：8043 行（CSS ~2652 + JS ~5391）· **许可**：GPL-3.0
 
-[油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充 / 执行 JS）元素。纯 JavaScript 实现，8032 行（CSS ~2654 行 + JS 逻辑 ~5378 行），无外部依赖。
+[油猴脚本（Tampermonkey）](https://www.tampermonkey.net/) — 在任意网页上自动操作（点击 / 填充 / 执行 JS）元素。纯 JavaScript 实现，8043 行（CSS ~2652 行 + JS 逻辑 ~5391 行），无外部依赖。
 
 ## 安装
 
@@ -594,10 +594,10 @@ info 面板的匹配规则检查区域按以下顺序组织：
 
 **时间格式化工具函数**：
 
-- `formatRefreshTime(ms)`（第 4968 行）：`MM:SS` 或 `HH:MM:SS`，`Math.ceil(ms/1000)` 向上取整
-- `formatAutoStartCountdown(ms)`（第 5125 行）：`XhXXmXXs`（>1h）或 `XXmXXs`（<1h）
-- `formatElapsedTime(ms)`（第 5223 行）：`HH:MM:SS`，`Math.floor(ms/1000)` 向下取整
-- `formatReqTime(ts)`（第 7244 行）：`YYYY/MM/DD HH:MM:SS.mmm`（网络请求时间戳，含完整日期）
+- `formatRefreshTime(ms)`（第 4967 行）：`MM:SS` 或 `HH:MM:SS`，`Math.ceil(ms/1000)` 向上取整
+- `formatAutoStartCountdown(ms)`（第 5124 行）：`XhXXmXXs`（>1h）或 `XXmXXs`（<1h）
+- `formatElapsedTime(ms)`（第 5222 行）：`HH:MM:SS`，`Math.floor(ms/1000)` 向下取整
+- `formatReqTime(ts)`（第 7255 行）：`YYYY/MM/DD HH:MM:SS.mmm`（网络请求时间戳，含完整日期）
 
 **自动启动**（第 3 页）
 
@@ -1396,7 +1396,7 @@ Tampermonkey 本身不限制脚本运行的网站数量，脚本通过 `@match *
 4. 检查自动启动是否在停止后被正确重置：`stopClickingFor` 末尾会调用 `startAutoStartCountdownTimerFor` 重新开始倒计时
 5. 打开浏览器控制台，查看是否有 `[AUTO_OP]` 前缀的倒计时相关日志
 
-**自动启动的内部逻辑**（`startAutoStartCountdownTimerFor`，第 5156 行）：
+**自动启动的内部逻辑**（`startAutoStartCountdownTimerFor`，第 5155 行）：
 
 - `autoStartCountdownTimerID` 使用 `setInterval` 每 200ms 更新一次倒计时显示
 - 当 `Date.now() >= autoStartNextTime` 时，调用 `startClickingFor(ci)` 启动操作
@@ -1523,7 +1523,7 @@ Tampermonkey 本身不限制脚本运行的网站数量，脚本通过 `@match *
 <details>
 <summary><b>Q: `buildFetchCode` 生成的 fetch 代码和原始请求有何差异？</b></summary>
 
-**A:** `buildFetchCode`（第 7404 行）生成的代码是对原始请求的简化重建：
+**A:** `buildFetchCode`（第 7415 行）生成的代码是对原始请求的简化重建：
 
 **保留的内容**：
 
@@ -1777,7 +1777,7 @@ function cv() { return configs[activeConfig]; }
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`buildBaseSelector(el)`** — 第 3894 行：
+**`buildBaseSelector(el)`** — 第 3893 行：
 
 ```js
 function buildBaseSelector(el) {
@@ -1794,7 +1794,7 @@ function buildBaseSelector(el) {
 
 ```
 
-**`buildAncestorSelector(el)`** — 第 3904 行：
+**`buildAncestorSelector(el)`** — 第 3903 行：
 
 ```js
 function buildAncestorSelector(el) {
@@ -1810,7 +1810,7 @@ function buildAncestorSelector(el) {
 
 - 返回: `button.primary:nth-of-type(2)`
 
-**`getElementFingerprint(el)`** — 第 3976 行：
+**`getElementFingerprint(el)`** — 第 3975 行：
 
 ```js
 function getElementFingerprint(el) {
@@ -1870,7 +1870,7 @@ function getElementFingerprint(el) {
 
 **`getElText(el)`** — 深度优先遍历提取可见文本节点（跳过 `<script>`/`<style>`/`<title>`），每节点截取前 300 字符，总上限 600 字符。额外回退 `alt`/`title`/`placeholder`/`aria-label`/`value` 属性（无字符限制）。用于弱指纹元素（无 id/class/属性）的精确文字提取。
 
-**`isInputField(el)`** — 第 3920 行：
+**`isInputField(el)`** — 第 3919 行：
 
 ```js
 function isInputField(el) {
@@ -1893,7 +1893,7 @@ function isInputField(el) {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`matchesFingerprint(el, t)`** — 第 4003 行，65 行核心函数：
+**`matchesFingerprint(el, t)`** — 第 4002 行，65 行核心函数：
 
 ```js
 function matchesFingerprint(el, t) {
@@ -1969,7 +1969,7 @@ function matchesFingerprint(el, t) {
 
 ```
 
-**查询缓存**（第 4091–4103 行）：
+**查询缓存**（第 4090–4102 行）：
 
 ```js
 let _queryCache = null;
@@ -1988,7 +1988,7 @@ function cachedQuery(root, selector) {
 
 每个操作周期调用 `beginQueryCycle()` 重置缓存。同一周期内对同一选择器的重复查询复用结果。不同 `root`（父容器 vs document）通过 key 前缀 `:doc:` 区分。
 
-**`tryFindTarget(targetObj)`** — 第 4126 行，三级查找+回退：
+**`tryFindTarget(targetObj)`** — 第 4125 行，三级查找+回退：
 
 ```js
 function tryFindTarget(targetObj) {
@@ -2026,11 +2026,11 @@ function tryFindTarget(targetObj) {
 
 ```
 
-**`resolveParentInfo(el)`** — 第 4155 行：
+**`resolveParentInfo(el)`** — 第 4154 行：
 
 从目标元素向上遍历祖先，找到第一个有 `id` 或 `class` 的父级作为 `blueParent`，直接父元素作为 `nearestParent`。
 
-**`refreshParentHighlights()`** — 第 4198 行：
+**`refreshParentHighlights()`** — 第 4197 行：
 
 ```js
 function refreshParentHighlights() {
@@ -2052,7 +2052,7 @@ function refreshParentHighlights() {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`startClickingFor(ci, savedTimestamp)`** — 第 7544 行，91 行核心启动函数：
+**`startClickingFor(ci, savedTimestamp)`** — 第 7555 行，91 行核心启动函数：
 
 ```js
 function startClickingFor(ci, savedTimestamp) {
@@ -2112,7 +2112,7 @@ function startClickingFor(ci, savedTimestamp) {
 
 ```
 
-**`doClickFor(ci)`** — 第 7726 行，~188 行核心操作循环：
+**`doClickFor(ci)`** — 第 7737 行，~188 行核心操作循环：
 
 ```js
 function doClickFor(ci) {
@@ -2195,7 +2195,7 @@ function doClickFor(ci) {
 
 ```
 
-**`startWaitTimer(ci, idx)`** — 第 7693 行：
+**`startWaitTimer(ci, idx)`** — 第 7704 行：
 
 ```js
 function startWaitTimer(ci, idx) {
@@ -2216,7 +2216,7 @@ function startWaitTimer(ci, idx) {
 
 ```
 
-**`stopClickingFor(ci)`** — 第 7644 行，45 行停止函数：
+**`stopClickingFor(ci)`** — 第 7655 行，45 行停止函数：
 
 1. 清除所有定时器（timerID、waitTimerID、maxDurationTimerID、stateTimerID）
 2. 停止运行计时器（仅 activeConfig）
@@ -2256,7 +2256,7 @@ if (!c.uiThrottled) c.doClickLastUIUpdate = now;
 
 [↑ 回到顶部](#automatic-operation-)
 
-初始化在 IIFE 末尾执行（第 7908–8032 行），共约 124 行。以下是完整流程：
+初始化在 IIFE 末尾执行（第 7936–8043 行），共约 108 行。以下是完整流程：
 
 ```text
 1. 事件绑定（全局）
@@ -2325,7 +2325,7 @@ if (!c.uiThrottled) c.doClickLastUIUpdate = now;
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`runUserCommand(code, el, t, ci, idx, onSettle)`** — 第 6826 行：
+**`runUserCommand(code, el, t, ci, idx, onSettle)`** — 第 6837 行：
 
 ```js
 function runUserCommand(code, el, t, ci, idx, onSettle) {
@@ -2418,7 +2418,7 @@ function runUserCommand(code, el, t, ci, idx, onSettle) {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`startNetworkMonitor()`** — 第 7032 行，拦截 fetch + XHR（v5.3.0+ 使用 `unsafeWindow` 绕过 Tampermonkey 沙箱）：
+**`startNetworkMonitor()`** — 第 7043 行，拦截 fetch + XHR（v5.3.0+ 使用 `unsafeWindow` 绕过 Tampermonkey 沙箱）：
 
 ```js
 function startNetworkMonitor() {
@@ -2525,9 +2525,9 @@ function startNetworkMonitor() {
 
 ```
 
-**`stopNetworkMonitor()`** — 第 7146 行：还原 `unsafeWindow.fetch`、`unsafeWindow.XMLHttpRequest.prototype.open`、`unsafeWindow.XMLHttpRequest.prototype.send`。
+**`stopNetworkMonitor()`** — 第 7157 行：还原 `unsafeWindow.fetch`、`unsafeWindow.XMLHttpRequest.prototype.open`、`unsafeWindow.XMLHttpRequest.prototype.send`。
 
-**请求复制为代码**（`buildFetchCode`，第 7404 行）：根据请求的实际内容智能生成 `fetch()` 代码，分四种路径：
+**请求复制为代码**（`buildFetchCode`，第 7415 行）：根据请求的实际内容智能生成 `fetch()` 代码，分四种路径：
 
 ```js
 // 路径①：有 body + headers → 完整 fetch
@@ -2560,7 +2560,7 @@ fetch(url).then(r => r.text()).then(console.log)
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`switchConfig(newIndex)`** — 第 3569 行，77 行完整流程：
+**`switchConfig(newIndex)`** — 第 3568 行，77 行完整流程：
 
 ```js
 function switchConfig(newIndex) {
@@ -2634,7 +2634,7 @@ function switchConfig(newIndex) {
 
 `toggleConfigLoadMode()` 切换第 1 页页签的显示模式——在「操作」和「配置加载」之间切换。配置加载模式下，页签图标变为 `CONFIG_LOAD_SVG`，页面原有内容隐藏，仅显示导入/导出两个按钮。
 
-**`exportConfig()`**（第 4517 行）：
+**`exportConfig()`**（第 4516 行）：
 
 1. 从 `cv()` 读取当前配置的 7 个配置字段 + 27 个 target 字段
 2. 附加元数据：`version`（脚本版本）、`exportedAt`（ISO 时间戳）、`hostname`（当前域名）
@@ -2642,7 +2642,7 @@ function switchConfig(newIndex) {
 4. 通过 `Blob` + `URL.createObjectURL` + 隐藏 `<a>` 触发浏览器下载
 5. 文件名格式：`auto-op-config-<hostname>-<timestamp>.json`
 
-**`importConfig()`**（第 4574 行，~243 行）：
+**`importConfig()`**（第 4573 行，~243 行）：
 
 1. 创建隐藏 `<input type="file" accept=".json">` 并触发点击
 2. 验证文件扩展名、大小（≤10MB）、JSON 格式、结构完整性
@@ -2659,7 +2659,7 @@ function switchConfig(newIndex) {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`performCollapse()`** — 第 4836 行：
+**`performCollapse()`** — 第 4835 行：
 
 ```js
 function performCollapse() {
@@ -2687,7 +2687,7 @@ function performCollapse() {
 
 ```
 
-**`performExpand()`** — 第 4857 行：
+**`performExpand()`** — 第 4856 行：
 
 ```js
 function performExpand() {
@@ -2786,7 +2786,7 @@ collapsedWidth = 14 + 30 + 12 + 30 + 12 + h3W + 12 + 30 + 14 + 2;
 
 这个计算确保折叠后面板的宽度恰好包裹标题栏的全部可见控件。切换字体（MiSans VF ↔ system-ui）后，`h3W` 自动更新，下一次折叠时使用新宽度。
 
-**`goToPage(page, animated)`** — 第 4263 行：
+**`goToPage(page, animated)`** — 第 4262 行：
 
 ```js
 function goToPage(page) {
@@ -2836,7 +2836,7 @@ function goToPage(page) {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`fitBodyToOverlay(overlayEl)`** — 第 5462 行，离屏探针测量：
+**`fitBodyToOverlay(overlayEl)`** — 第 5461 行，离屏探针测量：
 
 ```js
 function fitBodyToOverlay(overlayEl) {
@@ -2871,7 +2871,7 @@ function fitBodyToOverlay(overlayEl) {
 
 ```
 
-**`restoreBodyHeight()`** — 第 5482 行：
+**`restoreBodyHeight()`** — 第 5481 行：
 
 ```js
 function restoreBodyHeight() {
@@ -2892,7 +2892,7 @@ function restoreBodyHeight() {
 
 ```
 
-**`updatePageHeight()`** — 第 4252 行：
+**`updatePageHeight()`** — 第 4251 行：
 
 ```js
 function updatePageHeight() {
@@ -2927,13 +2927,13 @@ function updatePageHeight() {
 | `AUTO_OP_REFRESH_STATE_<host>` | `REFRESH_STATE_KEY` | 跨刷新临时状态 |
 | `AUTO_OP_NETMON_<host>` | `NETWORK_MONITOR_KEY` | 网络监测开关状态 + 请求记录（`{active, requests}`） |
 
-**`savePerConfig(ci)`** — 第 3678 行：
+**`savePerConfig(ci)`** — 第 3677 行：
 
 序列化 15 个 target 字段（`fingerprint`, `desc`, `isInput`, `parentSelector`, `parentChain`, `enabled`, `matchTag`, `matchText`, `matchTextMode`, `matchDataAttrs`, `matchAttrs`, `matchOnclick`, `matchParent`, `matchId`, `matchClass`，其中 `parentChain` 仅存 `[{selector}]` 无 `desc`）+ `keybind` 按键绑定字段 + 6 个配置级字段（`clickStrategy`, `clickInterval`, `maxClicks`, `missingAction`, `autoStartIntervalMin`, `maxDurationMin`）。
 
 **关键设计**：`element`（DOM引用）不序列化。刷新后通过 `tryFindTarget` 重新查找。`isCommand`/`customCommand` 为运行时字段不序列化——导入/刷新后由 `desc` 中的 `[CMD]` 前缀重新识别。`matchMode` 已删除（被 `matchTextMode` 替代）。`missCount` 已删除（从未在匹配逻辑中使用）。所有布尔开关序列化为 `true/false`。
 
-**`saveShared()`** — 第 3795 行：
+**`saveShared()`** — 第 3794 行：
 
 ```js
 storageSet(SHARED_KEY, JSON.stringify({
@@ -2996,7 +2996,7 @@ if (networkRequests.length > 0 && networkContentEl) {
 
 [↑ 回到顶部](#automatic-operation-)
 
-**`scanWebpageTheme(el)`** — 第 2860 行：
+**`scanWebpageTheme(el)`** — 第 2859 行：
 
 ```js
 const DARK_CLS = ['dark','dark-mode','night','theme-dark',
@@ -3023,7 +3023,7 @@ function scanWebpageTheme(el) {
 
 ```
 
-**`resolveTheme()`** — 第 2886 行：
+**`resolveTheme()`** — 第 2885 行：
 
 ```js
 function resolveTheme() {
@@ -3043,7 +3043,7 @@ function resolveTheme() {
 
 **`applyTheme()`** — 设置 `document.documentElement` 的 `data-theme` 属性（`light`/`dark`），CSS 通过 `[data-theme="light"]` 选择器覆盖变量。
 
-**`startThemeWatchers()` / `stopThemeWatchers()`** — 第 2922 / 2953 行：
+**`startThemeWatchers()` / `stopThemeWatchers()`** — 第 2921 / 2952 行：
 
 根据 `themeMode` 动态开关监听器：
 
@@ -3411,7 +3411,7 @@ WakeLock 的请求和释放遵循「全局判断」原则：
 
 这样可以正确处理多配置并行运行、自动刷新、标签页切换等场景。
 
-**全局 click 监听器**（第 7906 行）：
+**全局 click 监听器**（第 7936 行）：
 
 面板在 capture 阶段监听 click 事件，用于关闭配置菜单等全局 UI 状态：
 
@@ -3476,7 +3476,7 @@ panel.addEventListener('click', (e) => {
 
 ```text
 Automatic-operation/
-├── Automatic-operation.js    # 主脚本 8032行，全部功能（油猴 UserScript）
+├── Automatic-operation.js    # 主脚本 8043行，全部功能（油猴 UserScript）
 ├── Automatic-clicker.js      # 早期简化版 777行（单目标自动点击器）
 ├── README.md                 # 本文档（使用说明 + 技术参考）
 └── LICENSE                   # GPL-3.0 许可证
@@ -3487,9 +3487,9 @@ Automatic-operation/
 
 | 文件 | 行数 | 说明 |
 | --- | --- | --- |
-| `Automatic-operation.js` | **8032** | 主脚本，包含 CSS（~2654行）+ JS 逻辑（~5378行） |
+| `Automatic-operation.js` | **8043** | 主脚本，包含 CSS（~2652行）+ JS 逻辑（~5391行） |
 | `Automatic-clicker.js` | **777** | 早期简化版，单目标自动点击器 |
-| `README.md` | **~3786** | 本文档（使用说明 + 技术参考） |
+| `README.md` | **~3798** | 本文档（使用说明 + 技术参考） |
 
 | 指标 | 数值 |
 | --- | --- |
@@ -3513,46 +3513,46 @@ Automatic-operation/
 | 89–113 | 网络监测状态恢复 | 25 | `restoreNetworkMonitorData` IIFE, 刷新标记注入 |
 | 114–145 | configs 初始化 | 32 | 10 套配置 × 15 字段循环, `cv()` 快捷函数 |
 | 149–199 | WakeLock/Focus/字体 | 51 | `requestWakeLock`, `suppressFocus`（引用计数 `_suppressFocusCount`）, 字体 link 创建 |
-| 201–2854 | CSS 注入 | ~2654 | 暗/亮双主题全部样式（含 `color-scheme: dark/light`, `contain: layout style` ×7, `will-change` ×2, `transform` 省电动画, `auto-op-parent-chain-key` class, 按钮 `:active` 按压缩放, 网络监测 UI 过渡动画；v5.2.7 移除父容器高亮 `position: relative`；v5.2.8 新增自定义下拉选择框 `.auto-op-custom-select` 系列样式；v5.2.9 新增 `.auto-op-keybind-input` 和 `.auto-op-keybind-tip` 按键绑定样式） |
-| 2857–2970 | 主题系统 | 113 | `scanWebpageTheme`（2860）, `resolveTheme`（2893）, `applyTheme`, `startThemeWatchers`（2918）, `stopThemeWatchers`（2970, auto/system/light/dark 四模式，`_themeTimer` 清理） |
-| 2973–3367 | DOM 构建 | 394 | `createElement` 构建 panel + 5页面 + 3个overlay + 省电遮罩 + 确认框 + `appendChild` + 60+ `getElementById` |
-| 3476–3532 | 省电模式 | 56 | `enablePowerSave`（3476）, `disablePowerSave`（3498, 随机位置从 `left/top` 改为 `transform: translate()`） |
-| 3569–3673 | 配置切换 | 104 | `switchConfig`（3569, 核心：保存旧配置→清高亮→恢复元素引用→同步全部UI控件）；`parseFloat` 替代 `parseInt`；`parseInt` 统一加基数 `10` |
-| 3678–3808 | 配置持久化 | 131 | `savePerConfig`（3678, 14 个 target 字段+6 配置字段+`keybind` 字段，移除 `matchMode`/`missCount`/`isCommand`/`customCommand` 序列化）, `loadPerConfig`（3719） |
-| 3795–3858 | shared 存储 | 64 | `saveShared`（3795, 11 项全局状态）, `loadShared`（3812, `Number.isInteger` 验证 `activeConfig`） |
-| 3859–3914 | 数据加载入口 | 56 | `loadData`（3859, 串联 loadShared + loadPerConfig ×10 + 主题初始化） |
-| 3894–3957 | 选择器+文本工具 | 63 | `buildBaseSelector`（3894）, `buildAncestorSelector`（3904, 始终追加 `:nth-of-type(N)`）, `isInputField`（3920）, `getElText`（3930, 移除属性 50 字符限制） |
-| 3976–4001 | 元素指纹 | 25 | `getElementFingerprint`（3976, onclick 匹配改为通用 `/\(([^)]*)\)/`，空字符串 `onclickParam` 为有效值） |
-| 4003–4089 | 匹配规则 | 86 | `matchesFingerprint`（4003, 8 项规则 AND 关系；onclick 匹配用 `!== undefined && !== null` 允许空字符串） |
-| 4091–4125 | 查询缓存+复合选择器 | 34 | `beginQueryCycle`（4091）, `cachedQuery`（4095, Map 缓存）, `buildCompoundSelector`（4104, 增强 `chain[i] && chain[i].selector` 防御性检查） |
-| 4126–4196 | 目标查找+父容器 | 70 | `tryFindTarget`（4126, 三级回退：compoundSelector→cssSel→tagName）, `resolveParentInfo`（4155, parentChain 仅存 `{selector}` 无 `desc`） |
-| 4198–4260 | 父容器高亮 | 62 | `refreshParentHighlights`（4198, blueParent 蓝框 + nearestParent 红虚线框） |
-| 4252–4340 | 分页系统 | 89 | `updatePageHeight`（4252）, `goToPage`（4263, 回弹机制；parseInt 基数 10；离开第5/2页隐藏重置/清零计数） |
-| 4340–4474 | 页签事件+配置加载模式 | 134 | 页签点击处理（第2页4次点击→`clearAllAutoStart`, 第5页4次点击→恢复默认）, `toggleConfigLoadMode`（📄↔📂 切换）；`exitConfigLoadMode` 移除残留 `btnGroup` 引用 |
-| 4458–4574 | 配置加载模式退出+导出 | 116 | `exitConfigLoadMode`, `exportConfig`（4517, 序列化→Blob→下载 .json；版本号 5.3.0-78；移除 `matchMode` 字段） |
-| 4574–4834 | 配置导入 | 260 | `importConfig`（4574, 7 层安全校验→备份→清理→导入→恢复引用→失败回滚，移除 `missCount`/`matchMode` 字段） |
-| 4834–4934 | 折叠+透明度 | 100 | `performCollapse`（4834, `h3?.scrollWidth \|\| 0` 可选链）, `performExpand`（4854, width 过渡 + body opacity/max-height）, `collapsedWidth` 动态计算, 透明度状态机（3个定时器） |
-| 4924–4976 | 确认对话框 | 53 | `showConfirm`（4924, Promise 返回；`_confirmCleanup` 防重叠守卫） |
-| 4977–5033 | 刷新日志+状态保存 | 57 | `addRefreshLog`（4977）, `saveRefreshState`（5005, 使用 `_refreshIntervalAtStart` 锁定的间隔值计算剩余时间，含各运行中配置的 timestamp 和 clickedCount） |
-| 5034–5126 | 刷新状态恢复+倒计时 | 93 | `loadRefreshState`（5034）, `triggerRefresh`（5070, `_isRefreshing` 防重复标志） |
-| 5125–5207 | 自动启动倒计时 + 清除 | 82 | `startAutoStartCountdownTimerFor`（5156, setInterval 200ms 更新→到期调用 startClickingFor→清除定时器）；`clearAllAutoStart`（5207, 遍历10套配置一键清除所有自动启动+停止运行+持久化，入口为第2页4次点击） |
-| 5207–5325 | 运行计时+状态更新 | 118 | 运行时长计时（`elapsedTimerID_global`）, 状态栏 UI 更新（100ms 节流；空闲文案从「无目标」改为「未选取目标元素」） |
-| 5325–5486 | info/settings overlay 显示 | 161 | `showInfoPanel`（5340, v5.2.3 重构布局：元素引用→标签→父级链逐链节→id→class→data-*→标准属性→onclick→文字匹配；新增「更新」按钮；v5.2.8 文字模式 select 改为自定义下拉框）, `showSettingsPanel`（5501, v5.2.9 新增按键绑定输入框） |
-| 5486–5536 | 高度管理 | 50 | `fitBodyToOverlay`（5486, 离屏探针测量→上限 65% 视口）, `restoreBodyHeight`（5505, 动画还原） |
-| 5536–5716 | 元素测试+settings 观察器 | 180 | settings ResizeObserver/MutationObserver 动态绑定/解绑 |
-| 5960–6110 | 元素测试 | 150 | `runElementTest`（6031, 元素存活检测；父级链逐链节验证；extractText 快速路径；文字匹配测试优化）；`updateElementRef`（5978, 仅更新引用不测试）；`updateParentChain`（6006, 仅重建父链）；`rebuildParentInfo`（4172） |
-| 6110–6570 | 事件委托（info+settings） | 460 | 14 种 `data-info-action` + 10 种 `data-settings-action`（含 `change-keybind`）通过 change/input/click/dblclick 事件统一分发；info 面板新增 `updateElementRef`/`updateParentChain` 按钮处理；`_isValid` 计算含 `t.isCommand` |
-| 6570–6780 | 元素选取+目标列表UI | 210 | `selectTarget`（6648, endPickClick 500ms 防抖；parentChain 仅存 `{selector}`；移除 `missCount`；`lastPickTime`；v5.2.5 `isDragging` 拖拽状态防误选）, `updateTargetUI`（parentChain 显示 `p.selector` 替代 `p.desc`；缺失/禁用/CMD 状态着色）, 拖拽（鼠标+触屏）, v5.2.5 目标删除时滚动位置保持 |
-| 6780–6991 | 指令系统 | 211 | `runUserCommand`（6825, 15s Promise 超时守卫 `settle` + `guard`；console 拦截 5 种方法→new Function 沙箱→Promise 检测 .then/.catch）, 日志系统（`appendCmdOutput`, `updateCmdOutputUI`, 上限 500 条） |
-| 6991–7165 | 网络监测核心 | 174 | `normalizeHeaders` 和 `normalizeBody`（v5.2.7-73 截取上限提升至 50000 字符）通用解析函数；`startNetworkMonitor`（7031, v5.3.0 改用 `unsafeWindow.fetch`/`unsafeWindow.XMLHttpRequest` 绕过 Tampermonkey 沙箱；支持 `Request` 对象参数；`setRequestHeader` 拦截在 `load`/`error` 后自动还原 `once: true`）, `stopNetworkMonitor`（7145, 还原 `unsafeWindow` 方法） |
-| 7165–7217 | 网络监测开关+持久化 | 52 | `toggleNetworkMonitor`, `saveNetworkMonitorState`（7166, 简化 JSON.stringify）, `loadNetworkMonitorState`（7182）, `clearNetworkMonitorState`（7191） |
-| 7217–7543 | 网络监测UI+复制+渲染 | 327 | `updateNetworkCount`（v5.2.5 优化：响应体到达时增量重建详情）, `renderNetworkList`, `buildRequestDetail`, `buildFetchCode`（7404）, `completeJSON`（截断 JSON 补全）, `buildBodyDetail`（请求体/响应体智能格式化：JSON pretty-print + URL 编码解析 + 截断补全）, `formatReqTime`（7244, `YYYY/MM/DD HH:MM:SS.mmm` 完整日期格式）, 复制全部, overlay 事件（parseInt 基数 10） |
-| 7544–7692 | 操作启动+停止 | 149 | `startClickingFor`（7544, `parseFloat` 读取 clickInterval；parseInt 基数 10）, `stopClickingFor`（7644, 清所有定时器→释放 WakeLock/恢复 Focus（`_suppressFocusCount` 引用计数）→自动启动倒计时→UI 恢复→保存） |
-| 7693–7725 | 等待重试 | 33 | `startWaitTimer`（7693, 轮询间隔从 1ms 调整为 5ms, 超时=间隔×2） |
-| 7726–7967 | 操作执行 | 242 | `doClickFor`（7726, `isProgrammaticClick = false` 移入 `finally` 块；beginQueryCycle 重置缓存→status 评估→队列递归 setTimeout + 同时 setInterval） |
-| 7908–8032 | 初始化 | 125 | 事件绑定（拖拽/开关/按钮/ResizeObserver/MutationObserver/matchMedia/visibilitychange）→主题→加载→折叠→观察器→跨刷新状态恢复→网络监测恢复→自动启动恢复 |
-| 5693–5960 | 按键绑定系统 | 268 | `normalizeKeyName`（5693）, `formatKeyCombo`（5710）, `formatKeyComboFromSet`（5723）, `finalizeKeybindRecording`（5733）, `executeTargetByKeybind`（5911, click/fill/command 三种操作类型）, `showKeybindTip`（5864, 浮动提示堆叠显示）；keydown/keyup/mousedown 全局监听（5746/5804/5818）；录制模式 + 按键释放容差 150ms + 录制完成延迟 600ms；v5.2.9 新增 |
-| **合计** | **1–8032** | **8032** | **CSS ~2654 + JS ~5378** |
+| 201–2853 | CSS 注入 | ~2652 | 暗/亮双主题全部样式（含 `color-scheme: dark/light`, `contain: layout style` ×7, `will-change` ×2, `transform` 省电动画, `auto-op-parent-chain-key` class, 按钮 `:active` 按压缩放, 网络监测 UI 过渡动画；v5.2.7 移除父容器高亮 `position: relative`；v5.2.8 新增自定义下拉选择框 `.auto-op-custom-select` 系列样式；v5.2.9 新增 `.auto-op-keybind-input` 和 `.auto-op-keybind-tip` 按键绑定样式） |
+| 2856–2969 | 主题系统 | 113 | `scanWebpageTheme`（2859）, `resolveTheme`（2885）, `applyTheme`, `startThemeWatchers`（2921）, `stopThemeWatchers`（2969, auto/system/light/dark 四模式，`_themeTimer` 清理） |
+| 2972–3366 | DOM 构建 | 394 | `createElement` 构建 panel + 5页面 + 3个overlay + 省电遮罩 + 确认框 + `appendChild` + 60+ `getElementById` |
+| 3475–3531 | 省电模式 | 56 | `enablePowerSave`（3475）, `disablePowerSave`（3497, 随机位置从 `left/top` 改为 `transform: translate()`） |
+| 3568–3672 | 配置切换 | 104 | `switchConfig`（3568, 核心：保存旧配置→清高亮→恢复元素引用→同步全部UI控件）；`parseFloat` 替代 `parseInt`；`parseInt` 统一加基数 `10` |
+| 3677–3807 | 配置持久化 | 131 | `savePerConfig`（3677, 14 个 target 字段+6 配置字段+`keybind` 字段，移除 `matchMode`/`missCount`/`isCommand`/`customCommand` 序列化）, `loadPerConfig`（3718） |
+| 3794–3857 | shared 存储 | 64 | `saveShared`（3794, 11 项全局状态）, `loadShared`（3811, `Number.isInteger` 验证 `activeConfig`） |
+| 3858–3913 | 数据加载入口 | 56 | `loadData`（3858, 串联 loadShared + loadPerConfig ×10 + 主题初始化） |
+| 3893–3956 | 选择器+文本工具 | 63 | `buildBaseSelector`（3893）, `buildAncestorSelector`（3903, 始终追加 `:nth-of-type(N)`）, `isInputField`（3919）, `getElText`（3929, 移除属性 50 字符限制） |
+| 3975–4000 | 元素指纹 | 25 | `getElementFingerprint`（3975, onclick 匹配改为通用 `/\(([^)]*)\)/`，空字符串 `onclickParam` 为有效值） |
+| 4002–4088 | 匹配规则 | 86 | `matchesFingerprint`（4002, 8 项规则 AND 关系；onclick 匹配用 `!== undefined && !== null` 允许空字符串） |
+| 4090–4124 | 查询缓存+复合选择器 | 34 | `beginQueryCycle`（4090）, `cachedQuery`（4094, Map 缓存）, `buildCompoundSelector`（4103, 增强 `chain[i] && chain[i].selector` 防御性检查） |
+| 4125–4195 | 目标查找+父容器 | 70 | `tryFindTarget`（4125, 三级回退：compoundSelector→cssSel→tagName）, `resolveParentInfo`（4154, parentChain 仅存 `{selector}` 无 `desc`） |
+| 4197–4259 | 父容器高亮 | 62 | `refreshParentHighlights`（4197, blueParent 蓝框 + nearestParent 红虚线框） |
+| 4251–4339 | 分页系统 | 89 | `updatePageHeight`（4251）, `goToPage`（4262, 回弹机制；parseInt 基数 10；离开第5/2页隐藏重置/清零计数） |
+| 4339–4473 | 页签事件+配置加载模式 | 134 | 页签点击处理（第2页4次点击→`clearAllAutoStart`, 第5页4次点击→恢复默认）, `toggleConfigLoadMode`（📄↔📂 切换）；`exitConfigLoadMode` 移除残留 `btnGroup` 引用 |
+| 4457–4573 | 配置加载模式退出+导出 | 116 | `exitConfigLoadMode`, `exportConfig`（4516, 序列化→Blob→下载 .json；版本号 5.3.0-81；移除 `matchMode` 字段） |
+| 4573–4833 | 配置导入 | 260 | `importConfig`（4573, 7 层安全校验→备份→清理→导入→恢复引用→失败回滚，移除 `missCount`/`matchMode` 字段） |
+| 4833–4933 | 折叠+透明度 | 100 | `performCollapse`（4833, `h3?.scrollWidth \|\| 0` 可选链）, `performExpand`（4856, width 过渡 + body opacity/max-height）, `collapsedWidth` 动态计算, 透明度状态机（3个定时器） |
+| 4923–4975 | 确认对话框 | 53 | `showConfirm`（4923, Promise 返回；`_confirmCleanup` 防重叠守卫） |
+| 4976–5032 | 刷新日志+状态保存 | 57 | `addRefreshLog`（4976）, `saveRefreshState`（5004, 使用 `_refreshIntervalAtStart` 锁定的间隔值计算剩余时间，含各运行中配置的 timestamp 和 clickedCount） |
+| 5033–5125 | 刷新状态恢复+倒计时 | 93 | `loadRefreshState`（5033）, `triggerRefresh`（5069, `_isRefreshing` 防重复标志） |
+| 5124–5206 | 自动启动倒计时 + 清除 | 82 | `startAutoStartCountdownTimerFor`（5155, setInterval 200ms 更新→到期调用 startClickingFor→清除定时器）；`clearAllAutoStart`（5206, 遍历10套配置一键清除所有自动启动+停止运行+持久化，入口为第2页4次点击） |
+| 5206–5324 | 运行计时+状态更新 | 118 | 运行时长计时（`elapsedTimerID_global`）, 状态栏 UI 更新（100ms 节流；空闲文案从「无目标」改为「未选取目标元素」） |
+| 5324–5485 | info/settings overlay 显示 | 161 | `showInfoPanel`（5339, v5.2.3 重构布局：元素引用→标签→父级链逐链节→id→class→data-*→标准属性→onclick→文字匹配；新增「更新」按钮；v5.2.8 文字模式 select 改为自定义下拉框）, `showSettingsPanel`（5500, v5.2.9 新增按键绑定输入框） |
+| 5485–5535 | 高度管理 | 50 | `fitBodyToOverlay`（5485, 离屏探针测量→上限 65% 视口）, `restoreBodyHeight`（5504, 动画还原） |
+| 5535–5715 | 元素测试+settings 观察器 | 180 | settings ResizeObserver/MutationObserver 动态绑定/解绑 |
+| 5959–6109 | 元素测试 | 150 | `runElementTest`（6042, 元素存活检测；父级链逐链节验证；extractText 快速路径；文字匹配测试优化）；`updateElementRef`（5989, 仅更新引用不测试）；`updateParentChain`（6017, 仅重建父链）；`rebuildParentInfo`（4171） |
+| 6109–6569 | 事件委托（info+settings） | 460 | 14 种 `data-info-action` + 10 种 `data-settings-action`（含 `change-keybind`）通过 change/input/click/dblclick 事件统一分发；info 面板新增 `updateElementRef`/`updateParentChain` 按钮处理；`_isValid` 计算含 `t.isCommand` |
+| 6569–6779 | 元素选取+目标列表UI | 210 | `selectTarget`（6659, endPickClick 500ms 防抖；parentChain 仅存 `{selector}`；移除 `missCount`；`lastPickTime`；v5.2.5 `isDragging` 拖拽状态防误选）, `updateTargetUI`（parentChain 显示 `p.selector` 替代 `p.desc`；缺失/禁用/CMD 状态着色）, 拖拽（鼠标+触屏）, v5.2.5 目标删除时滚动位置保持 |
+| 6779–6990 | 指令系统 | 211 | `runUserCommand`（6836, 15s Promise 超时守卫 `settle` + `guard`；console 拦截 5 种方法→new Function 沙箱→Promise 检测 .then/.catch）, 日志系统（`appendCmdOutput`, `updateCmdOutputUI`, 上限 500 条） |
+| 6990–7164 | 网络监测核心 | 174 | `normalizeHeaders` 和 `normalizeBody`（v5.2.7-73 截取上限提升至 50000 字符）通用解析函数；`startNetworkMonitor`（7042, v5.3.0 改用 `unsafeWindow.fetch`/`unsafeWindow.XMLHttpRequest` 绕过 Tampermonkey 沙箱；支持 `Request` 对象参数；`setRequestHeader` 拦截在 `load`/`error` 后自动还原 `once: true`）, `stopNetworkMonitor`（7156, 还原 `unsafeWindow` 方法） |
+| 7164–7216 | 网络监测开关+持久化 | 52 | `toggleNetworkMonitor`, `saveNetworkMonitorState`（7177, 简化 JSON.stringify）, `loadNetworkMonitorState`（7193）, `clearNetworkMonitorState`（7202） |
+| 7216–7542 | 网络监测UI+复制+渲染 | 327 | `updateNetworkCount`（v5.2.5 优化：响应体到达时增量重建详情）, `renderNetworkList`, `buildRequestDetail`, `buildFetchCode`（7415）, `completeJSON`（截断 JSON 补全）, `buildBodyDetail`（请求体/响应体智能格式化：JSON pretty-print + URL 编码解析 + 截断补全）, `formatReqTime`（7255, `YYYY/MM/DD HH:MM:SS.mmm` 完整日期格式）, 复制全部, overlay 事件（parseInt 基数 10） |
+| 7555–7703 | 操作启动+停止 | 149 | `startClickingFor`（7555, `parseFloat` 读取 clickInterval；parseInt 基数 10）, `stopClickingFor`（7655, 清所有定时器→释放 WakeLock/恢复 Focus（`_suppressFocusCount` 引用计数）→自动启动倒计时→UI 恢复→保存） |
+| 7704–7736 | 等待重试 | 33 | `startWaitTimer`（7704, 轮询间隔从 1ms 调整为 5ms, 超时=间隔×2） |
+| 7737–7935 | 操作执行 | 199 | `doClickFor`（7737, `isProgrammaticClick = false` 移入 `finally` 块；beginQueryCycle 重置缓存→status 评估→队列递归 setTimeout + 同时 setInterval） |
+| 7936–8043 | 初始化 | 108 | 事件绑定（拖拽/开关/按钮/ResizeObserver/MutationObserver/matchMedia/visibilitychange）→主题→加载→折叠→观察器→跨刷新状态恢复→网络监测恢复→自动启动恢复 |
+| 5692–5959 | 按键绑定系统 | 268 | `normalizeKeyName`（5692）, `formatKeyCombo`（5709）, `formatKeyComboFromSet`（5722）, `finalizeKeybindRecording`（5732）, `executeTargetByKeybind`（5910, click/fill/command 三种操作类型）, `showKeybindTip`（5863, 浮动提示堆叠显示）；keydown/keyup/mousedown 全局监听（5745/5803/5817）；录制模式 + 按键释放容差 150ms + 录制完成延迟 600ms；v5.2.9 新增 |
+| **合计** | **1–8043** | **8043** | **CSS ~2652 + JS ~5391** |
 
 ---
 
@@ -3560,7 +3560,19 @@ Automatic-operation/
 
 [↑ 回到顶部](#automatic-operation-)
 
-### v5.3.0-78（当前 · 8032 行）
+### v5.3.0-81（当前 · 8043 行）
+
+[↑ 回到顶部](#automatic-operation-)
+
+- **按键绑定触发后 UI 同步**：`executeTargetByKeybind` 中执行目标操作后新增 `updateTargetUI()` 和 `updateTargetCount()` 调用，确保按键触发后目标列表和计数（存在/消失/总数）实时更新。指令类型目标执行后同步更新 `commandError` 状态；普通目标执行后添加选中高亮（`auto-op-selected-highlight`）并刷新父级高亮（`refreshParentHighlights`）；元素缺失时设置 `t._isValid = false`
+- **页面容器底部间距调整**：`.auto-op-page-container` 移除 `padding-bottom: 2px`，改为在 `.auto-op-page` 上添加 `padding-bottom: 2px`。间距控制从容器层移至页面层，CSS 更精确
+- **按钮组顶部间距微调**：`.auto-op-btn-group` 的 `margin-top` 从 `14px` 调整为 `12px`
+- **按键绑定提示框阴影移除**：`.auto-op-keybind-tip` 移除 `box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)` 声明，提示框外观更简洁
+- **版本号提升**：`@version` 从 5.3.0-78 提升至 5.3.0-81
+- **导出配置版本号**：`exportConfig()` 中序列化的 `version` 字段从 `'5.3.0-78'` 提升至 `'5.3.0-81'`
+- **代码行数变化**：从 8032 行增长至 8043 行（+11 行，CSS ~2654→~2652，JS ~5378→~5391）
+
+### v5.3.0-78（8032 行）
 
 [↑ 回到顶部](#automatic-operation-)
 
