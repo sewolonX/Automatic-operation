@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automatic-operation
 // @namespace    https://github.com/sewolonX/Automatic-operation
-// @version      5.3.0-81
+// @version      5.3.0-82
 // @description  不想描述
 // @author       sewolon
 // @match        *://*/*
@@ -4518,7 +4518,7 @@
 			const ci = activeConfig;
 			const c = configs[ci];
 			const data = {
-				version: '5.3.0-81',
+				version: '5.3.0-82',
 				exportedAt: new Date().toISOString(),
 				hostname: window.location.hostname,
 				clickStrategy: c.clickStrategy,
@@ -7566,6 +7566,12 @@
 		}
 		for (let i = 0; i < c.targets.length; i++) {
 			const t = c.targets[i];
+			if (!t.isCommand) {
+				t.element = null;
+			}
+		}
+		for (let i = 0; i < c.targets.length; i++) {
+			const t = c.targets[i];
 			if (!t.element || !document.contains(t.element)) {
 				const found = tryFindTarget(t);
 				if (found && found.length > 0) {
@@ -8012,7 +8018,7 @@
 						}
 						const c = cv();
 						if (c.isRunning) countSpan.textContent = c.clickedCount;
-					}, 200);
+					}, 1500);
 				}
 			}
 			clearRefreshState();
